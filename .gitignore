@@ -1,0 +1,17 @@
+# Large binaries unused by current demo
+assets/avatar.glb
+
+# Local dev / OS
+.DS_Store
+output/
+node_modules/
+
+# Editor
+.vscode/
+.idea/
+
+# Backup html
+*_backup.html
+
+# Logs
+*.log

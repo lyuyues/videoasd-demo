@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的小镇 — VideoASD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, "PingFang SC", system-ui, sans-serif;
+      color: #5a4a3a;
+      /* Matches diorama's baked-in sky color, so the image blends seamlessly into the page */
+      background: #98b7ce;
+    }
+
+    /* Diorama as fixed CSS background — no perspective distortion */
+    .bg-diorama {
+      position: fixed;
+      inset: 0;
+      background-image: url('assets/town_wide.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Three.js canvas (transparent) — only the 3D bear lives here */
+    #canvas {
+      position: fixed; inset: 0;
+      z-index: 2;
+      cursor: crosshair;
+    }
+
+    /* Hotspot overlay — invisible click zones positioned over the diorama */
+    .hotspots {
+      position: fixed; inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .hotspot {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 110px; height: 110px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+    }
+    .hotspot-ring {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      border: 4px solid currentColor;
+      opacity: 0.6;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0) 70%);
+      animation: pulse 2.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.08); }
+    }
+    .hotspot:hover .hotspot-ring {
+      opacity: 0.95;
+      transform: scale(1.18);
+      box-shadow: 0 0 24px currentColor;
+      animation: none;
+    }
+    .hotspot-label {
+      position: absolute;
+      top: -28px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #5a4a3a;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      white-space: nowrap;
+    }
+    .hotspot:hover .hotspot-label {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .hotspot.visited .hotspot-ring {
+      opacity: 0.5;
+      border-color: #7fc164 !important;
+      animation: none;
+    }
+    .hotspot.visited::after {
+      content: "✓";
+      position: absolute;
+      top: 6px; right: 12px;
+      background: #7fc164;
+      color: white;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(60, 130, 30, 0.35);
+    }
+
+    /* Floating progress chip (no top bar) */
+    .progress {
+      position: fixed;
+      top: 16px; right: 20px;
+      background: linear-gradient(135deg, #ffd49a 0%, #ffb56a 100%);
+      color: #6e4a1a;
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 14px; font-weight: 500;
+      box-shadow: 0 2px 8px rgba(255, 180, 100, 0.3);
+      z-index: 10;
+    }
+    /* Modal */
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(50, 60, 80, 0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; transition: opacity 0.22s ease;
+    }
+    .modal.hidden { opacity: 0; pointer-events: none; }
+    .modal-card {
+      background: white; border-radius: 28px;
+      padding: 36px 40px; max-width: 480px; width: 90%;
+      text-align: center;
+      box-shadow: 0 16px 56px rgba(0, 0, 0, 0.22);
+      transform: scale(0.96); transition: transform 0.22s ease;
+    }
+    .modal:not(.hidden) .modal-card { transform: scale(1); }
+    .modal-card h2 { font-size: 26px; margin-bottom: 14px; }
+    .modal-card p { color: #7a6a5a; margin-bottom: 10px; line-height: 1.55; }
+    .modal-hint { font-size: 12px; color: #b0a090; margin-top: 14px; }
+    .modal-card button {
+      background: linear-gradient(135deg, #ffb56a 0%, #ff9d3f 100%);
+      color: white; border: none;
+      padding: 12px 36px; border-radius: 28px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      margin-top: 20px;
+      box-shadow: 0 4px 12px rgba(255, 150, 60, 0.35);
+      font-family: inherit;
+      transition: transform 0.15s ease;
+    }
+    .modal-card button:hover { transform: translateY(-2px); }
+    .dev-hint {
+      position: fixed; bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px; color: rgba(90, 80, 70, 0.6);
+      background: rgba(255, 255, 255, 0.65);
+      padding: 6px 14px; border-radius: 12px;
+      pointer-events: none; z-index: 10;
+    }
+    .toolbar {
+      position: fixed; bottom: 16px; right: 16px;
+      display: flex; gap: 8px; z-index: 10;
+    }
+    .toolbar button {
+      background: rgba(255, 255, 255, 0.92);
+      border: none; padding: 8px 14px; border-radius: 14px;
+      font-size: 13px; font-weight: 500; color: #5a4a3a;
+      cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      font-family: inherit;
+    }
+    .toolbar button:hover { background: rgba(255, 220, 120, 0.95); }
+  </style>
+</head>
+<body>
+  <div class="bg-diorama"></div>
+  <canvas id="canvas"></canvas>
+
+  <div class="hotspots">
+    <button class="hotspot" data-loc="playground" style="left: 22%; top: 60%; color: #ff9966;">
+      <span class="hotspot-label">操场</span>
+      <span class="hotspot-ring"></span>
+    </button>
+    <button class="hotspot" data-loc="classroom" style="left: 41%; top: 50%; color: #ffcd6e;">
+      <span class="hotspot-label">教室</span>
+      <span class="hotspot-ring"></span>
+    </button>
+    <button class="hotspot" data-loc="cafeteria" style="left: 58%; top: 52%; color: #f07a5b;">
+      <span class="hotspot-label">餐厅</span>
+      <span class="hotspot-ring"></span>
+    </button>
+    <button class="hotspot" data-loc="park" style="left: 76%; top: 58%; color: #7fc164;">
+      <span class="hotspot-label">公园</span>
+      <span class="hotspot-ring"></span>
+    </button>
+  </div>
+
+  <span class="progress" id="progress">已探索 0/4</span>
+
+  <p class="dev-hint">点建筑/地面 → 小熊走过去</p>
+
+  <div class="toolbar">
+    <button id="reset-progress">清空</button>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="modal-title">进入 ...</h2>
+      <p>这里会播放 social context 视频。</p>
+      <p class="modal-hint">(占位：之后接 POE 预测+生成 流程)</p>
+      <button id="modal-close">完成探索</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    /* ===== Scene (bear only) ===== */
+    const canvas = document.getElementById('canvas');
+    const scene = new THREE.Scene();
+    scene.background = null;
+
+    // Perspective camera, slight 3/4 angle so bear has volume
+    const camera = new THREE.PerspectiveCamera(
+      35, window.innerWidth / window.innerHeight, 0.1, 100
+    );
+    camera.position.set(0, 7, 9);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000, 0);
+
+    /* ===== Light ===== */
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const sun = new THREE.DirectionalLight(0xfff4d6, 0.7);
+    sun.position.set(4, 10, 6);
+    scene.add(sun);
+    scene.add(new THREE.HemisphereLight(0xdcefff, 0xa6c899, 0.4));
+
+    /* ===== Hidden ground plane for click raycasting ===== */
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 40),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    /* ===== Bear character ===== */
+    const loader = new GLTFLoader();
+    let bear = null;
+    let bearMixer = null;
+    const BEAR_SCALE = 1.0;
+    const BEAR_HOME = new THREE.Vector3(0, 0, 0);
+
+    loader.load(
+      'assets/kaykit-mini/character_bear.gltf.glb',
+      (gltf) => {
+        bear = gltf.scene;
+        bear.scale.setScalar(BEAR_SCALE);
+        bear.position.copy(BEAR_HOME);
+        scene.add(bear);
+        if (gltf.animations && gltf.animations.length > 0) {
+          bearMixer = new THREE.AnimationMixer(bear);
+          const clip = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
+          if (clip) bearMixer.clipAction(clip).play();
+        }
+      },
+      undefined,
+      (err) => console.error('bear load failed', err)
+    );
+
+    /* ===== Convert hotspot screen % to world XZ ===== */
+    // The bear walks on a ground plane around origin. We map the 4 hotspot
+    // screen positions to corresponding world positions so bear arrives at
+    // the visual location of each building.
+    // Mapping uses screen-to-world unproject through the camera.
+    function screenPctToWorld(xPct, yPct) {
+      const nx = (xPct - 50) / 50;  // -1..1
+      const ny = -(yPct - 50) / 50; // -1..1
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2(nx, ny), camera);
+      const hits = ray.intersectObject(ground);
+      if (hits.length > 0) return hits[0].point.clone();
+      return new THREE.Vector3(0, 0, 0);
+    }
+
+    /* ===== State ===== */
+    let walkTarget = null;
+    let pendingLoc = null;
+    const visited = new Set(JSON.parse(localStorage.getItem('videoasd_visited_v5') || '[]'));
+
+    /* ===== Hotspot click handlers ===== */
+    document.querySelectorAll('.hotspot').forEach((el) => {
+      el.addEventListener('click', () => {
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        // Convert to world via raycaster (using ground plane)
+        const ndcX = (cx / window.innerWidth) * 2 - 1;
+        const ndcY = -(cy / window.innerHeight) * 2 + 1;
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+        const hits = ray.intersectObject(ground);
+        if (hits.length > 0) {
+          // Stop a bit before the hotspot (toward camera = +z)
+          const target = hits[0].point.clone();
+          target.z += 0.8;
+          walkTarget = target;
+          pendingLoc = { id: el.dataset.loc, label: el.querySelector('.hotspot-label').textContent };
+        }
+      });
+    });
+
+    /* ===== Click on background (canvas) → walk anywhere ===== */
+    canvas.addEventListener('click', (e) => {
+      const ndcX = (e.clientX / window.innerWidth) * 2 - 1;
+      const ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+      const hits = ray.intersectObject(ground);
+      if (hits.length > 0) {
+        walkTarget = hits[0].point.clone();
+        pendingLoc = null;
+      }
+    });
+
+    /* ===== Modal ===== */
+    const $modal = document.getElementById('modal');
+    const $modalTitle = document.getElementById('modal-title');
+    const $modalClose = document.getElementById('modal-close');
+    const $progress = document.getElementById('progress');
+
+    function openModal(loc) {
+      $modalTitle.textContent = `进入 ${loc.label}`;
+      $modal.dataset.locId = loc.id;
+      $modal.classList.remove('hidden');
+    }
+    function commitAndClose() {
+      const id = $modal.dataset.locId;
+      if (id) {
+        visited.add(id);
+        localStorage.setItem('videoasd_visited_v5', JSON.stringify([...visited]));
+        updateProgress();
+        markVisited();
+      }
+      $modal.classList.add('hidden');
+    }
+    function updateProgress() {
+      $progress.textContent = `已探索 ${visited.size}/4`;
+    }
+    function markVisited() {
+      document.querySelectorAll('.hotspot').forEach((el) => {
+        el.classList.toggle('visited', visited.has(el.dataset.loc));
+      });
+    }
+    $modalClose.addEventListener('click', commitAndClose);
+    $modal.addEventListener('click', (e) => { if (e.target === $modal) $modal.classList.add('hidden'); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') $modal.classList.add('hidden');
+    });
+    document.getElementById('reset-progress').addEventListener('click', () => {
+      visited.clear();
+      localStorage.removeItem('videoasd_visited_v5');
+      updateProgress();
+      markVisited();
+      walkTarget = BEAR_HOME.clone();
+    });
+
+    /* ===== Animation loop ===== */
+    const SPEED = 2.5;
+    const clock = new THREE.Clock();
+    function animate() {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      if (bearMixer) bearMixer.update(dt);
+
+      if (bear && walkTarget) {
+        const offset = walkTarget.clone().sub(bear.position);
+        offset.y = 0;
+        const dist = offset.length();
+        if (dist > 0.05) {
+          const dir = offset.clone().normalize();
+          bear.rotation.y = Math.atan2(dir.x, dir.z);
+          const step = Math.min(dist, dt * SPEED);
+          bear.position.x += dir.x * step;
+          bear.position.z += dir.z * step;
+        } else {
+          walkTarget = null;
+          if (pendingLoc) { openModal(pendingLoc); pendingLoc = null; }
+        }
+      }
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateProgress();
+    markVisited();
+    animate();
+  </script>
+</body>
+</html>
