@@ -223,6 +223,10 @@
       align-self: center;
     }
     .poe-next:hover, .poe-secondary:hover { transform: translateY(-2px); }
+    .poe-btn-row {
+      display: flex; gap: 12px; justify-content: center;
+      align-items: center; flex-wrap: wrap;
+    }
     .poe-secondary {
       background: linear-gradient(135deg, #d8d8e0 0%, #b5b5c0 100%);
       box-shadow: 0 4px 12px rgba(120, 120, 140, 0.3);
@@ -554,7 +558,10 @@
       <div id="poe-step-context" class="poe-step">
         <video id="ctx-video" class="poe-video" muted playsinline controls></video>
         <p class="poe-cue">See what happened ↑</p>
-        <button class="poe-next" id="ctx-done">Done watching →</button>
+        <div class="poe-btn-row">
+          <button class="poe-secondary" id="ctx-replay">↻ Watch again</button>
+          <button class="poe-next" id="ctx-done">Done watching →</button>
+        </div>
       </div>
 
       <!-- Step 2: choose action — visual path picker -->
@@ -986,6 +993,12 @@
 
     // POE flow handlers
     // After context, go to "what would YOU do?" action picker
+    // Replay the context video from the start
+    document.getElementById('ctx-replay').addEventListener('click', () => {
+      $ctxVideo.currentTime = 0;
+      $ctxVideo.play().catch(() => {});
+    });
+
     document.getElementById('ctx-done').addEventListener('click', () => {
       $ctxVideo.pause();
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
