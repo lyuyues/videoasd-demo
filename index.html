@@ -278,6 +278,26 @@
       margin-bottom: 4px;
     }
 
+    /* === Possibility Tree (Reflect step) === */
+    .tree-wrap { width: 100%; max-width: 540px; margin: 0 auto; }
+    .tree-svg { width: 100%; height: auto; display: block; }
+    .tree-legend {
+      display: flex; gap: 22px; justify-content: center;
+      margin-top: 4px; font-size: 13px; color: #8a8a96;
+    }
+    .tree-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .legend-dot.trunk { background: #b08968; }
+    .legend-dot.mine  { background: #f4a259; }
+    /* current round's branch grows in; trunk + old branches are static */
+    @keyframes tree-line-draw { from { stroke-dashoffset: 300; } to { stroke-dashoffset: 0; } }
+    .tree-svg line.grow { stroke-dasharray: 300; animation: tree-line-draw 0.5s ease both; }
+    @keyframes tree-fruit-pop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+    .tree-svg g.grow {
+      transform-box: fill-box; transform-origin: center;
+      animation: tree-fruit-pop 0.5s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
     /* === Visual path picker (zone close-up with invisible hotspots over sandy paths) === */
     .path-picker {
       position: relative;
@@ -660,6 +680,22 @@
           <button class="poe-next" id="out-done">Complete ✓</button>
         </div>
       </div>
+
+      <!-- Step 4: reflect — possibility tree -->
+      <div id="poe-step-tree" class="poe-step hidden">
+        <p class="poe-cue">Your story tree 🌳</p>
+        <div class="tree-wrap">
+          <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 380" aria-label="possibility tree"></svg>
+          <div class="tree-legend">
+            <span><i class="legend-dot trunk"></i> What happened</span>
+            <span><i class="legend-dot mine"></i> What you thought</span>
+          </div>
+        </div>
+        <div class="poe-btn-row">
+          <button class="poe-secondary" id="tree-again">Try another ↺</button>
+          <button class="poe-next" id="tree-done">Done ✓</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -919,6 +955,7 @@
     const $predictStep = document.getElementById('poe-step-predict');
     const $confirmStep = document.getElementById('poe-step-confirm');
     const $outStep = document.getElementById('poe-step-outcome');
+    const $treeStep = document.getElementById('poe-step-tree');
 
     // Display info for the lock-in summary
     const ACTION_INFO = {
@@ -1004,7 +1041,8 @@
       action:  'action',     // pick your action
       predict: 'reaction',   // predict the other's reaction
       confirm: 'reaction',   // lock in both predictions
-      outcome: 'reflect',    // watch actual outcome
+      outcome: 'reflect',    // watch actual outcome (Reveal)
+      tree:    'reflect',    // possibility tree (Reflect)
     };
 
     function showStep(which) {
@@ -1014,6 +1052,7 @@
       $predictStep.classList.toggle('hidden', which !== 'predict');
       $confirmStep.classList.toggle('hidden', which !== 'confirm');
       $outStep.classList.toggle('hidden', which !== 'outcome');
+      $treeStep.classList.toggle('hidden', which !== 'tree');
       const active = STEP_PHASE[which];
       $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
     }
@@ -1118,7 +1157,119 @@
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
       showStep('action');
     });
-    document.getElementById('out-done').addEventListener('click', commitAndClose);
+
+    /* ===== Possibility Tree (Reflect step) =====
+       主干 = this case's social norm (centered, fixed).
+       侧枝 = the child's guesses across rounds (≤3, one per action), stored by
+       constructId in localStorage. The current round's branch grows in. */
+    const $treeSvg = document.getElementById('tree-svg');
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    const XLINK = 'http://www.w3.org/1999/xlink';
+
+    // Social norm per case: the canonical action -> reaction for this scenario.
+    // PLACEHOLDER values — researcher should set these per scenario.
+    const CONSTRUCT_NORM = {
+      playground: { action: 'a', emotion: 'happy' },
+      classroom:  { action: 'a', emotion: 'happy' },
+      cafeteria:  { action: 'a', emotion: 'happy' },
+      park:       { action: 'a', emotion: 'happy' },
+      _default:   { action: 'a', emotion: 'happy' },
+    };
+    const normFor = (id) => CONSTRUCT_NORM[id] || CONSTRUCT_NORM._default;
+
+    const treeKey = (id) => 'videoasd_tree_' + id;
+    function loadGuesses(id) {
+      try { return JSON.parse(localStorage.getItem(treeKey(id)) || '{}'); }
+      catch { return {}; }
+    }
+    function saveGuess(id, action, emotion) {
+      const g = loadGuesses(id);
+      g[action] = emotion;              // one branch per action; latest reaction wins
+      localStorage.setItem(treeKey(id), JSON.stringify(g));
+      return g;
+    }
+    const emoSrc = (e) => `assets/emotions/sam_${e}.png`;
+
+    function svgEl(tag, attrs) {
+      const n = document.createElementNS(SVGNS, tag);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      return n;
+    }
+    function svgImg(x, y, w, h, href) {
+      const im = svgEl('image', { x, y, width: w, height: h, href });
+      im.setAttributeNS(XLINK, 'href', href);  // legacy fallback
+      return im;
+    }
+
+    // Where each side branch attaches on the trunk and where its fruit sits.
+    const BRANCH_SLOTS = [
+      { x0: 262, y0: 252, x1: 118, y1: 238 }, // left low
+      { x0: 258, y0: 214, x1: 404, y1: 196 }, // right mid
+      { x0: 262, y0: 178, x1: 128, y1: 150 }, // left high
+    ];
+
+    function drawFruit(svg, cx, cy, action, emotion, highlight, label) {
+      const g = svgEl('g', {});
+      if (highlight) g.classList.add('grow');
+      g.appendChild(svgEl('circle', { cx, cy, r: highlight ? 40 : 34,
+        fill: highlight ? '#ffe6c2' : '#eef5e2' }));
+      const size = highlight ? 60 : 52;
+      g.appendChild(svgImg(cx - size / 2, cy - size / 2, size, size, emoSrc(emotion)));
+      const aInfo = ACTION_INFO[action] || ACTION_INFO.a;
+      g.appendChild(svgImg(cx - 16, cy + (highlight ? 26 : 22), 32, 32, aInfo.icon));
+      if (label) {
+        const t = svgEl('text', { x: cx, y: cy - (highlight ? 48 : 42),
+          'text-anchor': 'middle', 'font-size': 13, fill: '#8a8a96',
+          'font-weight': 600, 'font-family': 'inherit' });
+        t.textContent = label;
+        g.appendChild(t);
+      }
+      svg.appendChild(g);
+    }
+
+    function renderTree(constructId, currentAction) {
+      const svg = $treeSvg;
+      svg.innerHTML = '';
+      const norm = normFor(constructId);
+      const guesses = loadGuesses(constructId);   // { action: emotion }
+
+      svg.appendChild(svgEl('ellipse', { cx: 260, cy: 344, rx: 152, ry: 18, fill: '#dceccb' }));
+      svg.appendChild(svgEl('path', {
+        d: 'M250 344 Q255 240 260 150 Q265 240 270 344 Z', fill: '#b08968' }));
+
+      // trunk top = the social norm (centered, neutral label)
+      drawFruit(svg, 260, 118, norm.action, norm.emotion, false, 'What happened');
+
+      // side branches = the child's guesses (≤3, one per action)
+      Object.keys(guesses).forEach((act, i) => {
+        const slot = BRANCH_SLOTS[i % BRANCH_SLOTS.length];
+        const isCurrent = act === currentAction;
+        const line = svgEl('line', { x1: slot.x0, y1: slot.y0, x2: slot.x1, y2: slot.y1,
+          stroke: '#b08968', 'stroke-width': 8, 'stroke-linecap': 'round' });
+        if (isCurrent) line.classList.add('grow');
+        svg.appendChild(line);
+        drawFruit(svg, slot.x1, slot.y1, act, guesses[act], isCurrent,
+          isCurrent ? 'You thought' : '');
+      });
+    }
+
+    function goToTree() {
+      $outVideo.pause();
+      const id = $modal.dataset.locId || '_default';
+      saveGuess(id, pendingChoice || 'a', pendingPrediction || 'neutral');
+      renderTree(id, pendingChoice || 'a');
+      showStep('tree');
+    }
+
+    document.getElementById('out-done').addEventListener('click', goToTree);
+    document.getElementById('tree-done').addEventListener('click', commitAndClose);
+    document.getElementById('tree-again').addEventListener('click', () => {
+      pendingChoice = null;
+      pendingPrediction = null;
+      document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+      showStep('action');
+    });
+
     function updateProgress() {
       $progress.textContent = `Explored ${visited.size}/12`;
     }
@@ -1135,6 +1286,10 @@
     document.getElementById('reset-progress').addEventListener('click', () => {
       visited.clear();
       localStorage.removeItem('videoasd_visited_v5');
+      // also clear every accumulated possibility tree
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('videoasd_tree_'))
+        .forEach((k) => localStorage.removeItem(k));
       updateProgress();
       markVisited();
       walkTarget = BEAR_HOME.clone();
