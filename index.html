@@ -227,6 +227,23 @@
       display: flex; gap: 12px; justify-content: center;
       align-items: center; flex-wrap: wrap;
     }
+    .confirm-summary {
+      display: flex; flex-direction: column; gap: 14px;
+      margin: 8px auto 18px; width: 100%; max-width: 420px;
+    }
+    .confirm-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #fff7ef; border: 2px solid #ffe0c2;
+      border-radius: 16px; padding: 12px 16px;
+    }
+    .confirm-label { color: #8a8a96; font-size: 14px; flex-shrink: 0; }
+    .confirm-icon {
+      width: 44px; height: 44px; object-fit: contain;
+      border-radius: 10px; flex-shrink: 0;
+    }
+    .confirm-text {
+      font-size: 16px; font-weight: 600; color: #4a4a55; margin-left: auto;
+    }
     .poe-secondary {
       background: linear-gradient(135deg, #d8d8e0 0%, #b5b5c0 100%);
       box-shadow: 0 4px 12px rgba(120, 120, 140, 0.3);
@@ -613,6 +630,27 @@
         </div>
       </div>
 
+      <!-- Step 2c: lock-in confirmation -->
+      <div id="poe-step-confirm" class="poe-step hidden">
+        <p class="poe-cue">Ready to see what happens?</p>
+        <div class="confirm-summary">
+          <div class="confirm-item">
+            <span class="confirm-label">You'll</span>
+            <img id="confirm-action-icon" class="confirm-icon" src="" alt="">
+            <span id="confirm-action-text" class="confirm-text"></span>
+          </div>
+          <div class="confirm-item">
+            <span class="confirm-label">You think she'll feel</span>
+            <img id="confirm-emotion-icon" class="confirm-icon" src="" alt="">
+            <span id="confirm-emotion-text" class="confirm-text"></span>
+          </div>
+        </div>
+        <div class="poe-btn-row">
+          <button class="poe-secondary" id="confirm-change">Change ↺</button>
+          <button class="poe-next" id="confirm-lock">Lock it in ✓</button>
+        </div>
+      </div>
+
       <!-- Step 3: outcome video -->
       <div id="poe-step-outcome" class="poe-step hidden">
         <video id="out-video" class="poe-video" muted playsinline controls></video>
@@ -879,7 +917,19 @@
     const $chooseStep = document.getElementById('poe-step-choose');
     const $actionStep = document.getElementById('poe-step-action');
     const $predictStep = document.getElementById('poe-step-predict');
+    const $confirmStep = document.getElementById('poe-step-confirm');
     const $outStep = document.getElementById('poe-step-outcome');
+
+    // Display info for the lock-in summary
+    const ACTION_INFO = {
+      a: { icon: 'assets/actions/comfort.png', label: 'Comfort them' },
+      b: { icon: 'assets/actions/joke.png', label: 'Crack a joke' },
+      c: { icon: 'assets/actions/ignore.png', label: 'Ignore them' },
+    };
+    const EMOTION_LABEL = {
+      happy: 'Happy', sad: 'Sad', angry: 'Angry',
+      confused: 'Confused', scared: 'Scared', neutral: 'Neutral',
+    };
     const $ctxVideo = document.getElementById('ctx-video');
     const $outVideo = document.getElementById('out-video');
     const $ierChips = document.querySelectorAll('.ier-chip');
@@ -953,6 +1003,7 @@
       choose:  'action',     // legacy path-picker step (unused in single-layer)
       action:  'action',     // pick your action
       predict: 'reaction',   // predict the other's reaction
+      confirm: 'reaction',   // lock in both predictions
       outcome: 'reflect',    // watch actual outcome
     };
 
@@ -961,6 +1012,7 @@
       $chooseStep.classList.toggle('hidden', which !== 'choose');
       $actionStep.classList.toggle('hidden', which !== 'action');
       $predictStep.classList.toggle('hidden', which !== 'predict');
+      $confirmStep.classList.toggle('hidden', which !== 'confirm');
       $outStep.classList.toggle('hidden', which !== 'outcome');
       const active = STEP_PHASE[which];
       $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
@@ -1027,14 +1079,36 @@
         document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
         btn.classList.add('selected');
         pendingPrediction = btn.dataset.emotion;
-        // After emotion picked, play the outcome corresponding to the action
-        setTimeout(() => {
-          $outVideo.src = OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a;
-          $outVideo.currentTime = 0;
-          showStep('outcome');
-          $outVideo.play().catch(() => {});
-        }, 350);
+        // After emotion picked, show the lock-in confirmation of both choices
+        setTimeout(showConfirm, 350);
       });
+    });
+
+    // Populate and show the lock-in summary of the two predictions
+    function showConfirm() {
+      const action = ACTION_INFO[pendingChoice] || ACTION_INFO.a;
+      document.getElementById('confirm-action-icon').src = action.icon;
+      document.getElementById('confirm-action-text').textContent = action.label;
+      const emo = pendingPrediction || 'neutral';
+      document.getElementById('confirm-emotion-icon').src = `assets/emotions/sam_${emo}.png`;
+      document.getElementById('confirm-emotion-text').textContent = EMOTION_LABEL[emo] || emo;
+      showStep('confirm');
+    }
+
+    // Change: go back to re-pick the action (and emotion)
+    document.getElementById('confirm-change').addEventListener('click', () => {
+      pendingChoice = null;
+      pendingPrediction = null;
+      document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+      showStep('action');
+    });
+
+    // Lock it in: commit the choices and play the matching outcome
+    document.getElementById('confirm-lock').addEventListener('click', () => {
+      $outVideo.src = OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a;
+      $outVideo.currentTime = 0;
+      showStep('outcome');
+      $outVideo.play().catch(() => {});
     });
     document.getElementById('out-revise').addEventListener('click', () => {
       // Stay in the modal: go back to the action step to try a different path here
