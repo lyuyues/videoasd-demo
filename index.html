@@ -1037,13 +1037,12 @@
       });
     });
     document.getElementById('out-revise').addEventListener('click', () => {
-      // Single-layer: close modal and let user pick a different path on the map
+      // Stay in the modal: go back to the action step to try a different path here
       $outVideo.pause();
-      $ctxVideo.pause();
       pendingChoice = null;
       pendingPrediction = null;
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
-      $modal.classList.add('hidden');
+      showStep('action');
     });
     document.getElementById('out-done').addEventListener('click', commitAndClose);
     function updateProgress() {
