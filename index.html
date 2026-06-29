@@ -1238,7 +1238,7 @@
 
     function startGazeCap(loc, clip, video) {
       if (!gazeTrackingActive) { gazeCap = null; gazeBuf = null; return; }
-      gazeCap = { key: `${loc}|${clip}`, video };
+      gazeCap = { key: `${loc}|${clip}`, video, grabbed: false };
       gazeBuf = { pts: [], on: 0, off: 0 };
     }
     function captureGazePoint(gx, gy) {
@@ -1254,8 +1254,14 @@
       } else {
         gazeBuf.off++;
       }
+      // grab the representative still mid-clip (faces tend to be frontal there)
+      const v = c.video;
+      if (!c.grabbed && v.duration && v.currentTime >= v.duration * 0.5) {
+        grabFrame(c.key, v, v.currentTime);
+        c.grabbed = true;
+      }
     }
-    function grabFrame(key, video) {
+    function grabFrame(key, video, t) {
       try {
         if (!video.videoWidth) return;
         const W = 320, H = Math.round(W * video.videoHeight / video.videoWidth);
@@ -1263,7 +1269,7 @@
         cv.width = W; cv.height = H;
         cv.getContext('2d').drawImage(video, 0, 0, W, H);
         const frames = JSON.parse(localStorage.getItem(GAZE_FRAME_KEY) || '{}');
-        frames[key] = cv.toDataURL('image/jpeg', 0.6);
+        frames[key] = { url: cv.toDataURL('image/jpeg', 0.6), t: +(t || 0).toFixed(2) };
         localStorage.setItem(GAZE_FRAME_KEY, JSON.stringify(frames));
       } catch (e) { /* tainted / no frame — skip */ }
     }
@@ -1271,7 +1277,7 @@
       const c = gazeCap, buf = gazeBuf;
       gazeCap = null; gazeBuf = null;
       if (!c || !buf || (buf.on + buf.off) === 0) return; // save even if all off-video
-      if (buf.pts.length) grabFrame(c.key, c.video);
+      if (!c.grabbed && buf.pts.length) grabFrame(c.key, c.video, c.video.currentTime); // fallback if midpoint not reached
       try {
         const all = JSON.parse(localStorage.getItem(GAZE_KEY) || '{}');
         const prev = all[c.key] || { pts: [], on: 0, off: 0 };
@@ -1534,21 +1540,24 @@
     const AOI_BARCOL = { ...AOI_BOXCOL, bg: '#c2c8d0' };
 
     // frame + child's gaze dots + AOI boxes (drawn at the representative frame's time)
-    function drawFocus(canvas, imgSrc, pts, aoi) {
+    function drawFocus(canvas, frame, pts, aoi) {
+      const url = typeof frame === 'string' ? frame : frame.url;
+      const fT = typeof frame === 'string'
+        ? (pts.length ? pts[pts.length - 1][2] : 0)
+        : (frame.t || 0);   // boxes + dots use the SHOWN frame's time, so they line up
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.onload = () => {
         const W = img.naturalWidth, H = img.naturalHeight;
         canvas.width = W; canvas.height = H;
         ctx.drawImage(img, 0, 0);
-        ctx.fillStyle = 'rgba(255,60,30,0.5)';
-        const repT = pts.length ? pts[pts.length - 1][2] : 0;
+        ctx.fillStyle = 'rgba(255,60,30,0.55)';
         pts.forEach(([vx, vy, t]) => {
-          if (Math.abs((t || 0) - (repT || 0)) > 0.9) return;   // show dots near the shown moment
+          if (Math.abs((t || 0) - fT) > 0.6) return;   // only dots near the shown moment
           ctx.beginPath(); ctx.arc(vx * W, vy * H, Math.max(3, W * 0.008), 0, Math.PI * 2); ctx.fill();
         });
         if (aoi) {
-          const f = nearestFrame(aoi, repT || 0);
+          const f = nearestFrame(aoi, fT);
           ctx.lineWidth = Math.max(2, W * 0.006);
           f.boxes.forEach((bx) => {
             if (!AOI_BOXCOL[bx.kind]) return;
@@ -1557,7 +1566,7 @@
           });
         }
       };
-      img.src = imgSrc;
+      img.src = url;
     }
     function aoiStats(pts, aoi) {
       const c = { eyes: 0, mouth: 0, face: 0, body: 0, bg: 0 };
