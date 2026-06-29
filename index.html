@@ -402,6 +402,46 @@
     }
     .toolbar button:hover { background: rgba(255, 220, 120, 0.95); }
 
+    /* === Difficulty picker (caregiver) === */
+    .modal-sub { font-size: 14px; color: #8a8a96; margin-top: -4px; }
+    .diff-cards {
+      display: flex; gap: 14px; justify-content: center;
+      margin: 20px 0 4px; flex-wrap: wrap;
+    }
+    /* scoped under .diff-cards to beat the global `.modal-card button` gradient */
+    .diff-cards .diff-card {
+      flex: 1 1 140px; max-width: 168px;
+      background: #f8fafc; border: 2px solid #e6e8ee; border-radius: 18px;
+      padding: 18px 12px 16px; margin-top: 0; cursor: pointer; font-family: inherit;
+      transition: all 0.15s ease; text-align: center; color: #5a4a3a;
+    }
+    .diff-cards .diff-card:hover {
+      background: #f8fafc; border-color: #ffb56a; transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(255, 180, 100, 0.22);
+    }
+    .diff-cards .diff-card.selected {
+      border-color: #ff9d3f; background: #fff7ef;
+      box-shadow: 0 0 0 3px rgba(255, 180, 100, 0.25);
+    }
+    .diff-card-dots {
+      font-size: 22px; color: #ffb56a; letter-spacing: 3px; margin-bottom: 8px;
+    }
+    .diff-card-title { font-size: 18px; font-weight: 700; color: #5a4a3a; margin-bottom: 6px; }
+    .diff-card-meta { font-size: 13px; color: #8a8a96; line-height: 1.5; }
+
+    /* === Caregiver report (static gaze focus) === */
+    .report-body { display: flex; flex-direction: column; gap: 18px; margin: 16px 0 4px; }
+    .report-clip { text-align: left; }
+    .report-clip h3 { font-size: 15px; color: #5a4a3a; margin-bottom: 8px; text-transform: capitalize; }
+    .report-focus {
+      position: relative; width: 100%; max-width: 480px; margin: 0 auto;
+      border-radius: 14px; overflow: hidden; background: #eef2f6;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .report-focus canvas { width: 100%; height: auto; display: block; }
+    .report-stat { font-size: 13px; color: #8a8a96; margin-top: 6px; text-align: center; }
+    .report-empty { color: #8a8a96; font-size: 14px; padding: 24px 0; }
+
     /* ===== Gaze tracking UI ===== */
     #gaze-video {
       position: fixed;
@@ -559,6 +599,8 @@
   <div class="toolbar">
     <button id="cal-start">Calibrate Gaze</button>
     <button id="gaze-toggle" style="display:none;">Show Gaze ●</button>
+    <button id="diff-start">Difficulty</button>
+    <button id="report-open">Report</button>
     <button id="reset-progress">Reset</button>
   </div>
 
@@ -699,6 +741,26 @@
     </div>
   </div>
 
+  <!-- Difficulty picker (caregiver) -->
+  <div id="diff-modal" class="modal hidden">
+    <div class="modal-card" style="max-width: 580px;">
+      <h2>Choose difficulty</h2>
+      <p class="modal-sub">How many choices the child sees</p>
+      <div class="diff-cards" id="diff-cards"></div>
+      <p class="modal-hint">Caregiver setting · applies to the next scene</p>
+    </div>
+  </div>
+
+  <!-- Caregiver report: static gaze focus map -->
+  <div id="report-modal" class="modal hidden">
+    <div class="modal-card" style="max-width: 760px;">
+      <h2>Session report</h2>
+      <p class="modal-sub">Where your child looked</p>
+      <div class="report-body" id="report-body"></div>
+      <p class="modal-hint">Focus areas are approximate — webcam gaze, shown as general zones, not exact points.</p>
+    </div>
+  </div>
+
   <script type="importmap">
   {
     "imports": {
@@ -818,6 +880,7 @@
       const y = Math.max(0, Math.min(1, g.y)) * window.innerHeight;
       $gazeCursor.style.left = `${x}px`;
       $gazeCursor.style.top = `${y}px`;
+      captureGazePoint(x, y);
     });
 
     $calStart.addEventListener('click', startCalibration);
@@ -1057,7 +1120,137 @@
       $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
     }
 
+    /* ===== Difficulty system (v0: single axis = option count) =====
+       Level is the single source of truth; it maps (via DIFFICULTY_LEVELS) to
+       how many actions + emotions the child sees. Pools are ORDERED so a higher
+       level reveals the more confusable options. Experts edit only the tables. */
+    const EMOTION_POOL = ['happy','sad','angry','confused','scared','neutral']; // distinct → confusable
+    const ACTION_POOL  = ['a','b','c'];  // comfort, joke, ignore (most complex last)
+    // v0: action count == reaction count (kept consistent). Ceiling = 3 actions
+    // available, so two levels for now; a 3rd (4/4) needs a new action + outcome.
+    const DIFFICULTY_LEVELS = [
+      { id: 1, label: 'Gentle', actions: 2, emotions: 2 },
+      { id: 2, label: 'Core',   actions: 3, emotions: 3 },
+    ];
+    // Future axes (cueAmbiguity / tomOrder / hintAmount / socialComplexity /
+    // independent emotionGranularity): add as new per-level columns once experts
+    // validate them — do NOT formula-derive from option count.
+    const DIFFICULTY_DEFAULT = 2;
+    let difficultyLevel = parseInt(localStorage.getItem('videoasd_difficulty') || DIFFICULTY_DEFAULT, 10);
+    const currentLevel = () =>
+      DIFFICULTY_LEVELS.find((l) => l.id === difficultyLevel) || DIFFICULTY_LEVELS[1];
+
+    function applyDifficulty() {
+      const lv = currentLevel();
+      // actions: show first N (.action-btn are in ACTION_POOL order)
+      const actionBtns = document.querySelectorAll('#poe-step-action .action-btn');
+      actionBtns.forEach((btn, i) => { btn.style.display = i < lv.actions ? '' : 'none'; });
+      const actionGrid = document.querySelector('#poe-step-action .poe-choices');
+      if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${lv.actions}, 1fr)`;
+      // emotions: show first N (.emotion-btn are in EMOTION_POOL order)
+      document.querySelectorAll('#poe-step-predict .emotion-btn')
+        .forEach((btn, i) => { btn.style.display = i < lv.emotions ? '' : 'none'; });
+      const emoGrid = document.querySelector('#poe-step-predict .emotion-grid');
+      if (emoGrid) emoGrid.style.gridTemplateColumns = `repeat(${Math.min(lv.emotions, 3)}, 1fr)`;
+      const diffBtn = document.getElementById('diff-start');
+      if (diffBtn) diffBtn.textContent = `Difficulty: ${lv.label}`;
+    }
+
+    // Caregiver difficulty picker (3 cards rendered from the config)
+    const $diffModal = document.getElementById('diff-modal');
+    const $diffCards = document.getElementById('diff-cards');
+    function renderDiffCards() {
+      $diffCards.innerHTML = '';
+      DIFFICULTY_LEVELS.forEach((lv) => {
+        const card = document.createElement('button');
+        card.className = 'diff-card' + (lv.id === difficultyLevel ? ' selected' : '');
+        card.innerHTML =
+          `<div class="diff-card-dots">${'●'.repeat(lv.actions)}</div>` +
+          `<div class="diff-card-title">${lv.label}</div>` +
+          `<div class="diff-card-meta">${lv.actions} actions · ${lv.emotions} feelings</div>`;
+        card.addEventListener('click', () => {
+          difficultyLevel = lv.id;
+          localStorage.setItem('videoasd_difficulty', String(lv.id));
+          applyDifficulty();
+          renderDiffCards();
+          setTimeout(() => $diffModal.classList.add('hidden'), 180);
+        });
+        $diffCards.appendChild(card);
+      });
+    }
+    document.getElementById('diff-start').addEventListener('click', () => {
+      renderDiffCards();
+      $diffModal.classList.remove('hidden');
+    });
+    $diffModal.addEventListener('click', (e) => {
+      if (e.target === $diffModal) $diffModal.classList.add('hidden');
+    });
+
+    // Minimal logging: record the level (+ choice) per completed round
+    function logRound(loc) {
+      try {
+        const log = JSON.parse(localStorage.getItem('videoasd_log') || '[]');
+        log.push({ t: Date.now(), loc, level: difficultyLevel,
+                   action: pendingChoice, emotion: pendingPrediction });
+        localStorage.setItem('videoasd_log', JSON.stringify(log));
+      } catch (e) { /* ignore */ }
+    }
+
+    /* ===== Gaze capture → static focus report (caregiver) =====
+       Light: accumulate on-video gaze points per (loc, clip) + grab ONE
+       representative frame. No timeline, no replay. Only when calibrated. */
+    const GAZE_KEY = 'videoasd_gaze';               // { "loc|clip": {pts:[[vx,vy]], on, off} }
+    const GAZE_FRAME_KEY = 'videoasd_gaze_frames';  // { "loc|clip": dataURL }
+    let gazeCap = null;   // { key, video } currently capturing
+    let gazeBuf = null;   // { pts:[], on, off } in-memory for current clip
+
+    function startGazeCap(loc, clip, video) {
+      if (!gazeTrackingActive) { gazeCap = null; gazeBuf = null; return; }
+      gazeCap = { key: `${loc}|${clip}`, video };
+      gazeBuf = { pts: [], on: 0, off: 0 };
+    }
+    function captureGazePoint(gx, gy) {
+      const c = gazeCap;
+      if (!c || !gazeBuf || !c.video || c.video.paused || c.video.ended) return;
+      const r = c.video.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const vx = (gx - r.left) / r.width, vy = (gy - r.top) / r.height;
+      if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) {
+        gazeBuf.pts.push([+vx.toFixed(3), +vy.toFixed(3)]);
+        gazeBuf.on++;
+      } else {
+        gazeBuf.off++;
+      }
+    }
+    function grabFrame(key, video) {
+      try {
+        if (!video.videoWidth) return;
+        const W = 320, H = Math.round(W * video.videoHeight / video.videoWidth);
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        cv.getContext('2d').drawImage(video, 0, 0, W, H);
+        const frames = JSON.parse(localStorage.getItem(GAZE_FRAME_KEY) || '{}');
+        frames[key] = cv.toDataURL('image/jpeg', 0.6);
+        localStorage.setItem(GAZE_FRAME_KEY, JSON.stringify(frames));
+      } catch (e) { /* tainted / no frame — skip */ }
+    }
+    function stopGazeCap() {
+      const c = gazeCap, buf = gazeBuf;
+      gazeCap = null; gazeBuf = null;
+      if (!c || !buf || !buf.pts.length) return;
+      grabFrame(c.key, c.video);
+      try {
+        const all = JSON.parse(localStorage.getItem(GAZE_KEY) || '{}');
+        const prev = all[c.key] || { pts: [], on: 0, off: 0 };
+        prev.pts.push(...buf.pts);
+        prev.on += buf.on; prev.off += buf.off;
+        all[c.key] = prev;
+        localStorage.setItem(GAZE_KEY, JSON.stringify(all));
+      } catch (e) { /* ignore */ }
+    }
+
     function openModal(loc) {
+      applyDifficulty();
       $modalTitle.textContent = `Enter ${loc.label}`;
       $modal.dataset.locId = loc.id;
       // Action choice gets picked inside modal at the action step
@@ -1068,15 +1261,18 @@
       $ctxVideo.src = 'assets/videos/context.mp4';
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
+      startGazeCap(loc.id, 'context', $ctxVideo);
     }
     function commitAndClose() {
       const id = $modal.dataset.locId;
       if (id) {
         visited.add(id);
         localStorage.setItem('videoasd_visited_v5', JSON.stringify([...visited]));
+        logRound(id);
         updateProgress();
         markVisited();
       }
+      stopGazeCap();
       $modal.classList.add('hidden');
       $ctxVideo.pause();
       $outVideo.pause();
@@ -1092,6 +1288,7 @@
 
     document.getElementById('ctx-done').addEventListener('click', () => {
       $ctxVideo.pause();
+      stopGazeCap();
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
       showStep('action');
     });
@@ -1148,10 +1345,12 @@
       $outVideo.currentTime = 0;
       showStep('outcome');
       $outVideo.play().catch(() => {});
+      startGazeCap($modal.dataset.locId, 'outcome', $outVideo);
     });
     document.getElementById('out-revise').addEventListener('click', () => {
       // Stay in the modal: go back to the action step to try a different path here
       $outVideo.pause();
+      stopGazeCap();
       pendingChoice = null;
       pendingPrediction = null;
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
@@ -1255,6 +1454,7 @@
 
     function goToTree() {
       $outVideo.pause();
+      stopGazeCap();
       const id = $modal.dataset.locId || '_default';
       saveGuess(id, pendingChoice || 'a', pendingPrediction || 'neutral');
       renderTree(id, pendingChoice || 'a');
@@ -1268,6 +1468,70 @@
       pendingPrediction = null;
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
       showStep('action');
+    });
+
+    /* ===== Caregiver report: render static gaze focus maps ===== */
+    const $reportModal = document.getElementById('report-modal');
+    const $reportBody = document.getElementById('report-body');
+
+    function renderFocusCanvas(canvas, imgSrc, pts) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        const r = canvas.width * 0.16;   // deliberately coarse → honest about precision
+        ctx.globalCompositeOperation = 'lighter';
+        pts.forEach(([vx, vy]) => {
+          const x = vx * canvas.width, y = vy * canvas.height;
+          const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          g.addColorStop(0, 'rgba(255,90,40,0.12)');
+          g.addColorStop(1, 'rgba(255,90,40,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalCompositeOperation = 'source-over';
+      };
+      img.src = imgSrc;
+    }
+
+    function openReport() {
+      $reportBody.innerHTML = '';
+      const data = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
+      const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
+      const keys = Object.keys(data);
+      if (!keys.length) {
+        $reportBody.innerHTML =
+          '<p class="report-empty">No gaze yet. Calibrate gaze, then play a scene — the focus map fills in afterward.</p>';
+      } else {
+        keys.forEach((key) => {
+          const d = data[key];
+          const [loc, clip] = key.split('|');
+          const total = (d.on || 0) + (d.off || 0);
+          const onPct = total ? Math.round((d.on / total) * 100) : 0;
+          const wrap = document.createElement('div');
+          wrap.className = 'report-clip';
+          wrap.innerHTML =
+            `<h3>${loc} · ${clip}</h3>` +
+            `<div class="report-focus"></div>` +
+            `<div class="report-stat">Looked at the video ${onPct}% of the time</div>`;
+          const focus = wrap.querySelector('.report-focus');
+          if (frames[key]) {
+            const cv = document.createElement('canvas');
+            focus.appendChild(cv);
+            renderFocusCanvas(cv, frames[key], d.pts || []);
+          } else {
+            focus.innerHTML = '<p class="report-empty" style="padding:14px">(no frame captured)</p>';
+          }
+          $reportBody.appendChild(wrap);
+        });
+      }
+      $reportModal.classList.remove('hidden');
+    }
+    document.getElementById('report-open').addEventListener('click', openReport);
+    $reportModal.addEventListener('click', (e) => {
+      if (e.target === $reportModal) $reportModal.classList.add('hidden');
     });
 
     function updateProgress() {
@@ -1290,6 +1554,8 @@
       Object.keys(localStorage)
         .filter((k) => k.startsWith('videoasd_tree_'))
         .forEach((k) => localStorage.removeItem(k));
+      localStorage.removeItem('videoasd_gaze');
+      localStorage.removeItem('videoasd_gaze_frames');
       updateProgress();
       markVisited();
       walkTarget = BEAR_HOME.clone();
@@ -1332,6 +1598,7 @@
 
     updateProgress();
     markVisited();
+    applyDifficulty();
     animate();
   </script>
 </body>
