@@ -441,6 +441,35 @@
     .report-focus canvas { width: 100%; height: auto; display: block; }
     .report-stat { font-size: 13px; color: #8a8a96; margin-top: 6px; text-align: center; }
     .report-empty { color: #8a8a96; font-size: 14px; padding: 24px 0; }
+    /* AOI per-region dwell bars */
+    .aoi-bars { margin: 12px auto 0; max-width: 480px; display: flex; flex-direction: column; gap: 7px; }
+    .aoi-bar { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #5a4a3a; }
+    .aoi-sw { width: 13px; height: 13px; border-radius: 3px; flex: 0 0 auto; }
+    .aoi-lab { width: 64px; flex: 0 0 auto; text-align: left; }
+    .aoi-track { flex: 1; height: 12px; background: #eef1f5; border-radius: 6px; overflow: hidden; }
+    .aoi-fill { display: block; height: 100%; border-radius: 6px; }
+    .aoi-val { width: 40px; text-align: right; font-weight: 600; flex: 0 0 auto; }
+
+    /* === Reward: per-location star meters on the map (breadth) === */
+    .loc-stars { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+    .loc-star {
+      position: absolute; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      pointer-events: none; text-align: center;
+    }
+    .loc-star .ls-row {
+      font-size: 21px; letter-spacing: 2px; color: #ffd24d;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.45), 0 0 2px rgba(0,0,0,0.4);
+    }
+    .loc-star.bloom .ls-row { animation: star-pop 0.6s ease; }
+    .loc-star .ls-bloom {
+      font-size: 12px; font-weight: 700; color: #6e4a1a;
+      background: rgba(255, 255, 255, 0.94); padding: 2px 9px; border-radius: 11px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+    @keyframes star-pop {
+      0% { transform: scale(0.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); }
+    }
 
     /* ===== Gaze tracking UI ===== */
     #gaze-video {
@@ -1220,7 +1249,7 @@
       const vx = (gx - r.left) / r.width, vy = (gy - r.top) / r.height;
       gazeDiag.capTotal++;               // DIAG
       if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) {
-        gazeBuf.pts.push([+vx.toFixed(3), +vy.toFixed(3)]);
+        gazeBuf.pts.push([+vx.toFixed(3), +vy.toFixed(3), +c.video.currentTime.toFixed(2)]);
         gazeBuf.on++; gazeDiag.capOn++;  // DIAG
       } else {
         gazeBuf.off++;
@@ -1478,64 +1507,120 @@
     const $reportModal = document.getElementById('report-modal');
     const $reportBody = document.getElementById('report-body');
 
-    function renderFocusCanvas(canvas, imgSrc, pts) {
+    // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
+    const AOI_FILES = { context: 'assets/aoi/context.json' };
+    const aoiCache = {};
+    async function loadAOI(clip) {
+      if (clip in aoiCache) return aoiCache[clip];
+      const f = AOI_FILES[clip];
+      if (!f) return (aoiCache[clip] = null);
+      try { aoiCache[clip] = await (await fetch(f)).json(); }
+      catch (e) { aoiCache[clip] = null; }
+      return aoiCache[clip];
+    }
+    const nearestFrame = (aoi, t) =>
+      aoi.frames.reduce((best, f) => Math.abs(f.t - t) < Math.abs(best.t - t) ? f : best, aoi.frames[0]);
+    const inBox = (b, x, y) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
+    function classifyPoint(aoi, x, y, t) {
+      const f = nearestFrame(aoi, t || 0);
+      for (const k of ['eyes', 'mouth'])
+        for (const bx of f.boxes) if (bx.kind === k && inBox(bx.b, x, y)) return k;
+      for (const bx of f.boxes) if (bx.kind === 'face' && inBox(bx.b, x, y)) return 'face';
+      for (const bx of f.boxes) if (bx.kind === 'body' && inBox(bx.b, x, y)) return 'body';
+      return 'bg';
+    }
+    const AOI_BOXCOL = { eyes: '#19c3ff', mouth: '#ff4db8', face: '#ffd24d', body: '#46d36a' };
+    const AOI_NAME = { eyes: 'Eyes', mouth: 'Mouth', face: 'Face', body: 'Body', bg: 'Elsewhere' };
+    const AOI_BARCOL = { ...AOI_BOXCOL, bg: '#c2c8d0' };
+
+    // frame + child's gaze dots + AOI boxes (drawn at the representative frame's time)
+    function drawFocus(canvas, imgSrc, pts, aoi) {
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.onload = () => {
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        const W = img.naturalWidth, H = img.naturalHeight;
+        canvas.width = W; canvas.height = H;
         ctx.drawImage(img, 0, 0);
-        const r = canvas.width * 0.16;   // deliberately coarse → honest about precision
-        ctx.globalCompositeOperation = 'lighter';
-        pts.forEach(([vx, vy]) => {
-          const x = vx * canvas.width, y = vy * canvas.height;
-          const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-          g.addColorStop(0, 'rgba(255,90,40,0.12)');
-          g.addColorStop(1, 'rgba(255,90,40,0)');
-          ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,60,30,0.5)';
+        const repT = pts.length ? pts[pts.length - 1][2] : 0;
+        pts.forEach(([vx, vy, t]) => {
+          if (Math.abs((t || 0) - (repT || 0)) > 0.9) return;   // show dots near the shown moment
+          ctx.beginPath(); ctx.arc(vx * W, vy * H, Math.max(3, W * 0.008), 0, Math.PI * 2); ctx.fill();
         });
-        ctx.globalCompositeOperation = 'source-over';
+        if (aoi) {
+          const f = nearestFrame(aoi, repT || 0);
+          ctx.lineWidth = Math.max(2, W * 0.006);
+          f.boxes.forEach((bx) => {
+            if (!AOI_BOXCOL[bx.kind]) return;
+            ctx.strokeStyle = AOI_BOXCOL[bx.kind];
+            ctx.strokeRect(bx.b[0] * W, bx.b[1] * H, (bx.b[2] - bx.b[0]) * W, (bx.b[3] - bx.b[1]) * H);
+          });
+        }
       };
       img.src = imgSrc;
     }
+    function aoiStats(pts, aoi) {
+      const c = { eyes: 0, mouth: 0, face: 0, body: 0, bg: 0 };
+      pts.forEach(([vx, vy, t]) => { c[classifyPoint(aoi, vx, vy, t)]++; });
+      const tot = pts.length || 1;
+      const pct = {}; for (const k in c) pct[k] = Math.round((c[k] / tot) * 100);
+      return pct;
+    }
+    function renderBars(el, pct) {
+      ['eyes', 'mouth', 'face', 'body', 'bg'].forEach((k) => {
+        const row = document.createElement('div');
+        row.className = 'aoi-bar';
+        row.innerHTML =
+          `<span class="aoi-sw" style="background:${AOI_BARCOL[k]}"></span>` +
+          `<span class="aoi-lab">${AOI_NAME[k]}</span>` +
+          `<span class="aoi-track"><span class="aoi-fill" style="width:${pct[k]}%;background:${AOI_BARCOL[k]}"></span></span>` +
+          `<span class="aoi-val">${pct[k]}%</span>`;
+        el.appendChild(row);
+      });
+    }
 
-    function openReport() {
+    async function openReport() {
       const data = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
       const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
       const keys = Object.keys(data);
-      // DIAG line (temporary — remove once gaze verified)
       $reportBody.innerHTML =
         `<p class="report-stat" style="text-align:left;background:#f5f3ff;padding:8px 10px;border-radius:8px">` +
         `ⓘ active:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
         `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`;
-      if (!keys.length) {
-        $reportBody.insertAdjacentHTML('beforeend',
-          '<p class="report-empty">No gaze data saved yet.</p>');
-      } else {
-        keys.forEach((key) => {
-          const d = data[key];
-          const [loc, clip] = key.split('|');
-          const total = (d.on || 0) + (d.off || 0);
-          const onPct = total ? Math.round((d.on / total) * 100) : 0;
-          const wrap = document.createElement('div');
-          wrap.className = 'report-clip';
-          wrap.innerHTML =
-            `<h3>${loc} · ${clip}</h3>` +
-            `<div class="report-focus"></div>` +
-            `<div class="report-stat">Looked at the video ${onPct}% of the time</div>`;
-          const focus = wrap.querySelector('.report-focus');
-          if (frames[key]) {
-            const cv = document.createElement('canvas');
-            focus.appendChild(cv);
-            renderFocusCanvas(cv, frames[key], d.pts || []);
-          } else {
-            focus.innerHTML = '<p class="report-empty" style="padding:14px">(no frame captured)</p>';
-          }
-          $reportBody.appendChild(wrap);
-        });
-      }
       $reportModal.classList.remove('hidden');
+      if (!keys.length) {
+        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">No gaze data saved yet.</p>');
+        return;
+      }
+      for (const key of keys) {
+        const d = data[key];
+        const [loc, clip] = key.split('|');
+        const total = (d.on || 0) + (d.off || 0);
+        const onPct = total ? Math.round((d.on / total) * 100) : 0;
+        const aoi = await loadAOI(clip);
+        const wrap = document.createElement('div');
+        wrap.className = 'report-clip';
+        wrap.innerHTML =
+          `<h3>${loc} · ${clip}</h3>` +
+          `<div class="report-focus"></div>` +
+          `<div class="report-stat">Looked at the video ${onPct}% of the time</div>` +
+          `<div class="aoi-bars"></div>`;
+        const focus = wrap.querySelector('.report-focus');
+        if (frames[key]) {
+          const cv = document.createElement('canvas');
+          focus.appendChild(cv);
+          drawFocus(cv, frames[key], d.pts || [], aoi);
+        } else {
+          focus.innerHTML = '<p class="report-empty" style="padding:14px">(no frame captured)</p>';
+        }
+        const barsEl = wrap.querySelector('.aoi-bars');
+        if (aoi && (d.pts || []).length) {
+          renderBars(barsEl, aoiStats(d.pts, aoi));
+        } else {
+          barsEl.innerHTML = '<p class="report-stat" style="text-align:left">(AOI breakdown not available for this clip)</p>';
+        }
+        $reportBody.appendChild(wrap);
+      }
     }
     document.getElementById('report-open').addEventListener('click', openReport);
     $reportModal.addEventListener('click', (e) => {
