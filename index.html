@@ -402,36 +402,6 @@
     }
     .toolbar button:hover { background: rgba(255, 220, 120, 0.95); }
 
-    /* === Topic map (caregiver, step 0) === */
-    .topic-grid { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 14px; }
-    .topic-btn {
-      display: flex; align-items: center; gap: 12px; width: 100%;
-      text-align: left; padding: 12px 14px; border: 1.5px solid #eceef3;
-      border-left-width: 4px; border-radius: 14px; background: #fff; cursor: pointer;
-      transition: background .15s ease, border-color .15s ease, transform .1s ease;
-    }
-    .topic-btn:hover:not(:disabled) { background: #faf9ff; transform: translateY(-1px); }
-    .topic-btn:disabled { cursor: not-allowed; opacity: .5; }
-    .topic-btn .topic-emoji { font-size: 24px; line-height: 1; }
-    .topic-btn .topic-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .topic-btn .topic-name { font-size: 15px; font-weight: 700; color: #2a2a33; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .topic-btn .topic-play { font-size: 11px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 1px 8px; border-radius: 10px; }
-    .topic-btn .topic-atoms { font-size: 12px; color: #9aa0ad; }
-    .topic-btn .topic-aff { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; max-width: 120px; }
-    .topic-btn .aff-sym { font-size: 16px; font-weight: 700; }
-    .topic-btn .aff-label { font-size: 10px; color: #9aa0ad; text-align: right; line-height: 1.2; }
-    /* affordance accents */
-    .topic-btn.full    { border-left-color: #22c55e; } .topic-btn.full .aff-sym    { color: #16a34a; }
-    .topic-btn.trigger { border-left-color: #f59e0b; } .topic-btn.trigger .aff-sym { color: #d97706; }
-    .topic-btn.prune   { border-left-color: #38bdf8; } .topic-btn.prune .aff-sym   { color: #0284c7; }
-    .topic-btn.none    { border-left-color: #e2e8f0; } .topic-btn.none .aff-sym    { color: #cbd5e1; }
-    .topic-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding-top: 10px; border-top: 1px solid #f1f1f4; margin-bottom: 10px; }
-    .topic-legend span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9aa0ad; }
-    .topic-legend .aff-sym { font-size: 13px; font-weight: 700; }
-    .topic-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 11px 13px; margin-bottom: 12px; }
-    .topic-note p { margin: 0 0 8px; font-size: 12.5px; color: #92400e; line-height: 1.5; }
-    .topic-note button { border: none; background: #f59e0b; color: #fff; font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 9px; cursor: pointer; }
-
     /* === Difficulty picker (caregiver) === */
     .modal-sub { font-size: 14px; color: #8a8a96; margin-top: -4px; }
     .diff-cards {
@@ -692,20 +662,6 @@
           <span class="ier-chip" data-phase="action">ACTION</span>
           <span class="ier-chip" data-phase="reaction">REACTION</span>
           <span class="ier-chip" data-phase="reflect">REFLECT</span>
-        </div>
-      </div>
-
-      <!-- Step 0: topic map (caregiver) — which social topic to prepare in this scene -->
-      <div id="poe-step-topic" class="poe-step hidden">
-        <p class="poe-cue">Which social moment to prepare here?</p>
-        <div class="topic-grid" id="topic-grid"></div>
-        <div class="topic-note hidden" id="topic-note">
-          <p id="topic-note-text"></p>
-          <button id="topic-note-ok">Got it</button>
-        </div>
-        <div class="topic-legend" id="topic-legend"></div>
-        <div class="poe-btn-row">
-          <button class="poe-secondary" id="topic-back">← Back to map</button>
         </div>
       </div>
 
@@ -1091,7 +1047,6 @@
     const $modalClose = document.getElementById('modal-close'); // legacy, may be null
     const $progress = document.getElementById('progress');
 
-    const $topicStep = document.getElementById('poe-step-topic');
     const $ctxStep = document.getElementById('poe-step-context');
     const $chooseStep = document.getElementById('poe-step-choose');
     const $actionStep = document.getElementById('poe-step-action');
@@ -1150,41 +1105,6 @@
       },
     };
 
-    /* ===== Topic layer (step 0) — caregiver picks a social topic per scene =====
-       Curated/frozen, NOT generated at runtime. Researchers edit only these tables.
-       Affordance per (scene, topic): full ✓ / prune △ᵖ / trigger △ᵗ / none ✗.
-       Only topics in TOPIC_PLAYABLE are wired to a real tree; others are shown
-       with their affordance but marked "no clip yet". */
-    const AFFORDANCE_META = {
-      full:    { symbol: '✓',  label: 'Fits this place' },
-      prune:   { symbol: '△ᵖ', label: 'Partly — fewer steps' },
-      trigger: { symbol: '△ᵗ', label: 'Only if a moment comes up' },
-      none:    { symbol: '✗',  label: "Doesn't happen here" },
-    };
-    const TOPICS = [
-      { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend',  atoms: ['Notice feeling', 'Approach', 'Offer comfort'] },
-      { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',     atoms: ['Approach', 'Open', 'Handle response'] },
-      { id: 'join_activity',  emoji: '🧩', label: 'Join an activity',  atoms: ['Notice', 'Ask to join', 'Fit in'] },
-      { id: 'handle_conflict',emoji: '🤝', label: 'Handle conflict',   atoms: ['Stay calm', 'Express', 'Repair / retry'] },
-      { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',      atoms: ['Recognize need', 'Find someone', 'Ask clearly'] },
-      { id: 'take_turns',     emoji: '🔁', label: 'Take turns',        atoms: ['Wait', 'Watch the cue', 'Take the turn'] },
-    ];
-    // affordance = SCENE_TOPICS[locId][topicId] (defaults to 'none')
-    const SCENE_TOPICS = {
-      playground: { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'full',  ask_help: 'prune', take_turns: 'full' },
-      classroom:  { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'full',  ask_help: 'full',  take_turns: 'full' },
-      cafeteria:  { comfort_friend: 'full', make_friends: 'trigger', join_activity: 'none', handle_conflict: 'prune', ask_help: 'full',  take_turns: 'full' },
-      park:       { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'trigger', ask_help: 'full', take_turns: 'full' },
-    };
-    // Topics wired to a real, playable tree in this demo. comfort_friend reuses
-    // the existing comfort/joke/ignore scenario (shared assets across scenes).
-    const TOPIC_PLAYABLE = { comfort_friend: true };
-    // Per-topic content (context video etc.). Only the playable topic is filled.
-    const TOPIC_CONTENT = { comfort_friend: { context: 'assets/videos/context.mp4' } };
-
-    const affordanceOf = (loc, t) => (SCENE_TOPICS[loc] && SCENE_TOPICS[loc][t]) || 'none';
-    const isTopicPlayable = (loc, t) => !!TOPIC_PLAYABLE[t] && affordanceOf(loc, t) !== 'none';
-
     const $pathPickerImg = document.getElementById('path-picker-img');
     const $pathHotspotEls = {
       a: document.getElementById('path-hotspot-a'),
@@ -1214,7 +1134,6 @@
     let pendingPrediction = null;
 
     const STEP_PHASE = {
-      topic:   'setup',     // caregiver topic map (no IER chip lights)
       context: 'interpret',
       choose:  'action',     // legacy path-picker step (unused in single-layer)
       action:  'action',     // pick your action
@@ -1225,7 +1144,6 @@
     };
 
     function showStep(which) {
-      $topicStep.classList.toggle('hidden', which !== 'topic');
       $ctxStep.classList.toggle('hidden', which !== 'context');
       $chooseStep.classList.toggle('hidden', which !== 'choose');
       $actionStep.classList.toggle('hidden', which !== 'action');
@@ -1380,80 +1298,13 @@
       // Action choice gets picked inside modal at the action step
       pendingChoice = null;
       $modal.classList.remove('hidden');
-      // Start at the topic map (step 0): which social topic to prepare here
-      renderTopicMap(loc.id);
-      showStep('topic');
-    }
-
-    /* ===== Topic map (step 0) ===== */
-    const $topicGrid = document.getElementById('topic-grid');
-    const $topicLegend = document.getElementById('topic-legend');
-    const $topicNote = document.getElementById('topic-note');
-    const $topicNoteText = document.getElementById('topic-note-text');
-
-    function renderTopicMap(locId) {
-      $topicNote.classList.add('hidden');
-      // legend (once)
-      if (!$topicLegend.dataset.ready) {
-        $topicLegend.innerHTML = ['full', 'prune', 'trigger', 'none']
-          .map((a) => `<span><i></i><span class="aff-sym">${AFFORDANCE_META[a].symbol}</span> ${AFFORDANCE_META[a].label}</span>`)
-          .join('');
-        $topicLegend.dataset.ready = '1';
-      }
-      $topicGrid.innerHTML = '';
-      TOPICS.forEach((t) => {
-        const aff = affordanceOf(locId, t.id);
-        const meta = AFFORDANCE_META[aff];
-        const playable = isTopicPlayable(locId, t.id);
-        const btn = document.createElement('button');
-        btn.className = `topic-btn ${aff}` + (playable ? ' playable' : '');
-        btn.disabled = aff === 'none';
-        btn.innerHTML =
-          `<span class="topic-emoji">${t.emoji}</span>` +
-          `<span class="topic-main">` +
-            `<span class="topic-name">${t.label}` +
-              (playable ? `<span class="topic-play">▶ Playable</span>` : '') +
-            `</span>` +
-            `<span class="topic-atoms">${t.atoms.join(' · ')}</span>` +
-          `</span>` +
-          `<span class="topic-aff" title="${meta.label}">` +
-            `<span class="aff-sym">${meta.symbol}</span>` +
-            `<span class="aff-label">${meta.label}</span>` +
-          `</span>`;
-        btn.addEventListener('click', () => {
-          if (aff === 'none') return;
-          if (playable) startTopic(t.id);
-          else {
-            $topicNoteText.textContent =
-              'This topic is authored in the content table, but no playable tree is wired for it yet. Try “Comfort a friend” to play through a tree.';
-            $topicNote.classList.remove('hidden');
-          }
-        });
-        $topicGrid.appendChild(btn);
-      });
-    }
-
-    // After a topic is chosen, run the existing POE flow with its content.
-    function startTopic(topicId) {
-      $modal.dataset.topicId = topicId;
-      const content = TOPIC_CONTENT[topicId] || {};
+      // Start at context step
       showStep('context');
-      $ctxVideo.src = content.context || 'assets/videos/context.mp4';
+      $ctxVideo.src = 'assets/videos/context.mp4';
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
-      startGazeCap($modal.dataset.locId, 'context', $ctxVideo);
+      startGazeCap(loc.id, 'context', $ctxVideo);
     }
-
-    // Topic-step controls
-    document.getElementById('topic-back').addEventListener('click', () => {
-      $modal.classList.add('hidden');
-      $ctxVideo.pause();
-      $outVideo.pause();
-      stopGazeCap();
-    });
-    document.getElementById('topic-note-ok').addEventListener('click', () => {
-      $topicNote.classList.add('hidden');
-    });
     function commitAndClose() {
       const id = $modal.dataset.locId;
       if (id) {
