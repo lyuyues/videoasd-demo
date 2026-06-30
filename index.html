@@ -1514,7 +1514,7 @@
     const $reportBody = document.getElementById('report-body');
 
     // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
-    const AOI_VER = '5';  // cache-bust bundled AOI assets
+    const AOI_VER = '6';  // cache-bust bundled AOI assets
     const AOI_FILES = { context: `assets/aoi/context.json?v=${AOI_VER}` };
     const AOI_FRAME = { context: `assets/aoi/context_frame.jpg?v=${AOI_VER}` }; // canonical still (best-detected frame)
     const aoiCache = {};
@@ -1553,10 +1553,9 @@
         const W = img.naturalWidth, H = img.naturalHeight;
         canvas.width = W; canvas.height = H;
         ctx.drawImage(img, 0, 0);
-        ctx.fillStyle = 'rgba(255,60,30,0.55)';
-        pts.forEach(([vx, vy, t]) => {
-          if (Math.abs((t || 0) - fT) > 0.6) return;   // only dots near the shown moment
-          ctx.beginPath(); ctx.arc(vx * W, vy * H, Math.max(3, W * 0.008), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,60,30,0.5)';
+        pts.forEach(([vx, vy]) => {   // all on-video gaze points (where the child looked)
+          ctx.beginPath(); ctx.arc(vx * W, vy * H, Math.max(3, W * 0.007), 0, Math.PI * 2); ctx.fill();
         });
         if (aoi) {
           const f = nearestFrame(aoi, fT);
