@@ -621,7 +621,10 @@
     </button>
   </div>
 
-  <span class="progress" id="progress">Explored 0/12</span>
+  <!-- Reward: per-location star meters (breadth) -->
+  <div class="loc-stars" id="loc-stars"></div>
+
+  <span class="progress" id="progress">★ 0/12</span>
 
   <p class="dev-hint">Click a path → character walks there</p>
 
@@ -1642,8 +1645,32 @@
       if (e.target === $reportModal) $reportModal.classList.add('hidden');
     });
 
+    // Reward: depth = the possibility tree; breadth = per-location stars on the
+    // map. Stars at a location = distinct actions explored there (tree branches).
+    // Rewards exploration, never correctness. Full = "bloom".
+    const STAR_MAX = 3;  // full action set
+    const LOC_CENTERS = {
+      playground: [20, 46], classroom: [42, 40], cafeteria: [62, 42], park: [84, 46],
+    };
+    const $locStars = document.getElementById('loc-stars');
     function updateProgress() {
-      $progress.textContent = `Explored ${visited.size}/12`;
+      let total = 0;
+      if ($locStars) $locStars.innerHTML = '';
+      Object.entries(LOC_CENTERS).forEach(([loc, [x, y]]) => {
+        const n = Object.keys(loadGuesses(loc)).length;   // distinct actions explored here
+        total += n;
+        if (!$locStars) return;
+        const full = n >= STAR_MAX;
+        const badge = document.createElement('div');
+        badge.className = 'loc-star' + (full ? ' bloom' : '');
+        badge.style.left = `${x}%`; badge.style.top = `${y}%`;
+        let stars = '';
+        for (let i = 0; i < STAR_MAX; i++) stars += (i < n ? '★' : '☆');
+        badge.innerHTML = `<span class="ls-row">${stars}</span>` +
+          (full ? '<span class="ls-bloom">🌸 full!</span>' : '');
+        $locStars.appendChild(badge);
+      });
+      $progress.textContent = `★ ${total}/12`;
     }
     function markVisited() {
       document.querySelectorAll('.hotspot').forEach((el) => {
