@@ -415,6 +415,32 @@
     .scene-pill .scene-ico { font-size: 17px; line-height: 1; }
     .scene-pill.active { border-color: #e8804f; background: #fff7f1; color: #c2502a; box-shadow: 0 3px 12px rgba(232, 128, 79, 0.22); }
 
+    /* === Per-scene topic circles (each circle = a topic) === */
+    .scene-circles { position: fixed; inset: 0; z-index: 6; display: none; }
+    .scene-circles.show { display: block; }
+    .topic-spot {
+      position: absolute; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;
+    }
+    .topic-spot .ts-ring {
+      width: 66px; height: 66px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.94); border: 3px solid #e8804f;
+      display: flex; align-items: center; justify-content: center; font-size: 30px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); transition: transform .12s;
+      animation: tsPulse 2.2s ease-in-out infinite;
+    }
+    .topic-spot:hover .ts-ring { transform: scale(1.09); }
+    .topic-spot .ts-label {
+      background: rgba(255, 255, 255, 0.94); padding: 3px 12px; border-radius: 12px;
+      font-size: 13px; font-weight: 700; color: #5a4a3a; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    @keyframes tsPulse {
+      0%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); }
+      50%      { box-shadow: 0 4px 22px rgba(232, 128, 79, 0.55); }
+    }
+
     /* === Difficulty picker (caregiver) === */
     .modal-sub { font-size: 14px; color: #8a8a96; margin-top: -4px; }
     .diff-cards {
@@ -575,6 +601,8 @@
 <body>
   <div class="bg-diorama"></div>
   <canvas id="canvas"></canvas>
+  <!-- Per-scene topic circles (each circle = a topic); shown when a scene pill is active -->
+  <div class="scene-circles" id="scene-circles"></div>
 
   <div class="hotspots">
     <!-- Playground: 3 paths (slide / swings / sandbox) -->
@@ -1752,23 +1780,88 @@
     applyDifficulty();
     animate();
 
-    /* ===== Top-left scene bar (each pill = a scene) =====
-       Self-contained: does not touch the bear / map / POE flow. */
+    /* ===== Scene bar + per-scene topic circles =====
+       Each top-left pill = a scene. Clicking it switches the map to that
+       scene's image and shows its topic circles (each circle = a topic).
+       Clicking a topic circle enters the existing POE flow for that scene.
+       Click the active pill again to return to the town overview.
+       Curated/frozen table — researcher edits SCENES (incl. circle x/y %). */
     (function () {
       const SCENES = [
-        { id: 'playground', ico: '🛝', label: 'Playground' },
-        { id: 'classroom',  ico: '🏫', label: 'Classroom' },
-        { id: 'cafeteria',  ico: '🍽️', label: 'Cafeteria' },
-        { id: 'park',       ico: '🌳', label: 'Park' },
+        { id: 'playground', ico: '🛝', label: 'Playground', img: 'assets/zones/playground.png', topics: [
+          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 28, y: 54 },
+          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 52, y: 47 },
+          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 56 },
+        ] },
+        { id: 'classroom', ico: '🏫', label: 'Classroom', img: 'assets/zones/classroom.png', topics: [
+          { id: 'take_turns',     emoji: '🔁', label: 'Take turns',      x: 28, y: 58 },
+          { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',    x: 52, y: 50 },
+          { id: 'handle_conflict',emoji: '🤝', label: 'Handle conflict', x: 74, y: 60 },
+        ] },
+        { id: 'cafeteria', ico: '🍽️', label: 'Cafeteria', img: 'assets/zones/cafeteria.png', topics: [
+          { id: 'take_turns',     emoji: '🔁', label: 'Take turns',     x: 30, y: 56 },
+          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',  x: 54, y: 49 },
+          { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',   x: 74, y: 58 },
+        ] },
+        { id: 'park', ico: '🌳', label: 'Park', img: 'assets/zones/park.png', topics: [
+          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 30, y: 54 },
+          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 54, y: 60 },
+          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 76, y: 52 },
+        ] },
       ];
+      const TOWN_BG = "url('assets/town_imagen.png')";
+
       const $bar = document.getElementById('scene-bar');
+      const $circles = document.getElementById('scene-circles');
+      const $bg = document.querySelector('.bg-diorama');
+      const $canvas = document.getElementById('canvas');
+      const $hotspots = document.querySelector('.hotspots');
+      const $stars = document.getElementById('loc-stars');
+      let active = null;
+
+      function setActivePill(id) {
+        [...$bar.children].forEach((p) => p.classList.toggle('active', p.dataset.scene === id));
+      }
+      function renderCircles(scene) {
+        $circles.innerHTML = '';
+        scene.topics.forEach((t) => {
+          const b = document.createElement('button');
+          b.className = 'topic-spot';
+          b.style.left = t.x + '%';
+          b.style.top = t.y + '%';
+          b.innerHTML = `<span class="ts-ring">${t.emoji}</span><span class="ts-label">${t.label}</span>`;
+          // Enter the existing POE flow for this scene (topic carried as the title)
+          b.addEventListener('click', () => openModal({ id: scene.id, label: t.label }));
+          $circles.appendChild(b);
+        });
+      }
+      function enterScene(scene) {
+        active = scene.id;
+        $bg.style.backgroundImage = `url('${scene.img}')`;
+        $canvas.style.display = 'none';          // hide the town bear
+        $hotspots.style.display = 'none';        // hide the 12 town circles
+        if ($stars) $stars.style.display = 'none';
+        renderCircles(scene);
+        $circles.classList.add('show');
+      }
+      function exitScene() {
+        active = null;
+        $bg.style.backgroundImage = TOWN_BG;
+        $canvas.style.display = '';
+        $hotspots.style.display = '';
+        if ($stars) $stars.style.display = '';
+        $circles.classList.remove('show');
+        $circles.innerHTML = '';
+      }
+
       SCENES.forEach((s) => {
         const b = document.createElement('button');
         b.className = 'scene-pill';
         b.dataset.scene = s.id;
         b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}`;
         b.addEventListener('click', () => {
-          [...$bar.children].forEach((p) => p.classList.toggle('active', p === b));
+          if (active === s.id) { exitScene(); setActivePill(null); }
+          else { enterScene(s); setActivePill(s.id); }
         });
         $bar.appendChild(b);
       });
