@@ -1514,7 +1514,9 @@
     const $reportBody = document.getElementById('report-body');
 
     // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
-    const AOI_FILES = { context: 'assets/aoi/context.json' };
+    const AOI_VER = '5';  // cache-bust bundled AOI assets
+    const AOI_FILES = { context: `assets/aoi/context.json?v=${AOI_VER}` };
+    const AOI_FRAME = { context: `assets/aoi/context_frame.jpg?v=${AOI_VER}` }; // canonical still (best-detected frame)
     const aoiCache = {};
     async function loadAOI(clip) {
       if (clip in aoiCache) return aoiCache[clip];
@@ -1615,10 +1617,15 @@
           `<div class="report-stat">Looked at the video ${onPct}% of the time</div>` +
           `<div class="aoi-bars"></div>`;
         const focus = wrap.querySelector('.report-focus');
-        if (frames[key]) {
+        // prefer the bundled canonical still (best-detected frame) so AOI boxes
+        // are guaranteed present + correctly placed; else the live-captured still.
+        const repFrame = (aoi && AOI_FRAME[clip])
+          ? { url: AOI_FRAME[clip], t: aoi.repT || 0 }
+          : frames[key];
+        if (repFrame) {
           const cv = document.createElement('canvas');
           focus.appendChild(cv);
-          drawFocus(cv, frames[key], d.pts || [], aoi);
+          drawFocus(cv, repFrame, d.pts || [], aoi);
         } else {
           focus.innerHTML = '<p class="report-empty" style="padding:14px">(no frame captured)</p>';
         }
