@@ -1508,14 +1508,22 @@
     function drawFruit(svg, cx, cy, action, emotion, highlight, label) {
       const g = svgEl('g', {});
       if (highlight) g.classList.add('grow');
-      g.appendChild(svgEl('circle', { cx, cy, r: highlight ? 40 : 34,
-        fill: highlight ? '#ffe6c2' : '#eef5e2' }));
-      const size = highlight ? 60 : 52;
-      g.appendChild(svgImg(cx - size / 2, cy - size / 2, size, size, emoSrc(emotion)));
+      // side by side so neither image covers the other: action (the boy, what
+      // the child did) on the left, emotion (the girl's reaction) on the right.
+      const aSize = highlight ? 52 : 44;
+      const eSize = highlight ? 48 : 42;
+      const gap = 4;
+      const total = aSize + gap + eSize;
+      const rh = Math.max(aSize, eSize) + 16;
+      const rw = total + 22;
+      g.appendChild(svgEl('rect', { x: cx - rw / 2, y: cy - rh / 2, width: rw, height: rh,
+        rx: rh / 2, fill: highlight ? '#ffe6c2' : '#eef5e2' }));
+      const left = cx - total / 2;
       const aInfo = ACTION_INFO[action] || ACTION_INFO.a;
-      g.appendChild(svgImg(cx - 16, cy + (highlight ? 26 : 22), 32, 32, aInfo.icon));
+      g.appendChild(svgImg(left, cy - aSize / 2, aSize, aSize, aInfo.icon));
+      g.appendChild(svgImg(left + aSize + gap, cy - eSize / 2, eSize, eSize, emoSrc(emotion)));
       if (label) {
-        const t = svgEl('text', { x: cx, y: cy - (highlight ? 48 : 42),
+        const t = svgEl('text', { x: cx, y: cy - rh / 2 - 8,
           'text-anchor': 'middle', 'font-size': 13, fill: '#8a8a96',
           'font-weight': 600, 'font-family': 'inherit' });
         t.textContent = label;
