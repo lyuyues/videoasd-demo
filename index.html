@@ -402,6 +402,51 @@
     }
     .toolbar button:hover { background: rgba(255, 220, 120, 0.95); }
 
+    /* === Top-left scene bar (each pill = a scene) === */
+    .scene-bar { position: fixed; top: 14px; left: 14px; display: flex; gap: 10px; flex-wrap: wrap; max-width: 72vw; z-index: 12; }
+    .scene-pill {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255, 255, 255, 0.95); border: 2px solid #efe3cf; border-radius: 16px;
+      padding: 8px 15px; font-size: 14px; font-weight: 600; color: #6b5640; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); font-family: inherit;
+      transition: border-color .15s, background .15s, transform .1s;
+    }
+    .scene-pill:hover { transform: translateY(-1px); }
+    .scene-pill .scene-ico { font-size: 17px; line-height: 1; }
+    .scene-pill.active { border-color: #e8804f; background: #fff7f1; color: #c2502a; box-shadow: 0 3px 12px rgba(232, 128, 79, 0.22); }
+
+    /* === Topic map panel === */
+    .topic-panel {
+      position: fixed; top: 64px; left: 14px; width: 330px; max-width: 86vw;
+      background: #fff; border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+      z-index: 12; padding: 14px 14px 12px;
+    }
+    .topic-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    #topic-panel-title { font-size: 15px; font-weight: 700; color: #2a2a33; }
+    #topic-panel-close { border: none; background: #f1f1f4; width: 26px; height: 26px; border-radius: 50%; font-size: 17px; line-height: 1; color: #888; cursor: pointer; }
+    .topic-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .topic-btn {
+      display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+      padding: 10px 12px; border: 1.5px solid #eceef3; border-left-width: 4px; border-radius: 13px;
+      background: #fff; cursor: pointer; transition: background .15s, transform .1s;
+    }
+    .topic-btn:hover:not(:disabled) { background: #faf9ff; transform: translateY(-1px); }
+    .topic-btn:disabled { cursor: not-allowed; opacity: .5; }
+    .topic-btn.chosen { background: #f5f3ff; box-shadow: inset 0 0 0 2px #c4b5fd; }
+    .topic-btn .topic-emoji { font-size: 22px; line-height: 1; }
+    .topic-btn .topic-main { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .topic-btn .topic-name { font-size: 14px; font-weight: 700; color: #2a2a33; display: flex; align-items: center; gap: 6px; }
+    .topic-btn .topic-play { font-size: 12px; color: #15803d; }
+    .topic-btn .topic-atoms { font-size: 11px; color: #9aa0ad; }
+    .topic-btn .aff-sym { font-size: 16px; font-weight: 700; flex-shrink: 0; }
+    .topic-btn.full    { border-left-color: #22c55e; } .topic-btn.full .aff-sym    { color: #16a34a; }
+    .topic-btn.trigger { border-left-color: #f59e0b; } .topic-btn.trigger .aff-sym { color: #d97706; }
+    .topic-btn.prune   { border-left-color: #38bdf8; } .topic-btn.prune .aff-sym   { color: #0284c7; }
+    .topic-btn.none    { border-left-color: #e2e8f0; } .topic-btn.none .aff-sym    { color: #cbd5e1; }
+    .topic-legend { display: flex; flex-wrap: wrap; gap: 5px 13px; padding-top: 9px; border-top: 1px solid #f1f1f4; }
+    .topic-legend span { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: #9aa0ad; }
+    .topic-legend .aff-sym { font-size: 13px; font-weight: 700; }
+
     /* === Difficulty picker (caregiver) === */
     .modal-sub { font-size: 14px; color: #8a8a96; margin-top: -4px; }
     .diff-cards {
@@ -623,6 +668,18 @@
 
   <!-- Reward: per-location star meters (breadth) -->
   <div class="loc-stars" id="loc-stars"></div>
+
+  <!-- Top-left scene bar: each pill = a scene -->
+  <div class="scene-bar" id="scene-bar"></div>
+  <!-- Topic map for the selected scene (hidden until a scene pill is clicked) -->
+  <div class="topic-panel hidden" id="topic-panel">
+    <div class="topic-panel-head">
+      <span id="topic-panel-title">Topics</span>
+      <button id="topic-panel-close" aria-label="close">×</button>
+    </div>
+    <div class="topic-list" id="topic-list"></div>
+    <div class="topic-legend" id="topic-legend"></div>
+  </div>
 
   <span class="progress" id="progress">★ 0/12</span>
 
@@ -1735,6 +1792,101 @@
     markVisited();
     applyDifficulty();
     animate();
+
+    /* ===== Top-left scene bar + per-scene topic map (caregiver) =====
+       Self-contained: does not touch the bear / map / POE flow.
+       Curated/frozen tables — researchers edit only these. */
+    (function () {
+      const SCENES = [
+        { id: 'playground', ico: '🛝', label: 'Playground' },
+        { id: 'classroom',  ico: '🏫', label: 'Classroom' },
+        { id: 'cafeteria',  ico: '🍽️', label: 'Cafeteria' },
+        { id: 'park',       ico: '🌳', label: 'Park' },
+      ];
+      const TOPICS = [
+        { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', atoms: ['Notice feeling', 'Approach', 'Offer comfort'] },
+        { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    atoms: ['Approach', 'Open', 'Handle response'] },
+        { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', atoms: ['Notice', 'Ask to join', 'Fit in'] },
+        { id: 'handle_conflict',emoji: '🤝', label: 'Handle conflict',  atoms: ['Stay calm', 'Express', 'Repair / retry'] },
+        { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',     atoms: ['Recognize need', 'Find someone', 'Ask clearly'] },
+        { id: 'take_turns',     emoji: '🔁', label: 'Take turns',       atoms: ['Wait', 'Watch the cue', 'Take the turn'] },
+      ];
+      const SCENE_TOPICS = {
+        playground: { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'full',    ask_help: 'prune', take_turns: 'full' },
+        classroom:  { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'full',    ask_help: 'full',  take_turns: 'full' },
+        cafeteria:  { comfort_friend: 'full', make_friends: 'trigger', join_activity: 'none', handle_conflict: 'prune',   ask_help: 'full',  take_turns: 'full' },
+        park:       { comfort_friend: 'full', make_friends: 'full',    join_activity: 'full', handle_conflict: 'trigger', ask_help: 'full',  take_turns: 'full' },
+      };
+      const TOPIC_PLAYABLE = { comfort_friend: true };
+      const AFFORDANCE_META = {
+        full:    { symbol: '✓',  label: 'Fits here' },
+        prune:   { symbol: '△ᵖ', label: 'Partly' },
+        trigger: { symbol: '△ᵗ', label: 'If a moment comes up' },
+        none:    { symbol: '✗',  label: "Doesn't happen here" },
+      };
+      const affOf = (s, t) => (SCENE_TOPICS[s] && SCENE_TOPICS[s][t]) || 'none';
+      const isPlayable = (s, t) => !!TOPIC_PLAYABLE[t] && affOf(s, t) !== 'none';
+
+      const $bar = document.getElementById('scene-bar');
+      const $panel = document.getElementById('topic-panel');
+      const $list = document.getElementById('topic-list');
+      const $legend = document.getElementById('topic-legend');
+      const $title = document.getElementById('topic-panel-title');
+      let activeScene = null;
+
+      SCENES.forEach((s) => {
+        const b = document.createElement('button');
+        b.className = 'scene-pill';
+        b.dataset.scene = s.id;
+        b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}`;
+        b.addEventListener('click', () => selectScene(s.id));
+        $bar.appendChild(b);
+      });
+
+      $legend.innerHTML = ['full', 'prune', 'trigger', 'none']
+        .map((a) => `<span><span class="aff-sym">${AFFORDANCE_META[a].symbol}</span> ${AFFORDANCE_META[a].label}</span>`)
+        .join('');
+
+      function selectScene(id) {
+        if (activeScene === id) { closePanel(); return; }   // click active pill again → close
+        activeScene = id;
+        [...$bar.children].forEach((p) => p.classList.toggle('active', p.dataset.scene === id));
+        const scene = SCENES.find((s) => s.id === id);
+        $title.textContent = `${scene.ico} ${scene.label} — social topics`;
+        renderTopics(id);
+        $panel.classList.remove('hidden');
+      }
+      function closePanel() {
+        activeScene = null;
+        [...$bar.children].forEach((p) => p.classList.remove('active'));
+        $panel.classList.add('hidden');
+      }
+      function renderTopics(sceneId) {
+        $list.innerHTML = '';
+        TOPICS.forEach((t) => {
+          const aff = affOf(sceneId, t.id);
+          const meta = AFFORDANCE_META[aff];
+          const play = isPlayable(sceneId, t.id);
+          const b = document.createElement('button');
+          b.className = `topic-btn ${aff}` + (play ? ' playable' : '');
+          b.disabled = aff === 'none';
+          b.innerHTML =
+            `<span class="topic-emoji">${t.emoji}</span>` +
+            `<span class="topic-main">` +
+              `<span class="topic-name">${t.label}` + (play ? `<span class="topic-play">▶ Playable</span>` : '') + `</span>` +
+              `<span class="topic-atoms">${t.atoms.join(' · ')}</span>` +
+            `</span>` +
+            `<span class="aff-sym" title="${meta.label}">${meta.symbol}</span>`;
+          b.addEventListener('click', () => {
+            if (aff === 'none') return;
+            [...$list.children].forEach((x) => x.classList.remove('chosen'));
+            b.classList.add('chosen');
+          });
+          $list.appendChild(b);
+        });
+      }
+      document.getElementById('topic-panel-close').addEventListener('click', closePanel);
+    })();
   </script>
 </body>
 </html>
