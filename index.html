@@ -489,6 +489,17 @@
     .aoi-fill { display: block; height: 100%; border-radius: 6px; }
     .aoi-val { width: 40px; text-align: right; font-weight: 600; flex: 0 0 auto; }
 
+    /* === Reward banner on the reflect (tree) step === */
+    .tree-reward { position: relative; display: none; text-align: center; margin: 2px auto 8px; min-height: 84px; }
+    .tree-reward.show { display: block; }
+    .tree-reward .tr-star { font-size: 56px; line-height: 1; display: inline-block; animation: tr-pop 0.6s cubic-bezier(.2, 1.4, .4, 1) both; }
+    .tree-reward .tr-stars { font-size: 26px; letter-spacing: 5px; margin-top: 2px; animation: tr-pop 0.6s 0.12s cubic-bezier(.2, 1.4, .4, 1) both; }
+    .tree-reward .tr-msg { font-size: 19px; font-weight: 800; color: #e8804f; margin-top: 3px; animation: tr-rise 0.5s 0.2s ease both; }
+    .tree-reward .tr-spark { position: absolute; left: 50%; top: 28px; font-size: 22px; pointer-events: none; animation: tr-spark 0.9s ease forwards; }
+    @keyframes tr-pop  { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.25) rotate(8deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    @keyframes tr-rise { 0% { transform: translateY(8px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+    @keyframes tr-spark { 0% { transform: translate(-50%, 0) scale(.4); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), var(--dy)) scale(1.1); opacity: 0; } }
+
     /* === Reward: per-location star meters on the map (breadth) === */
     .loc-stars { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
     .loc-star {
@@ -801,6 +812,7 @@
 
       <!-- Step 4: reflect — possibility tree -->
       <div id="poe-step-tree" class="poe-step hidden">
+        <div id="tree-reward" class="tree-reward"></div>
         <p class="poe-cue">Your story tree 🌳</p>
         <div class="tree-wrap">
           <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 380" aria-label="possibility tree"></svg>
@@ -1545,6 +1557,32 @@
       saveGuess(id, pendingChoice || 'a', pendingPrediction || 'neutral');
       renderTree(id, pendingChoice || 'a');
       showStep('tree');
+      const matched = (pendingPrediction || 'neutral') === normFor(id).emotion;
+      showTreeReward(matched);
+    }
+
+    /* ===== Reward on the reflect step ===== */
+    function showTreeReward(matched) {
+      const el = document.getElementById('tree-reward');
+      if (!el) return;
+      el.innerHTML = matched
+        ? '<div class="tr-star">⭐</div><div class="tr-stars">⭐ ⭐ ⭐</div><div class="tr-msg">You guessed it! Amazing!</div>'
+        : '<div class="tr-star">🌱</div><div class="tr-stars">⭐</div><div class="tr-msg">Nice exploring — you found a new path!</div>';
+      el.classList.remove('show');
+      void el.offsetWidth;            // restart the pop animation
+      el.classList.add('show');
+      // sparkle burst around the star
+      const n = 8, r = 72;
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement('span');
+        s.className = 'tr-spark';
+        s.textContent = '✨';
+        const a = (Math.PI * 2 * i) / n;
+        s.style.setProperty('--dx', (Math.cos(a) * r).toFixed(0) + 'px');
+        s.style.setProperty('--dy', (Math.sin(a) * r - 10).toFixed(0) + 'px');
+        el.appendChild(s);
+        setTimeout(() => s.remove(), 950);
+      }
     }
 
     document.getElementById('out-done').addEventListener('click', goToTree);
