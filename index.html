@@ -763,6 +763,10 @@
             <img class="action-icon" src="assets/actions/ignore.png" alt="">
             <span>Ignore them</span>
           </button>
+          <button class="poe-choice action-btn" data-choice="d">
+            <img class="action-icon" src="assets/actions/ask.png" alt="">
+            <span>Ask for help</span>
+          </button>
         </div>
       </div>
 
@@ -1116,6 +1120,7 @@
       a: { icon: 'assets/actions/comfort.png', label: 'Comfort them' },
       b: { icon: 'assets/actions/joke.png', label: 'Crack a joke' },
       c: { icon: 'assets/actions/ignore.png', label: 'Ignore them' },
+      d: { icon: 'assets/actions/ask.png', label: 'Ask for help' },  // PLACEHOLDER 4th action
     };
     const EMOTION_LABEL = {
       happy: 'Happy', sad: 'Sad', angry: 'Angry',
@@ -1129,6 +1134,7 @@
       a: 'assets/videos/outcome_a.mp4',
       b: 'assets/videos/outcome_b.mp4',
       c: 'assets/videos/outcome_c.mp4',
+      d: 'assets/videos/outcome_a.mp4',  // PLACEHOLDER — needs its own outcome video
     };
 
     // Zone close-up images + 3 path hotspot positions per zone.
@@ -1216,12 +1222,15 @@
        how many actions + emotions the child sees. Pools are ORDERED so a higher
        level reveals the more confusable options. Experts edit only the tables. */
     const EMOTION_POOL = ['happy','sad','angry','confused','scared','neutral']; // distinct → confusable
-    const ACTION_POOL  = ['a','b','c'];  // comfort, joke, ignore (most complex last)
-    // v0: action count == reaction count (kept consistent). Ceiling = 3 actions
-    // available, so two levels for now; a 3rd (4/4) needs a new action + outcome.
+    const ACTION_POOL  = ['a','b','c','d'];  // comfort, joke, ignore, (4th = placeholder)
+    // action count == reaction count. 3 levels: 2 / 3 / 4 options.
+    // ⚠ The 4-option level needs a real 4th action — icon + outcome video +
+    // meaning. 'd' is a PLACEHOLDER (icon assets/actions/ask.png, outcome reuses
+    // outcome_a.mp4). Replace with real content.
     const DIFFICULTY_LEVELS = [
-      { id: 1, label: 'Gentle', actions: 2, emotions: 2 },
-      { id: 2, label: 'Core',   actions: 3, emotions: 3 },
+      { id: 1, label: 'Gentle',  actions: 2, emotions: 2 },
+      { id: 2, label: 'Core',    actions: 3, emotions: 3 },
+      { id: 3, label: 'Stretch', actions: 4, emotions: 4 },
     ];
     // Future axes (cueAmbiguity / tomOrder / hintAmount / socialComplexity /
     // independent emotionGranularity): add as new per-level columns once experts
