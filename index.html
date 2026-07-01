@@ -688,6 +688,7 @@
     <button id="gaze-toggle" style="display:none;">Show Gaze ●</button>
     <button id="diff-start">Difficulty</button>
     <button id="report-open">Report</button>
+    <button id="author-open" title="专家生成台(需本地运行 expert_ui.py)">✨ Author</button>
     <button id="reset-progress">Reset</button>
   </div>
 
@@ -1941,6 +1942,13 @@
     $modal.addEventListener('click', (e) => { if (e.target === $modal) $modal.classList.add('hidden'); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') $modal.classList.add('hidden');
+    });
+    document.getElementById('author-open').addEventListener('click', () => {
+      // Expert generation studio — runs locally (python expert_ui.py in VIDEOASD-backend)
+      const w = window.open('http://localhost:5055', '_blank');
+      setTimeout(() => {
+        if (!w || w.closed) alert('请先在本地启动专家生成台:\n  cd VIDEOASD-backend && python3 expert_ui.py\n然后再点这里。');
+      }, 800);
     });
     document.getElementById('reset-progress').addEventListener('click', () => {
       visited.clear();
