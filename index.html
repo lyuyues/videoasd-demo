@@ -1180,6 +1180,14 @@
           c: { label: '挤过去自己玩',     action: CB + 'playground_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'playground_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
+      classroom_make_friends: {
+        context: CB + 'classroom_make_friends/context_sam-plays_alex-watches.mp4',
+        options: {
+          a: { label: '走过去打招呼', action: CB + 'classroom_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'classroom_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: '站在旁边看',   action: CB + 'classroom_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'classroom_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: '直接拿玩具',   action: CB + 'classroom_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'classroom_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+        },
+      },
     };
     let currentClips = null;
     const $actVideo = document.getElementById('act-video');
@@ -1946,9 +1954,9 @@
           { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 56 },
         ] },
         { id: 'classroom', ico: '🏫', label: 'Classroom', img: 'assets/zones/classroom.png', topics: [
-          { id: 'take_turns',     emoji: '🔁', label: 'Take turns',      x: 28, y: 58 },
-          { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',    x: 52, y: 50 },
-          { id: 'handle_conflict',emoji: '🤝', label: 'Handle conflict', x: 74, y: 60 },
+          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 28, y: 58 },
+          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 52, y: 50 },
+          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 60 },
         ] },
         { id: 'cafeteria', ico: '🍽️', label: 'Cafeteria', img: 'assets/zones/cafeteria.png', topics: [
           { id: 'take_turns',     emoji: '🔁', label: 'Take turns',     x: 30, y: 56 },
