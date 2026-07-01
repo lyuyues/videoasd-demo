@@ -1196,6 +1196,22 @@
           c: { label: '挤过去自己玩',     action: CB + 'classroom_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'classroom_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
+      cafeteria_make_friends: {
+        context: CB + 'cafeteria_make_friends/context_sam-plays_alex-watches.mp4',
+        options: {
+          a: { label: '走过去打招呼', action: CB + 'cafeteria_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'cafeteria_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: '站在旁边看',   action: CB + 'cafeteria_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'cafeteria_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: '直接拿玩具',   action: CB + 'cafeteria_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'cafeteria_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+        },
+      },
+      cafeteria_join_activity: {
+        context: CB + 'cafeteria_join_activity/context_sam-builds_alex-watches.mp4',
+        options: {
+          a: { label: '问能不能一起玩',   action: CB + 'cafeteria_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'cafeteria_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: '站在旁边不敢过去', action: CB + 'cafeteria_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'cafeteria_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: '挤过去自己玩',     action: CB + 'cafeteria_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'cafeteria_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+        },
+      },
     };
     let currentClips = null;
     const $actVideo = document.getElementById('act-video');
@@ -1967,9 +1983,9 @@
           { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 60 },
         ] },
         { id: 'cafeteria', ico: '🍽️', label: 'Cafeteria', img: 'assets/zones/cafeteria.png', topics: [
-          { id: 'take_turns',     emoji: '🔁', label: 'Take turns',     x: 30, y: 56 },
-          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',  x: 54, y: 49 },
-          { id: 'ask_help',       emoji: '🆘', label: 'Ask for help',   x: 74, y: 58 },
+          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 30, y: 56 },
+          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 54, y: 49 },
+          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 58 },
         ] },
         { id: 'park', ico: '🌳', label: 'Park', img: 'assets/zones/park.png', topics: [
           { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 30, y: 54 },
