@@ -770,6 +770,12 @@
         </div>
       </div>
 
+      <!-- Step 2a: action clip — Alex does the chosen action -->
+      <div id="poe-step-actplay" class="poe-step hidden">
+        <video id="act-video" class="poe-video" playsinline></video>
+        <p class="poe-cue">看看你做了什么…</p>
+      </div>
+
       <!-- Step 2b: predict emotion -->
       <div id="poe-step-predict" class="poe-step hidden">
         <p class="poe-cue">How do you think <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> will feel after?</p>
@@ -1110,6 +1116,7 @@
     const $ctxStep = document.getElementById('poe-step-context');
     const $chooseStep = document.getElementById('poe-step-choose');
     const $actionStep = document.getElementById('poe-step-action');
+    const $actplayStep = document.getElementById('poe-step-actplay');
     const $predictStep = document.getElementById('poe-step-predict');
     const $confirmStep = document.getElementById('poe-step-confirm');
     const $outStep = document.getElementById('poe-step-outcome');
@@ -1136,6 +1143,30 @@
       c: 'assets/videos/outcome_c.mp4',
       d: 'assets/videos/outcome_a.mp4',  // PLACEHOLDER — needs its own outcome video
     };
+
+    // ── Per-(scene,topic) 3-segment clips: context → action(Alex) → reaction(Sam) ──
+    // Topics not listed here fall back to the legacy global context + OUTCOME_MAP flow.
+    const CB = 'assets/videos/clips/';
+    const CLIPS = {
+      park_make_friends: {
+        context: CB + 'park_make_friends/context_sam-plays_alex-watches.mp4',
+        options: {
+          a: { label: '走过去打招呼', action: CB + 'park_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'park_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: '站在旁边看',   action: CB + 'park_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'park_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: '直接拿玩具',   action: CB + 'park_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'park_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+        },
+      },
+      park_join_activity: {
+        context: CB + 'park_join_activity/context_sam-builds_alex-watches.mp4',
+        options: {
+          a: { label: '问能不能一起玩',   action: CB + 'park_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'park_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: '站在旁边不敢过去', action: CB + 'park_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'park_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: '挤过去自己玩',     action: CB + 'park_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'park_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+        },
+      },
+    };
+    let currentClips = null;
+    const $actVideo = document.getElementById('act-video');
 
     // Zone close-up images + 3 path hotspot positions per zone.
     // Positions are eyeballed from the generated 1024x1024 isometric images;
@@ -1199,6 +1230,7 @@
       context: 'interpret',
       choose:  'action',     // legacy path-picker step (unused in single-layer)
       action:  'action',     // pick your action
+      actplay: 'action',     // watch Alex do the action
       predict: 'reaction',   // predict the other's reaction
       confirm: 'reaction',   // lock in both predictions
       outcome: 'reflect',    // watch actual outcome (Reveal)
@@ -1209,6 +1241,7 @@
       $ctxStep.classList.toggle('hidden', which !== 'context');
       $chooseStep.classList.toggle('hidden', which !== 'choose');
       $actionStep.classList.toggle('hidden', which !== 'action');
+      $actplayStep.classList.toggle('hidden', which !== 'actplay');
       $predictStep.classList.toggle('hidden', which !== 'predict');
       $confirmStep.classList.toggle('hidden', which !== 'confirm');
       $outStep.classList.toggle('hidden', which !== 'outcome');
@@ -1362,10 +1395,13 @@
       $modal.dataset.locId = loc.id;
       // Action choice gets picked inside modal at the action step
       pendingChoice = null;
+      const key = loc.topic ? `${loc.id}_${loc.topic}` : null;
+      currentClips = (key && CLIPS[key]) ? CLIPS[key] : null;
       $modal.classList.remove('hidden');
       // Start at context step
       showStep('context');
-      $ctxVideo.src = 'assets/videos/context.mp4';
+      $ctxVideo.src = currentClips ? currentClips.context : 'assets/videos/context.mp4';
+      $ctxVideo.muted = !currentClips;   // new clips carry dialogue → unmute
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
       startGazeCap(loc.id, 'context', $ctxVideo);
@@ -1397,15 +1433,58 @@
       $ctxVideo.pause();
       stopGazeCap();
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+      applyTopicActions();
       showStep('action');
     });
 
-    // Action picker: set pendingChoice then go to predict
+    // For clip-backed topics, relabel the 3 action buttons from the topic options.
+    function applyTopicActions() {
+      const btns = document.querySelectorAll('#poe-step-action .action-btn');
+      const grid = document.querySelector('#poe-step-action .poe-choices');
+      if (currentClips) {
+        ['a', 'b', 'c'].forEach((ch, i) => {
+          const b = btns[i], o = currentClips.options[ch];
+          if (!b) return;
+          b.style.display = o ? '' : 'none';
+          if (o) {
+            const span = b.querySelector('span'); if (span) span.textContent = o.label;
+            const img = b.querySelector('img'); if (img) img.style.display = 'none';
+          }
+        });
+        if (btns[3]) btns[3].style.display = 'none';
+        if (grid) grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      } else {
+        // Restore legacy labels/icons (a previous clip topic may have changed them)
+        ['a', 'b', 'c', 'd'].forEach((ch, i) => {
+          const b = btns[i], info = ACTION_INFO[ch];
+          if (!b || !info) return;
+          const span = b.querySelector('span'); if (span) span.textContent = info.label;
+          const img = b.querySelector('img'); if (img) { img.style.display = ''; img.src = info.icon; }
+        });
+        applyDifficulty();   // restore per-difficulty visible count
+      }
+    }
+
+    // Action picker: play the action clip (clip topics) then go to predict.
     document.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         pendingChoice = btn.dataset.choice;
-        showStep('predict');
+        const opt = currentClips && currentClips.options[pendingChoice];
+        if (opt) {
+          $actVideo.src = opt.action;
+          $actVideo.muted = false;
+          $actVideo.currentTime = 0;
+          showStep('actplay');
+          $actVideo.play().catch(() => {});
+        } else {
+          showStep('predict');
+        }
       });
+    });
+    // Action clip finished → predict Sam's emotion
+    $actVideo.addEventListener('ended', () => {
+      document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+      showStep('predict');
     });
     document.querySelectorAll('.path-hotspot').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1448,7 +1527,9 @@
 
     // Lock it in: commit the choices and play the matching outcome
     document.getElementById('confirm-lock').addEventListener('click', () => {
-      $outVideo.src = OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a;
+      const opt = currentClips && currentClips.options[pendingChoice];
+      $outVideo.src = opt ? opt.reaction : (OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a);
+      $outVideo.muted = !opt;   // reaction clips carry dialogue → unmute
       $outVideo.currentTime = 0;
       showStep('outcome');
       $outVideo.play().catch(() => {});
@@ -1886,7 +1967,7 @@
           b.style.top = t.y + '%';
           b.innerHTML = `<span class="ts-ring">${t.emoji}</span><span class="ts-label">${t.label}</span>`;
           // Enter the existing POE flow for this scene (topic carried as the title)
-          b.addEventListener('click', () => openModal({ id: scene.id, label: t.label }));
+          b.addEventListener('click', () => openModal({ id: scene.id, label: t.label, topic: t.id }));
           $circles.appendChild(b);
         });
       }
