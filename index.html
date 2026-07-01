@@ -1188,6 +1188,14 @@
           c: { label: '直接拿玩具',   action: CB + 'classroom_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'classroom_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
         },
       },
+      classroom_join_activity: {
+        context: CB + 'classroom_join_activity/context_sam-builds_alex-watches.mp4',
+        options: {
+          a: { label: '问能不能一起玩',   action: CB + 'classroom_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'classroom_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: '站在旁边不敢过去', action: CB + 'classroom_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'classroom_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: '挤过去自己玩',     action: CB + 'classroom_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'classroom_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+        },
+      },
     };
     let currentClips = null;
     const $actVideo = document.getElementById('act-video');
