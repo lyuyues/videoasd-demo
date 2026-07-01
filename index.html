@@ -1164,6 +1164,14 @@
           c: { label: '挤过去自己玩',     action: CB + 'park_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'park_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
+      playground_make_friends: {
+        context: CB + 'playground_make_friends/context_sam-plays_alex-watches.mp4',
+        options: {
+          a: { label: '走过去打招呼', action: CB + 'playground_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'playground_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: '站在旁边看',   action: CB + 'playground_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'playground_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: '直接拿玩具',   action: CB + 'playground_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'playground_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+        },
+      },
     };
     let currentClips = null;
     const $actVideo = document.getElementById('act-video');
