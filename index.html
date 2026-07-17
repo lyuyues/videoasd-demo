@@ -1069,6 +1069,10 @@
     let walkTarget = null;
     let pendingLoc = null;
     const visited = new Set(JSON.parse(localStorage.getItem('videoasd_visited_v5') || '[]'));
+    // Session progress is per (scene, topic) — 4 scenes x 3 topics = 12. A topic
+    // counts as done once the child has finished one full PRR round there.
+    const doneTopics = new Set(JSON.parse(localStorage.getItem('videoasd_done_topics_v1') || '[]'));
+    const TOPIC_TOTAL = 12;
 
     /* ===== Hotspot click handlers ===== */
     document.querySelectorAll('.hotspot').forEach((el) => {
@@ -1477,6 +1481,10 @@
       // Action choice gets picked inside modal at the action step
       pendingChoice = null;
       const key = loc.topic ? `${loc.id}_${loc.topic}` : null;
+      // The possibility tree and its stars belong to the (scene, topic) pair, not
+      // the scene — sharing a scene's store across its 3 topics would let one
+      // topic's branches sprout in another's tree.
+      $modal.dataset.constructId = key || loc.id;
       currentClips = (key && CLIPS[key]) ? CLIPS[key] : null;
       $modal.classList.remove('hidden');
       // Start at context step
@@ -1489,10 +1497,15 @@
     }
     function commitAndClose() {
       const id = $modal.dataset.locId;
+      const cid = $modal.dataset.constructId;
+      if (cid) {
+        doneTopics.add(cid);
+        localStorage.setItem('videoasd_done_topics_v1', JSON.stringify([...doneTopics]));
+      }
       if (id) {
         visited.add(id);
         localStorage.setItem('videoasd_visited_v5', JSON.stringify([...visited]));
-        logRound(id);
+        logRound(cid || id);
         updateProgress();
         markVisited();
       }
@@ -1634,16 +1647,20 @@
     const SVGNS = 'http://www.w3.org/2000/svg';
     const XLINK = 'http://www.w3.org/1999/xlink';
 
-    // Social norm per case: the canonical action -> reaction for this scenario.
-    // PLACEHOLDER values — researcher should set these per scenario.
+    // Social norm per case: the canonical action -> reaction. The norm belongs to
+    // the topic (what the social situation calls for), not the scene it plays in —
+    // comforting a friend reads the same in the park as in the cafeteria. Keyed by
+    // topic; add a full `scene_topic` key to override one scene's case.
+    // PLACEHOLDER values — researcher should set these per case.
     const CONSTRUCT_NORM = {
-      playground: { action: 'a', emotion: 'happy' },
-      classroom:  { action: 'a', emotion: 'happy' },
-      cafeteria:  { action: 'a', emotion: 'happy' },
-      park:       { action: 'a', emotion: 'happy' },
-      _default:   { action: 'a', emotion: 'happy' },
+      make_friends:   { action: 'a', emotion: 'happy' },
+      join_activity:  { action: 'a', emotion: 'happy' },
+      comfort_friend: { action: 'a', emotion: 'happy' },
+      _default:       { action: 'a', emotion: 'happy' },
     };
-    const normFor = (id) => CONSTRUCT_NORM[id] || CONSTRUCT_NORM._default;
+    const topicOf = (id) => String(id).split('_').slice(1).join('_');
+    const normFor = (id) =>
+      CONSTRUCT_NORM[id] || CONSTRUCT_NORM[topicOf(id)] || CONSTRUCT_NORM._default;
 
     const treeKey = (id) => 'videoasd_tree_' + id;
     function loadGuesses(id) {
@@ -1732,7 +1749,7 @@
     function goToTree() {
       $outVideo.pause();
       stopGazeCap();
-      const id = $modal.dataset.locId || '_default';
+      const id = $modal.dataset.constructId || $modal.dataset.locId || '_default';
       saveGuess(id, pendingChoice || 'a', pendingPrediction || 'neutral');
       renderTree(id, pendingChoice || 'a');
       showStep('tree');
@@ -1906,20 +1923,21 @@
       if (e.target === $reportModal) $reportModal.classList.add('hidden');
     });
 
-    // Reward: depth = the possibility tree; breadth = per-location stars on the
-    // map. Stars at a location = distinct actions explored there (tree branches).
-    // Rewards exploration, never correctness. Full = "bloom".
-    const STAR_MAX = 3;  // full action set
+    // Reward: depth = the possibility tree inside one topic (how many actions the
+    // child tried there); breadth = per-scene stars on the map. Stars at a scene =
+    // topics completed there, of 3. Rewards exploration, never correctness.
+    // Full = "bloom". 4 scenes x 3 topics = the 12 in the counter.
+    const STAR_MAX = 3;  // topics per scene
     const LOC_CENTERS = {
       playground: [20, 46], classroom: [42, 40], cafeteria: [62, 42], park: [84, 46],
     };
     const $locStars = document.getElementById('loc-stars');
+    const topicsDoneIn = (loc) => [...doneTopics].filter((t) => t.startsWith(loc + '_')).length;
+    const sceneComplete = (loc) => topicsDoneIn(loc) >= STAR_MAX;
     function updateProgress() {
-      let total = 0;
       if ($locStars) $locStars.innerHTML = '';
       Object.entries(LOC_CENTERS).forEach(([loc, [x, y]]) => {
-        const n = Object.keys(loadGuesses(loc)).length;   // distinct actions explored here
-        total += n;
+        const n = topicsDoneIn(loc);
         if (!$locStars) return;
         const full = n >= STAR_MAX;
         const badge = document.createElement('div');
@@ -1931,7 +1949,7 @@
           (full ? '<span class="ls-bloom">🌸 full!</span>' : '');
         $locStars.appendChild(badge);
       });
-      $progress.textContent = `★ ${total}/12`;
+      $progress.textContent = `★ ${doneTopics.size}/${TOPIC_TOTAL}`;
     }
     function markVisited() {
       document.querySelectorAll('.hotspot').forEach((el) => {
@@ -1952,7 +1970,9 @@
     });
     document.getElementById('reset-progress').addEventListener('click', () => {
       visited.clear();
+      doneTopics.clear();
       localStorage.removeItem('videoasd_visited_v5');
+      localStorage.removeItem('videoasd_done_topics_v1');
       // also clear every accumulated possibility tree
       Object.keys(localStorage)
         .filter((k) => k.startsWith('videoasd_tree_'))
