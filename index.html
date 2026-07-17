@@ -663,32 +663,12 @@
     }
     .setup-foot { font-size: 11px; color: #b0b0bc; text-align: center; margin: 12px 0 0; }
 
-    /* Locked scenes: visible so the map stays whole, but not a choice to make.
-       A lock glyph, not just grey — grey alone reads as "loading" or "broken",
-       and a tap that does nothing without saying why is indistinguishable from
-       a bug. Tapping one nudges and explains. */
-    .scene-pill.locked { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
-    .scene-pill.locked:hover { transform: none; }
-    .scene-pill.locked .scene-ico { visibility: hidden; }
-    .scene-pill.locked .scene-ico::after {
-      content: '🔒'; visibility: visible; position: absolute; font-size: 15px;
-    }
-    .scene-pill.locked.nudge { animation: pillNudge 0.32s ease; }
-    @keyframes pillNudge {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-3px); } 75% { transform: translateX(3px); }
-    }
+    /* Every place is selectable. The suggested one — where the child left off —
+       is only highlighted, never enforced. */
     .scene-pill.today { border-color: #e8804f; box-shadow: 0 0 0 4px rgba(232, 128, 79, 0.18); }
-
-    /* Toast: says why a locked place didn't open */
-    .toast {
-      position: fixed; top: 66px; left: 14px; z-index: 13;
-      background: rgba(58, 58, 68, 0.94); color: #fff;
-      padding: 9px 15px; border-radius: 14px; font-size: 13px; font-weight: 600;
-      pointer-events: none; opacity: 0; transform: translateY(-6px);
-      transition: opacity .18s, transform .18s;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
+    /* Progress per place, so switching around still shows what's left */
+    .scene-pill .pill-stars { font-size: 9px; color: #ffb56a; letter-spacing: -1px; margin-left: 2px; }
+    .scene-pill.complete .pill-stars { color: #7fc164; }
 
     /* Invisible long-press target back to the grown-up controls */
     #parent-tab { position: fixed; top: 0; right: 0; width: 64px; height: 64px; z-index: 11; }
@@ -773,7 +753,6 @@
   <div class="scene-bar" id="scene-bar"></div>
 
   <span class="progress" id="progress">★ 0/12</span>
-  <div class="toast" id="toast"></div>
 
   <!-- Grown-up controls. Hidden while the child plays; reached by long-pressing
        the top-right corner (#parent-tab) so a stray tap can't open it. -->
@@ -2170,21 +2149,24 @@
       const $stars = document.getElementById('loc-stars');
       let active = null;
 
-      /* ===== Which scene is today's =====
-         One scene per sitting: the first one the child hasn't finished. Picked
-         once when the page loads and held for the sitting, so finishing today's
-         last topic doesn't silently move the goalposts. Every other scene is
-         locked, so on the map there is exactly one thing to tap. */
+      /* ===== Where the child picks up =====
+         The first scene they haven't finished. Computed once on load and held,
+         so finishing its last topic doesn't move the highlight mid-sitting. It's
+         a suggestion — the gate opens straight into it, and every other place
+         stays one tap away. */
       const firstUnfinished = () => (SCENES.find((s) => !sceneComplete(s.id)) || SCENES[0]).id;
       const todayScene = firstUnfinished();
       const sceneById = (id) => SCENES.find((s) => s.id === id);
 
       function renderPills() {
         [...$bar.children].forEach((p) => {
-          const isToday = p.dataset.scene === todayScene;
-          p.classList.toggle('locked', !isToday);
-          p.classList.toggle('today', isToday && active !== todayScene);
-          p.classList.toggle('active', p.dataset.scene === active);
+          const id = p.dataset.scene;
+          const n = topicsDoneIn(id);
+          p.classList.toggle('today', id === todayScene && active !== todayScene);
+          p.classList.toggle('active', id === active);
+          p.classList.toggle('complete', n >= STAR_MAX);
+          const stars = p.querySelector('.pill-stars');
+          if (stars) stars.textContent = '★'.repeat(n) + '☆'.repeat(STAR_MAX - n);
         });
       }
       function renderCircles(scene) {
@@ -2224,50 +2206,45 @@
         const b = document.createElement('button');
         b.className = 'scene-pill';
         b.dataset.scene = s.id;
-        b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}`;
+        b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}` +
+                      `<span class="pill-stars"></span>`;
+        // Any place, any time. Tapping the one you're in backs out to the town.
         b.addEventListener('click', () => {
-          if (s.id !== todayScene) { explainLocked(b, s); return; }
-          if (active === s.id) { exitScene(); }
-          else { enterScene(s); }
+          if (active === s.id) exitScene();
+          else enterScene(s);
         });
         $bar.appendChild(b);
       });
-
-      // A locked place has to say why it didn't open, or it just reads as broken.
-      const $toast = document.getElementById('toast');
-      let toastTimer = null;
-      function explainLocked(pill, scene) {
-        pill.classList.remove('nudge');
-        void pill.offsetWidth;                   // restart the animation
-        pill.classList.add('nudge');
-        $toast.textContent = `${sceneById(todayScene).label} first — then ${scene.label} opens 🔒`;
-        $toast.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => $toast.classList.remove('show'), 2200);
-      }
 
       /* ===== End of a sitting =====
          Fires when today's scene has all 3 topics done. Called back from the PRR
          flow via onTopicDone so the map, the circles and the gate stay in step. */
       const $doneScreen = document.getElementById('done-screen');
       function refreshAfterRound() {
-        if (active) renderCircles(sceneById(active));
+        const here = active;
+        if (here) renderCircles(sceneById(here));
         renderPills();
-        if (sceneComplete(todayScene)) showDoneScreen();
+        // Celebrate the place the child is actually in — they can roam freely,
+        // so it isn't necessarily the one they started the sitting in.
+        if (here && sceneComplete(here)) showDoneScreen(here);
       }
-      function showDoneScreen() {
+      function showDoneScreen(sceneId) {
         const all = doneTopics.size >= TOPIC_TOTAL;
+        const next = SCENES.find((s) => !sceneComplete(s.id));
         document.getElementById('done-emoji').textContent = all ? '🏆' : '🌸';
         document.getElementById('done-title').textContent =
           all ? 'You explored every place!' : 'All done here!';
         document.getElementById('done-sub').textContent = all
           ? `${TOPIC_TOTAL} of ${TOPIC_TOTAL} stories explored.`
-          : `${sceneById(todayScene).label} is complete — ${doneTopics.size} of ${TOPIC_TOTAL} stories so far.`;
+          : `${sceneById(sceneId).label} is complete — ${doneTopics.size} of ${TOPIC_TOTAL} stories so far.` +
+            (next ? ` Next up: ${next.label}.` : '');
         $doneScreen.classList.remove('hidden');
       }
       document.getElementById('done-back').addEventListener('click', () => {
         $doneScreen.classList.add('hidden');
-        exitScene();
+        // Move them on to somewhere with something left to do.
+        const next = SCENES.find((s) => !sceneComplete(s.id));
+        if (next) enterScene(next); else exitScene();
       });
       window.__onTopicDone = refreshAfterRound;
 
@@ -2311,7 +2288,9 @@
 
       document.getElementById('setup-done').addEventListener('click', () => {
         $setup.classList.add('hidden');
-        if (sceneComplete(todayScene)) showDoneScreen();
+        // Open straight into the place the child left off, not the town overview:
+        // the topic circles are the actual choice, and the town is a detour.
+        enterScene(sceneById(todayScene));
       });
 
       /* ===== Grown-up controls: long-press the top-right corner ===== */

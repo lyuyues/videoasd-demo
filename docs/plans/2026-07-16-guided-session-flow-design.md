@@ -43,10 +43,8 @@ cross-contaminate each other's stars and fruit.
     ├ Gaze calibration    [Calibrate] / [Skip]
     └ Make a scene        [✨ Author] / [Skip → use prepared scenes]
                           ↓ "Hand the iPad to your child →"
-[1] Map                   child-facing, toolbar hidden
-    4 scenes on a path; only the next unlocked one is lit
-                          ↓ tap the lit scene
-[2] Scene                 3 topic circles, freely chosen
+[1] Scene                 child-facing, toolbar hidden — opens here directly
+    3 topic circles; the pill bar switches place at any time
                           ↓ tap a topic
 [3] PRR loop              per topic, ≤3 rounds
     context → notice(A) → pick action → predict reaction
@@ -55,13 +53,21 @@ cross-contaminate each other's stars and fruit.
 [4] Done                  4 scenes complete → end screen
 ```
 
-**Unlock granularity (chosen: A).** Scenes are levels, unlocked in order; topics inside a scene are
-freely chosen. At the map level the child has nothing to deliberate over (one scene is lit); inside a
-scene they get 3 concrete, illustrated choices. This preserves agency — the framing calls the child a
-"cognitive agent", so a fully rails-ed flow would be self-defeating — while removing the "what do I tap
-first" problem. **One session = one scene** (~10–15 min); progress persists in localStorage across
-sessions, so the full 12 is the map's extent, not one sitting's workload. Today's scene is the first
-unfinished one, computed at load and held for the sitting — the grown-up doesn't pick it.
+**Guidance, not gating.** An earlier cut locked every scene but the current one. Yue rejected it: the
+locked pills read as broken (a tap that does nothing is indistinguishable from a bug, and a lock glyph
+plus an explanatory toast only papered over it), and it took away a choice worth having. Scene selection
+is now free.
+
+What replaces the gating is **defaulting**: the hand-over opens *directly into* the scene the child left
+off in, with its 3 topic circles already up — the town overview is a detour, not a decision. Nothing must
+be tapped to get started, but every other place is one tap away, each pill showing its own ★ progress.
+Finished topics stop pulsing and get a check, so what's left reads at a glance. This keeps the child a
+"cognitive agent" (the framing's words) rather than putting them on rails.
+
+**One session ≈ one scene** (~10–15 min) stays true as a default, not a rule: the suggested scene is the
+first unfinished one, computed at load and held so finishing its last topic doesn't move the highlight
+mid-sitting. Progress persists in localStorage, so the full 12 is the map's extent, not one sitting's
+workload.
 
 **Step 2 is the Author studio itself** — the button relocated out of the toolbar, not a rebuild of its
 form. `expert_ui.py` authors a scene (place + topic + one-line context → LLM designs the good / passive /
@@ -88,10 +94,12 @@ already half-supports.
 3. **PRR completion** — chips → Predict/Reveal/Reflect; add step A and step C; delete dead
    `poe-step-choose`.
 
-## Known gap
+## Known gaps
 
-The map has nothing telling the child to tap the lit pill. The distractors are gone, but the one live
-target sits in the **top-left corner** — not where a 3–6 y/o looks first; the diorama in the middle is.
-The fix is to make today's scene tappable on the map itself (the building), demoting the pills to a pure
-progress indicator, which touches `LOC_CENTERS` positioning and the bear's walk-to-target behaviour.
-Not attempted — it needs Yue's call on whether the walking animation returns.
+- **The town overview is now bypassed.** Opening straight into a scene means the diorama, the bear and
+  its walk-to-target behaviour are only seen by tapping the active pill to back out. If the town isn't
+  earning its place, it and `LOC_CENTERS` / `pendingLoc` could go; if it is, the child needs a reason to
+  visit it.
+- **`VIDEOASD-backend` is not under version control.** It sits untracked inside the `Research-Demo` repo,
+  whose index is full of unrelated staged deletions. The `gen_spec.py` / `expert_ui.py` changes that make
+  authoring reach the child exist only on disk.
