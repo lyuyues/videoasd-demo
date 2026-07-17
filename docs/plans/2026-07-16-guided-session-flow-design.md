@@ -41,7 +41,7 @@ cross-contaminate each other's stars and fruit.
 ```
 [0] Setup gate            parent-facing, one screen
     ├ Gaze calibration    [Calibrate] / [Skip]
-    └ Today's scene       [Pick] / [Skip → default]
+    └ Make a scene        [✨ Author] / [Skip → use prepared scenes]
                           ↓ "Hand the iPad to your child →"
 [1] Map                   child-facing, toolbar hidden
     4 scenes on a path; only the next unlocked one is lit
@@ -60,7 +60,18 @@ freely chosen. At the map level the child has nothing to deliberate over (one sc
 scene they get 3 concrete, illustrated choices. This preserves agency — the framing calls the child a
 "cognitive agent", so a fully rails-ed flow would be self-defeating — while removing the "what do I tap
 first" problem. **One session = one scene** (~10–15 min); progress persists in localStorage across
-sessions, so the full 12 is the map's extent, not one sitting's workload.
+sessions, so the full 12 is the map's extent, not one sitting's workload. Today's scene is the first
+unfinished one, computed at load and held for the sitting — the grown-up doesn't pick it.
+
+**Step 2 is the Author studio itself** — the button relocated out of the toolbar, not a rebuild of its
+form. `expert_ui.py` authors a scene (place + topic + one-line context → LLM designs the good / passive /
+inappropriate branches, editable → Veo generates 7 clips → an entry to paste into `CLIPS`). It needs a
+local server and minutes per case, and its output reaches the demo by hand, so it runs **before** a
+sitting, never inside one. The study uses pre-generated, expert-reviewed content per
+`IER_Framework_Design.md` ("预生成 + 专家审核，不做实时生成") and the grown-up skips this step. It stays in
+the flow because the pipeline supports authoring — it is a capability proof, not a session component.
+Making it usable in-session would require A) running Veo while the child waits and B) replacing the
+hard-coded `CLIPS` constant with runtime injection. Neither is in scope.
 
 ### Duration note (flagged, accepted)
 
@@ -77,9 +88,10 @@ already half-supports.
 3. **PRR completion** — chips → Predict/Reveal/Reflect; add step A and step C; delete dead
    `poe-step-choose`.
 
-## Out of scope
+## Known gap
 
-`✨ Author` (`expert_ui.py`) is a **capability proof in the pipeline, not a session component** — it needs
-a local Python server + `GOOGLE_API_KEY`, runs Veo for 7 clips (minutes, per-call cost), and emits config
-to paste into the demo by hand. Experiment content is pre-generated and expert-reviewed, per
-`IER_Framework_Design.md` ("预生成 + 专家审核，不做实时生成"). The button leaves the toolbar.
+The map has nothing telling the child to tap the lit pill. The distractors are gone, but the one live
+target sits in the **top-left corner** — not where a 3–6 y/o looks first; the diorama in the middle is.
+The fix is to make today's scene tappable on the map itself (the building), demoting the pills to a pure
+progress indicator, which touches `LOC_CENTERS` positioning and the bear's walk-to-target behaviour.
+Not attempted — it needs Yue's call on whether the walking animation returns.
