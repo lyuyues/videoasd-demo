@@ -381,18 +381,12 @@
       transition: transform 0.15s ease;
     }
     .modal-card button:hover { transform: translateY(-2px); }
-    .dev-hint {
-      position: fixed; bottom: 12px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 12px; color: rgba(90, 80, 70, 0.6);
-      background: rgba(255, 255, 255, 0.65);
-      padding: 6px 14px; border-radius: 12px;
-      pointer-events: none; z-index: 10;
-    }
     .toolbar {
       position: fixed; bottom: 16px; right: 16px;
       display: flex; gap: 8px; z-index: 10;
     }
+    /* `display: flex` above would otherwise beat the UA rule for [hidden] */
+    .toolbar[hidden] { display: none; }
     .toolbar button {
       background: rgba(255, 255, 255, 0.92);
       border: none; padding: 8px 14px; border-radius: 14px;
@@ -431,6 +425,16 @@
       animation: tsPulse 2.2s ease-in-out infinite;
     }
     .topic-spot:hover .ts-ring { transform: scale(1.09); }
+    /* Finished topics stop asking to be tapped: no pulse, and a quiet check.
+       Only the unfinished circles pulse, so what to do next reads at a glance. */
+    .topic-spot.done .ts-ring { animation: none; border-color: #7fc164; opacity: 0.7; }
+    .topic-spot.done .ts-label { opacity: 0.7; }
+    .topic-spot.done .ts-ring::after {
+      content: '✓'; position: absolute; transform: translate(22px, -22px);
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #7fc164; color: #fff; font-size: 13px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
     .topic-spot .ts-label {
       background: rgba(255, 255, 255, 0.94); padding: 3px 12px; border-radius: 12px;
       font-size: 13px; font-weight: 700; color: #5a4a3a; white-space: nowrap;
@@ -607,6 +611,81 @@
       padding: 6px 16px; border-radius: 16px;
       cursor: pointer; font-family: inherit; font-size: 13px;
     }
+
+    /* ===== Setup gate (grown-up) ===== */
+    .setup {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(152, 183, 206, 0.96);
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 4vh 16px; overflow-y: auto;
+    }
+    .setup.hidden { display: none; }
+    .setup-card {
+      background: #fff; border-radius: 28px; padding: 30px 34px 26px;
+      max-width: 560px; width: 100%;
+      box-shadow: 0 16px 56px rgba(0, 0, 0, 0.16);
+    }
+    .setup-title { font-size: 24px; font-weight: 800; color: #3a3a44; margin: 0 0 4px; text-align: center; }
+    .setup-sub { color: #8a8a96; font-size: 13px; text-align: center; margin: 0 0 24px; }
+    .setup-step {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 16px 0; border-top: 1px solid #f0eee9;
+    }
+    .setup-num {
+      flex: 0 0 28px; height: 28px; border-radius: 50%;
+      background: #ffb56a; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800;
+    }
+    .setup-step.done .setup-num { background: #7fc164; }
+    .setup-body { flex: 1; min-width: 0; }
+    .setup-body h2 { font-size: 16px; font-weight: 700; color: #5a4a3a; margin: 2px 0 4px; }
+    .setup-body p { font-size: 13px; color: #8a8a96; margin: 0 0 10px; line-height: 1.5; }
+    .setup-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .setup-go, .setup-skip {
+      border-radius: 20px; padding: 8px 20px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; border: 2px solid transparent;
+    }
+    .setup-go { background: linear-gradient(135deg, #ffb56a, #ff9d3f); color: #fff; box-shadow: 0 3px 12px rgba(255, 157, 63, 0.3); }
+    .setup-skip { background: #f6f7f9; color: #8a8a96; }
+    .setup-skip:hover { background: #eceef2; }
+    .setup-state { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #7fc164; padding-top: 6px; }
+    .setup-note {
+      font-size: 12px; color: #c2502a; background: #fff7f1;
+      border-radius: 10px; padding: 8px 11px; margin: 10px 0 0; line-height: 1.5;
+    }
+    .setup-hand {
+      display: block; width: 100%; margin: 22px 0 0;
+      padding: 15px; border: none; border-radius: 24px;
+      background: linear-gradient(135deg, #ffb56a, #ff9d3f); color: #fff;
+      font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit;
+      box-shadow: 0 5px 18px rgba(255, 157, 63, 0.34);
+    }
+    .setup-foot { font-size: 11px; color: #b0b0bc; text-align: center; margin: 12px 0 0; }
+
+    /* Locked scenes: visible so the map stays whole, but not a choice to make */
+    .scene-pill.locked { opacity: 0.4; filter: grayscale(0.7); cursor: default; }
+    .scene-pill.locked:hover { transform: none; }
+    .scene-pill.today { border-color: #e8804f; box-shadow: 0 0 0 4px rgba(232, 128, 79, 0.18); }
+
+    /* Invisible long-press target back to the grown-up controls */
+    #parent-tab { position: fixed; top: 0; right: 0; width: 64px; height: 64px; z-index: 11; }
+
+    /* ===== End of a sitting ===== */
+    .done-screen {
+      position: fixed; inset: 0; z-index: 55;
+      background: rgba(152, 183, 206, 0.95);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .done-screen.hidden { display: none; }
+    .done-card {
+      background: #fff; border-radius: 28px; padding: 40px 44px;
+      text-align: center; max-width: 420px;
+      box-shadow: 0 16px 56px rgba(0, 0, 0, 0.16);
+    }
+    .done-emoji { font-size: 56px; line-height: 1; margin-bottom: 10px; }
+    .done-card h1 { font-size: 26px; font-weight: 800; color: #3a3a44; margin: 0 0 6px; }
+    .done-card p { font-size: 14px; color: #8a8a96; margin: 0; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -615,62 +694,54 @@
   <!-- Per-scene topic circles (each circle = a topic); shown when a scene pill is active -->
   <div class="scene-circles" id="scene-circles"></div>
 
-  <div class="hotspots">
-    <!-- Playground: 3 paths (slide / swings / sandbox) -->
-    <button class="hotspot path" data-loc="playground" data-choice="a" style="left: 14%; top: 56%; color: #ff9966;">
-      <span class="hotspot-label">Playground · Slide</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="playground" data-choice="b" style="left: 20%; top: 64%; color: #ff9966;">
-      <span class="hotspot-label">Playground · Swings</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="playground" data-choice="c" style="left: 26%; top: 58%; color: #ff9966;">
-      <span class="hotspot-label">Playground · Sandbox</span>
-      <span class="hotspot-ring small"></span>
-    </button>
+  <!-- ===== Setup gate — the grown-up does these two things, then hands over. =====
+       Both steps are skippable: the game plays without gaze, and skipping the
+       scene pick falls through to the next unfinished one. -->
+  <div id="setup" class="setup">
+    <div class="setup-card">
+      <h1 class="setup-title">Before you start</h1>
+      <p class="setup-sub">For the grown-up · about a minute</p>
 
-    <!-- Classroom: 3 paths -->
-    <button class="hotspot path" data-loc="classroom" data-choice="a" style="left: 36%; top: 48%; color: #ffcd6e;">
-      <span class="hotspot-label">Classroom · Front Door</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="classroom" data-choice="b" style="left: 42%; top: 56%; color: #ffcd6e;">
-      <span class="hotspot-label">Classroom · Reading Nook</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="classroom" data-choice="c" style="left: 48%; top: 50%; color: #ffcd6e;">
-      <span class="hotspot-label">Classroom · Art Board</span>
-      <span class="hotspot-ring small"></span>
-    </button>
+      <div class="setup-step" id="setup-step-cal">
+        <div class="setup-num">1</div>
+        <div class="setup-body">
+          <h2>Eye calibration</h2>
+          <p>Lets the app see where your child looks while they watch. The game plays exactly the same without it.</p>
+          <div class="setup-actions">
+            <button class="setup-go" id="setup-cal">Calibrate</button>
+            <button class="setup-skip" id="setup-cal-skip">Skip</button>
+          </div>
+        </div>
+        <div class="setup-state" id="setup-cal-state"></div>
+      </div>
 
-    <!-- Cafeteria: 3 paths -->
-    <button class="hotspot path" data-loc="cafeteria" data-choice="a" style="left: 56%; top: 50%; color: #f07a5b;">
-      <span class="hotspot-label">Cafeteria · Round Table</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="cafeteria" data-choice="b" style="left: 62%; top: 58%; color: #f07a5b;">
-      <span class="hotspot-label">Cafeteria · Long Table</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="cafeteria" data-choice="c" style="left: 68%; top: 52%; color: #f07a5b;">
-      <span class="hotspot-label">Cafeteria · Snack Counter</span>
-      <span class="hotspot-ring small"></span>
-    </button>
+      <div class="setup-step" id="setup-step-author">
+        <div class="setup-num">2</div>
+        <div class="setup-body">
+          <h2>Make a scene</h2>
+          <p>Build a situation of your own — pick a place and a topic, and the studio designs the choices. Skip to use the scenes we prepared.</p>
+          <div class="setup-actions">
+            <button class="setup-go" id="setup-author">✨ Author</button>
+            <button class="setup-skip" id="setup-author-skip">Skip</button>
+          </div>
+          <p class="setup-note" id="setup-author-note" hidden></p>
+        </div>
+        <div class="setup-state" id="setup-author-state"></div>
+      </div>
 
-    <!-- Park: 3 paths -->
-    <button class="hotspot path" data-loc="park" data-choice="a" style="left: 78%; top: 54%; color: #7fc164;">
-      <span class="hotspot-label">Park · Fountain</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="park" data-choice="b" style="left: 84%; top: 62%; color: #7fc164;">
-      <span class="hotspot-label">Park · Bench</span>
-      <span class="hotspot-ring small"></span>
-    </button>
-    <button class="hotspot path" data-loc="park" data-choice="c" style="left: 90%; top: 56%; color: #7fc164;">
-      <span class="hotspot-label">Park · Flowers</span>
-      <span class="hotspot-ring small"></span>
-    </button>
+      <button class="setup-hand" id="setup-done">Hand the tablet to your child →</button>
+      <p class="setup-foot" id="setup-foot">Long-press the top-right corner to get back here.</p>
+    </div>
+  </div>
+
+  <!-- End of a sitting: today's place is finished -->
+  <div id="done-screen" class="done-screen hidden">
+    <div class="done-card">
+      <div class="done-emoji" id="done-emoji">🌸</div>
+      <h1 id="done-title">All done!</h1>
+      <p id="done-sub"></p>
+      <button class="setup-hand" id="done-back">Back to the map</button>
+    </div>
   </div>
 
   <!-- Reward: per-location star meters (breadth) -->
@@ -681,16 +752,17 @@
 
   <span class="progress" id="progress">★ 0/12</span>
 
-  <p class="dev-hint">Click a path → character walks there</p>
-
-  <div class="toolbar">
+  <!-- Grown-up controls. Hidden while the child plays; reached by long-pressing
+       the top-right corner (#parent-tab) so a stray tap can't open it. -->
+  <div class="toolbar" id="toolbar" hidden>
     <button id="cal-start">Calibrate Gaze</button>
     <button id="gaze-toggle" style="display:none;">Show Gaze ●</button>
     <button id="diff-start">Difficulty</button>
     <button id="report-open">Report</button>
-    <button id="author-open" title="专家生成台(需本地运行 expert_ui.py)">✨ Author</button>
     <button id="reset-progress">Reset</button>
+    <button id="toolbar-hide">Done ✓</button>
   </div>
+  <div id="parent-tab" title="Long-press for grown-up controls"></div>
 
   <!-- Webcam preview (small thumbnail) -->
   <video id="gaze-video" autoplay muted playsinline></video>
@@ -963,6 +1035,7 @@
       $gazeToggle.style.display = '';
       $gazeToggle.textContent = 'Hide Gaze ●';
       enableGazeCursor(true);
+      if (window.__afterCalibration) { window.__afterCalibration(); window.__afterCalibration = null; }
     }
 
     function enableGazeCursor(on) {
@@ -989,6 +1062,8 @@
     $calCancel.addEventListener('click', () => {
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
+      // Cancelling from the setup gate must land back on the gate, not on the map.
+      if (window.__afterCalibration) { window.__afterCalibration('cancelled'); window.__afterCalibration = null; }
     });
     $gazeToggle.addEventListener('click', () => {
       const next = !gazeTrackingActive;
@@ -1073,31 +1148,6 @@
     // counts as done once the child has finished one full PRR round there.
     const doneTopics = new Set(JSON.parse(localStorage.getItem('videoasd_done_topics_v1') || '[]'));
     const TOPIC_TOTAL = 12;
-
-    /* ===== Hotspot click handlers ===== */
-    document.querySelectorAll('.hotspot').forEach((el) => {
-      el.addEventListener('click', () => {
-        const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const ndcX = (cx / window.innerWidth) * 2 - 1;
-        const ndcY = -(cy / window.innerHeight) * 2 + 1;
-        const ray = new THREE.Raycaster();
-        ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
-        const hits = ray.intersectObject(ground);
-        if (hits.length > 0) {
-          const target = hits[0].point.clone();
-          target.z += 0.8;
-          walkTarget = target;
-          // Single-layer: hotspot carries both loc and choice
-          pendingLoc = {
-            id: el.dataset.loc,
-            choice: el.dataset.choice,
-            label: el.querySelector('.hotspot-label').textContent,
-          };
-        }
-      });
-    });
 
     /* ===== Click on background (canvas) → walk anywhere ===== */
     canvas.addEventListener('click', (e) => {
@@ -1513,6 +1563,9 @@
       $modal.classList.add('hidden');
       $ctxVideo.pause();
       $outVideo.pause();
+      // Let the map controller relight the circles and check whether today's
+      // scene just finished. Defined in the scene IIFE below.
+      if (window.__onTopicDone) window.__onTopicDone();
     }
 
     // POE flow handlers
@@ -1961,13 +2014,11 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') $modal.classList.add('hidden');
     });
-    document.getElementById('author-open').addEventListener('click', () => {
-      // Expert generation studio — runs locally (python expert_ui.py in VIDEOASD-backend)
-      const w = window.open('http://localhost:5055', '_blank');
-      setTimeout(() => {
-        if (!w || w.closed) alert('请先在本地启动专家生成台:\n  cd VIDEOASD-backend && python3 expert_ui.py\n然后再点这里。');
-      }, 800);
-    });
+    // The expert generation studio (VIDEOASD-backend/expert_ui.py) is a pipeline
+    // tool, not a session component — it needs a local server, runs Veo for minutes
+    // per case, and its output is pasted into CLIPS by hand. Study content is
+    // pre-generated and expert-reviewed, so no child- or caregiver-facing button
+    // opens it. Run it directly: cd VIDEOASD-backend && python3 expert_ui.py
     document.getElementById('reset-progress').addEventListener('click', () => {
       visited.clear();
       doneTopics.clear();
@@ -2059,22 +2110,36 @@
       const $circles = document.getElementById('scene-circles');
       const $bg = document.querySelector('.bg-diorama');
       const $canvas = document.getElementById('canvas');
-      const $hotspots = document.querySelector('.hotspots');
       const $stars = document.getElementById('loc-stars');
       let active = null;
 
-      function setActivePill(id) {
-        [...$bar.children].forEach((p) => p.classList.toggle('active', p.dataset.scene === id));
+      /* ===== Which scene is today's =====
+         One scene per sitting: the first one the child hasn't finished. Picked
+         once when the page loads and held for the sitting, so finishing today's
+         last topic doesn't silently move the goalposts. Every other scene is
+         locked, so on the map there is exactly one thing to tap. */
+      const firstUnfinished = () => (SCENES.find((s) => !sceneComplete(s.id)) || SCENES[0]).id;
+      const todayScene = firstUnfinished();
+      const sceneById = (id) => SCENES.find((s) => s.id === id);
+
+      function renderPills() {
+        [...$bar.children].forEach((p) => {
+          const isToday = p.dataset.scene === todayScene;
+          p.classList.toggle('locked', !isToday);
+          p.classList.toggle('today', isToday && active !== todayScene);
+          p.classList.toggle('active', p.dataset.scene === active);
+        });
       }
       function renderCircles(scene) {
         $circles.innerHTML = '';
         scene.topics.forEach((t) => {
           const b = document.createElement('button');
           b.className = 'topic-spot';
+          if (doneTopics.has(`${scene.id}_${t.id}`)) b.classList.add('done');
           b.style.left = t.x + '%';
           b.style.top = t.y + '%';
           b.innerHTML = `<span class="ts-ring">${t.emoji}</span><span class="ts-label">${t.label}</span>`;
-          // Enter the existing POE flow for this scene (topic carried as the title)
+          // Enter the existing PRR flow for this scene (topic carried as the title)
           b.addEventListener('click', () => openModal({ id: scene.id, label: t.label, topic: t.id }));
           $circles.appendChild(b);
         });
@@ -2083,19 +2148,19 @@
         active = scene.id;
         $bg.style.backgroundImage = `url('${scene.img}')`;
         $canvas.style.display = 'none';          // hide the town bear
-        $hotspots.style.display = 'none';        // hide the 12 town circles
         if ($stars) $stars.style.display = 'none';
         renderCircles(scene);
         $circles.classList.add('show');
+        renderPills();
       }
       function exitScene() {
         active = null;
         $bg.style.backgroundImage = TOWN_BG;
         $canvas.style.display = '';
-        $hotspots.style.display = '';
         if ($stars) $stars.style.display = '';
         $circles.classList.remove('show');
         $circles.innerHTML = '';
+        renderPills();
       }
 
       SCENES.forEach((s) => {
@@ -2104,11 +2169,99 @@
         b.dataset.scene = s.id;
         b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}`;
         b.addEventListener('click', () => {
-          if (active === s.id) { exitScene(); setActivePill(null); }
-          else { enterScene(s); setActivePill(s.id); }
+          if (s.id !== todayScene) return;       // locked: not today's place
+          if (active === s.id) { exitScene(); }
+          else { enterScene(s); }
         });
         $bar.appendChild(b);
       });
+
+      /* ===== End of a sitting =====
+         Fires when today's scene has all 3 topics done. Called back from the PRR
+         flow via onTopicDone so the map, the circles and the gate stay in step. */
+      const $doneScreen = document.getElementById('done-screen');
+      function refreshAfterRound() {
+        if (active) renderCircles(sceneById(active));
+        renderPills();
+        if (sceneComplete(todayScene)) showDoneScreen();
+      }
+      function showDoneScreen() {
+        const all = doneTopics.size >= TOPIC_TOTAL;
+        document.getElementById('done-emoji').textContent = all ? '🏆' : '🌸';
+        document.getElementById('done-title').textContent =
+          all ? 'You explored every place!' : 'All done here!';
+        document.getElementById('done-sub').textContent = all
+          ? `${TOPIC_TOTAL} of ${TOPIC_TOTAL} stories explored.`
+          : `${sceneById(todayScene).label} is complete — ${doneTopics.size} of ${TOPIC_TOTAL} stories so far.`;
+        $doneScreen.classList.remove('hidden');
+      }
+      document.getElementById('done-back').addEventListener('click', () => {
+        $doneScreen.classList.add('hidden');
+        exitScene();
+      });
+      window.__onTopicDone = refreshAfterRound;
+
+      /* ===== Setup gate ===== */
+      const $setup = document.getElementById('setup');
+      function markStep(which, label) {
+        document.getElementById(`setup-step-${which}`).classList.add('done');
+        document.getElementById(`setup-${which}-state`).textContent = label;
+      }
+      document.getElementById('setup-cal').addEventListener('click', () => {
+        $setup.classList.add('hidden');
+        // Hand off to the existing 9-dot calibration; it returns here either way.
+        window.__afterCalibration = (result) => {
+          $setup.classList.remove('hidden');
+          if (result !== 'cancelled') markStep('cal', 'calibrated ✓');
+        };
+        document.getElementById('cal-start').click();
+      });
+      document.getElementById('setup-cal-skip').addEventListener('click', () => markStep('cal', 'skipped'));
+
+      /* Step 2 — the expert generation studio (VIDEOASD-backend/expert_ui.py).
+         Opens in its own tab: it authors a scene with Veo and its output is
+         pasted into CLIPS, so it belongs before a sitting, not inside one. The
+         study runs on pre-generated, expert-reviewed content — the grown-up
+         skips this. It sits in the flow because the pipeline supports authoring. */
+      const AUTHOR_URL = 'http://localhost:5055';
+      document.getElementById('setup-author').addEventListener('click', () => {
+        const w = window.open(AUTHOR_URL, '_blank');
+        const note = document.getElementById('setup-author-note');
+        setTimeout(() => {
+          if (!w || w.closed) {
+            note.hidden = false;
+            note.textContent = 'The studio isn\'t running. Start it with: cd VIDEOASD-backend && python3 expert_ui.py';
+          } else {
+            note.hidden = true;
+            markStep('author', 'studio open ↗');
+          }
+        }, 800);
+      });
+      document.getElementById('setup-author-skip').addEventListener('click', () => markStep('author', 'skipped'));
+
+      document.getElementById('setup-done').addEventListener('click', () => {
+        $setup.classList.add('hidden');
+        if (sceneComplete(todayScene)) showDoneScreen();
+      });
+
+      /* ===== Grown-up controls: long-press the top-right corner ===== */
+      const $toolbar = document.getElementById('toolbar');
+      let pressTimer = null;
+      const startPress = () => {
+        pressTimer = setTimeout(() => { $toolbar.hidden = false; }, 800);
+      };
+      const cancelPress = () => { clearTimeout(pressTimer); };
+      const $tab = document.getElementById('parent-tab');
+      $tab.addEventListener('pointerdown', startPress);
+      $tab.addEventListener('pointerup', cancelPress);
+      $tab.addEventListener('pointerleave', cancelPress);
+      document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
+
+      // Tell the grown-up where the child is picking up, since they no longer choose it.
+      document.getElementById('setup-foot').textContent =
+        `Up next: ${sceneById(todayScene).label} · ${doneTopics.size} of ${TOPIC_TOTAL} stories explored` +
+        ` — long-press the top-right corner to get back here.`;
+      renderPills();
     })();
   </script>
 </body>
