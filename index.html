@@ -663,10 +663,32 @@
     }
     .setup-foot { font-size: 11px; color: #b0b0bc; text-align: center; margin: 12px 0 0; }
 
-    /* Locked scenes: visible so the map stays whole, but not a choice to make */
-    .scene-pill.locked { opacity: 0.4; filter: grayscale(0.7); cursor: default; }
+    /* Locked scenes: visible so the map stays whole, but not a choice to make.
+       A lock glyph, not just grey — grey alone reads as "loading" or "broken",
+       and a tap that does nothing without saying why is indistinguishable from
+       a bug. Tapping one nudges and explains. */
+    .scene-pill.locked { opacity: 0.45; filter: grayscale(0.7); cursor: default; }
     .scene-pill.locked:hover { transform: none; }
+    .scene-pill.locked .scene-ico { visibility: hidden; }
+    .scene-pill.locked .scene-ico::after {
+      content: '🔒'; visibility: visible; position: absolute; font-size: 15px;
+    }
+    .scene-pill.locked.nudge { animation: pillNudge 0.32s ease; }
+    @keyframes pillNudge {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); } 75% { transform: translateX(3px); }
+    }
     .scene-pill.today { border-color: #e8804f; box-shadow: 0 0 0 4px rgba(232, 128, 79, 0.18); }
+
+    /* Toast: says why a locked place didn't open */
+    .toast {
+      position: fixed; top: 66px; left: 14px; z-index: 13;
+      background: rgba(58, 58, 68, 0.94); color: #fff;
+      padding: 9px 15px; border-radius: 14px; font-size: 13px; font-weight: 600;
+      pointer-events: none; opacity: 0; transform: translateY(-6px);
+      transition: opacity .18s, transform .18s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
 
     /* Invisible long-press target back to the grown-up controls */
     #parent-tab { position: fixed; top: 0; right: 0; width: 64px; height: 64px; z-index: 11; }
@@ -751,6 +773,7 @@
   <div class="scene-bar" id="scene-bar"></div>
 
   <span class="progress" id="progress">★ 0/12</span>
+  <div class="toast" id="toast"></div>
 
   <!-- Grown-up controls. Hidden while the child plays; reached by long-pressing
        the top-right corner (#parent-tab) so a stray tap can't open it. -->
@@ -1302,6 +1325,40 @@
     };
     let currentClips = null;
     const $actVideo = document.getElementById('act-video');
+
+    /* ===== Authored cases from the expert studio =====
+       CLIPS above is the curated, expert-reviewed set that ships with the demo.
+       Anything authored in the studio (setup gate, step 2) lives in
+       VIDEOASD-backend/videos/<scene>_<topic>/ with a spec.json beside it; the
+       studio serves those over /authored and /clips. Merge them in at load so a
+       grown-up who authors a scene can hand the tablet over and the child plays
+       it — no pasting a CLIPS entry by hand.
+
+       The studio is a local dev tool, so it is usually absent: a failed fetch is
+       the normal case and is swallowed. The browser still logs the refused
+       request to the console — that red line on load is expected, not a fault.
+       Authored cases override same-key curated ones, which is what "I just made
+       this one" should mean. */
+    const AUTHOR_ORIGIN = 'http://localhost:5055';
+    async function loadAuthoredClips() {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 1200);   // don't stall the gate on a dead port
+      try {
+        const r = await fetch(`${AUTHOR_ORIGIN}/authored`, { signal: ctl.signal });
+        if (!r.ok) return 0;
+        const { cases } = await r.json();
+        (cases || []).forEach((c) => {
+          const base = `${AUTHOR_ORIGIN}/clips/${c.dir}/`;
+          const options = {};
+          Object.entries(c.options).forEach(([k, o]) => {
+            options[k] = { label: o.label, action: base + o.action, reaction: base + o.reaction };
+          });
+          CLIPS[`${c.scene}_${c.topic}`] = { context: base + c.context, options, authored: true };
+        });
+        return (cases || []).length;
+      } catch { return 0; }        // studio not running — expected
+      finally { clearTimeout(t); }
+    }
 
     // Zone close-up images + 3 path hotspot positions per zone.
     // Positions are eyeballed from the generated 1024x1024 isometric images;
@@ -2169,12 +2226,25 @@
         b.dataset.scene = s.id;
         b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}`;
         b.addEventListener('click', () => {
-          if (s.id !== todayScene) return;       // locked: not today's place
+          if (s.id !== todayScene) { explainLocked(b, s); return; }
           if (active === s.id) { exitScene(); }
           else { enterScene(s); }
         });
         $bar.appendChild(b);
       });
+
+      // A locked place has to say why it didn't open, or it just reads as broken.
+      const $toast = document.getElementById('toast');
+      let toastTimer = null;
+      function explainLocked(pill, scene) {
+        pill.classList.remove('nudge');
+        void pill.offsetWidth;                   // restart the animation
+        pill.classList.add('nudge');
+        $toast.textContent = `${sceneById(todayScene).label} first — then ${scene.label} opens 🔒`;
+        $toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => $toast.classList.remove('show'), 2200);
+      }
 
       /* ===== End of a sitting =====
          Fires when today's scene has all 3 topics done. Called back from the PRR
@@ -2262,6 +2332,28 @@
         `Up next: ${sceneById(todayScene).label} · ${doneTopics.size} of ${TOPIC_TOTAL} stories explored` +
         ` — long-press the top-right corner to get back here.`;
       renderPills();
+
+      /* Pick up anything authored in the studio. A case only reaches the child if
+         its scene AND topic exist on the map — the studio accepts free-text
+         scenes ('library', 'supermarket') that have no zone art and no place in
+         SCENES, so those are reported rather than silently dropped. */
+      const onMap = (scene, topic) =>
+        SCENES.some((s) => s.id === scene && s.topics.some((t) => t.id === topic));
+      loadAuthoredClips().then((n) => {
+        if (!n) return;
+        const authored = Object.entries(CLIPS).filter(([, v]) => v.authored).map(([k]) => k);
+        const reachable = authored.filter((k) => {
+          const scene = SCENES.find((s) => k.startsWith(s.id + '_'));
+          return scene && onMap(scene.id, k.slice(scene.id.length + 1));
+        });
+        const stray = authored.filter((k) => !reachable.includes(k));
+        const note = document.getElementById('setup-author-note');
+        note.hidden = false;
+        note.textContent =
+          `${reachable.length} authored scene${reachable.length === 1 ? '' : 's'} ready to play` +
+          (stray.length ? ` · ${stray.length} not on the map yet (${stray.join(', ')}) — needs zone art and a SCENES entry` : '');
+        if (active) renderCircles(sceneById(active));
+      });
     })();
   </script>
 </body>
