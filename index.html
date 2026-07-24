@@ -2260,6 +2260,11 @@
           p.classList.toggle('today', id === todayScene && active !== todayScene);
           p.classList.toggle('active', id === active);
           p.classList.toggle('complete', n >= STAR_MAX);
+          // Positioned on the map, the other 3 scenes' pills would float over
+          // whichever zoomed scene is showing -- only the active one's stays up,
+          // doubling as the "tap again to back out" control. All 4 return once
+          // active is null (back on the town overview).
+          p.style.display = (!active || id === active) ? '' : 'none';
           const stars = p.querySelector('.pill-stars');
           if (stars) stars.textContent = '★'.repeat(n) + '☆'.repeat(STAR_MAX - n);
         });
