@@ -120,10 +120,13 @@
       box-shadow: 0 2px 6px rgba(60, 130, 30, 0.35);
     }
 
-    /* Floating progress chip (no top bar) */
+    /* Floating progress chip (no top bar). Stacked below the ⚙ button (#parent-tab,
+       top: safe-area-inset-top + 8px, 40px tall) rather than beside it -- side by
+       side at this corner overlapped. */
     .progress {
       position: fixed;
-      top: 16px; right: 20px;
+      top: calc(env(safe-area-inset-top, 0px) + 56px);
+      right: calc(env(safe-area-inset-right, 0px) + 8px);
       background: linear-gradient(135deg, #ffd49a 0%, #ffb56a 100%);
       color: #6e4a1a;
       padding: 6px 16px; border-radius: 20px;
