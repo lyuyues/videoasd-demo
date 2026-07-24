@@ -974,25 +974,27 @@
           </div>
         </div>
 
-        <!-- 3b: observe -- re-label Sam's feeling after a mismatch; shown at most once per location -->
-        <div id="poe-outcome-observe" class="poe-substep hidden">
-          <p class="poe-cue">Now that you saw it -- how does <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> actually feel?</p>
-          <div class="emotion-grid" id="observe-emotion-grid">
-            <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>Happy</span></button>
-            <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>Sad</span></button>
-            <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>Angry</span></button>
-            <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>Confused</span></button>
-            <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>Scared</span></button>
-            <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>Neutral</span></button>
-          </div>
-        </div>
-
         <!-- 3c: try another / complete -->
         <div id="poe-outcome-next" class="poe-substep hidden">
           <div class="poe-row">
             <button class="poe-secondary" id="out-revise">Try another ↺</button>
             <button class="poe-next" id="out-done">Complete ✓</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Step 3b: observe -- re-label Sam's feeling after a mismatch; shown at most
+           once per location. Own step (not a substep of outcome, like predict) so it
+           doesn't have to share a scrollable view with the outcome video. -->
+      <div id="poe-step-observe" class="poe-step hidden">
+        <p class="poe-cue">Now that you saw it -- how does <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> actually feel?</p>
+        <div class="emotion-grid" id="observe-emotion-grid">
+          <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>Happy</span></button>
+          <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>Sad</span></button>
+          <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>Angry</span></button>
+          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>Confused</span></button>
+          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>Scared</span></button>
+          <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>Neutral</span></button>
         </div>
       </div>
 
@@ -1291,6 +1293,7 @@
     const $predictStep = document.getElementById('poe-step-predict');
     const $confirmStep = document.getElementById('poe-step-confirm');
     const $outStep = document.getElementById('poe-step-outcome');
+    const $observeStep = document.getElementById('poe-step-observe');
     const $treeStep = document.getElementById('poe-step-tree');
 
     // Display info for the lock-in summary
@@ -1517,7 +1520,6 @@
       // Check stays hidden until the outcome video finishes (see $outVideo 'ended' below) --
       // keeps the child's attention on the video instead of the buttons underneath it.
       document.getElementById('poe-outcome-check').classList.add('hidden');
-      document.getElementById('poe-outcome-observe').classList.add('hidden');
       document.getElementById('poe-outcome-next').classList.add('hidden');
       pendingCheck = null;
     }
@@ -1530,6 +1532,7 @@
       predict: 'reaction',   // predict the other's reaction
       confirm: 'reaction',   // lock in both predictions
       outcome: 'reflect',    // watch actual outcome (Reveal)
+      observe: 'reflect',    // re-label after a mismatch (Reflect)
       tree:    'reflect',    // possibility tree (Reflect)
     };
 
@@ -1541,6 +1544,7 @@
       $predictStep.classList.toggle('hidden', which !== 'predict');
       $confirmStep.classList.toggle('hidden', which !== 'confirm');
       $outStep.classList.toggle('hidden', which !== 'outcome');
+      $observeStep.classList.toggle('hidden', which !== 'observe');
       $treeStep.classList.toggle('hidden', which !== 'tree');
       const active = STEP_PHASE[which];
       $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
@@ -1866,10 +1870,12 @@
         const constructId = $modal.dataset.constructId || '_default';
         document.getElementById('poe-outcome-check').classList.add('hidden');
         if (pendingCheck !== 'yes' && !observedScenarios.has(constructId)) {
-          // First mismatch (no/kindof) for this (scene, topic) -- ask the child to re-label what Sam actually felt.
+          // First mismatch (no/kindof) for this (scene, topic) -- ask the child to re-label
+          // what Sam actually felt. Own step, not a substep here -- it doesn't need the
+          // outcome video visible, and sharing a scroll area with it was crowding both.
           observedScenarios.add(constructId);
           document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
-          document.getElementById('poe-outcome-observe').classList.remove('hidden');
+          showStep('observe');
         } else {
           // Either it matched, or this (scene, topic) already had its one OBSERVE prompt -- move on.
           document.getElementById('poe-outcome-next').classList.remove('hidden');
@@ -1883,7 +1889,9 @@
         document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
         btn.classList.add('selected');
         setTimeout(() => {
-          document.getElementById('poe-outcome-observe').classList.add('hidden');
+          // Back to the outcome step (video + the try-another/complete choice) --
+          // the check panel stays hidden (already answered), only "next" shows.
+          showStep('outcome');
           document.getElementById('poe-outcome-next').classList.remove('hidden');
         }, 350);
       });
