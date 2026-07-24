@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的小镇 — VideoASD</title>
+  <title>My Little Town — VideoASD</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -182,37 +182,37 @@
 
   <div class="hotspots">
     <button class="hotspot" data-loc="playground" style="left: 22%; top: 60%; color: #ff9966;">
-      <span class="hotspot-label">操场</span>
+      <span class="hotspot-label">Playground</span>
       <span class="hotspot-ring"></span>
     </button>
     <button class="hotspot" data-loc="classroom" style="left: 41%; top: 50%; color: #ffcd6e;">
-      <span class="hotspot-label">教室</span>
+      <span class="hotspot-label">Classroom</span>
       <span class="hotspot-ring"></span>
     </button>
     <button class="hotspot" data-loc="cafeteria" style="left: 58%; top: 52%; color: #f07a5b;">
-      <span class="hotspot-label">餐厅</span>
+      <span class="hotspot-label">Cafeteria</span>
       <span class="hotspot-ring"></span>
     </button>
     <button class="hotspot" data-loc="park" style="left: 76%; top: 58%; color: #7fc164;">
-      <span class="hotspot-label">公园</span>
+      <span class="hotspot-label">Park</span>
       <span class="hotspot-ring"></span>
     </button>
   </div>
 
-  <span class="progress" id="progress">已探索 0/4</span>
+  <span class="progress" id="progress">Explored 0/4</span>
 
-  <p class="dev-hint">点建筑/地面 → 小熊走过去</p>
+  <p class="dev-hint">Click a building or the ground -> the bear walks there</p>
 
   <div class="toolbar">
-    <button id="reset-progress">清空</button>
+    <button id="reset-progress">Clear</button>
   </div>
 
   <div id="modal" class="modal hidden">
     <div class="modal-card">
-      <h2 id="modal-title">进入 ...</h2>
-      <p>这里会播放 social context 视频。</p>
-      <p class="modal-hint">(占位：之后接 POE 预测+生成 流程)</p>
-      <button id="modal-close">完成探索</button>
+      <h2 id="modal-title">Enter ...</h2>
+      <p>A social context video will play here.</p>
+      <p class="modal-hint">(Placeholder — POE predict + generate flow to be wired in later)</p>
+      <button id="modal-close">Finish exploring</button>
     </div>
   </div>
 
@@ -348,7 +348,7 @@
     const $progress = document.getElementById('progress');
 
     function openModal(loc) {
-      $modalTitle.textContent = `进入 ${loc.label}`;
+      $modalTitle.textContent = `Enter ${loc.label}`;
       $modal.dataset.locId = loc.id;
       $modal.classList.remove('hidden');
     }
@@ -363,7 +363,7 @@
       $modal.classList.add('hidden');
     }
     function updateProgress() {
-      $progress.textContent = `已探索 ${visited.size}/4`;
+      $progress.textContent = `Explored ${visited.size}/4`;
     }
     function markVisited() {
       document.querySelectorAll('.hotspot').forEach((el) => {

@@ -164,6 +164,8 @@
     }
     .poe-step { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
     .poe-step.hidden { display: none; }
+    .poe-substep { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+    .poe-substep.hidden { display: none; }
     .emotion-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -227,6 +229,7 @@
       display: flex; gap: 12px; justify-content: center;
       align-items: center; flex-wrap: wrap;
     }
+    .poe-btn-row.hidden { display: none; }
     .confirm-summary {
       display: flex; flex-direction: column; gap: 14px;
       margin: 8px auto 18px; width: 100%; max-width: 420px;
@@ -396,16 +399,20 @@
     }
     .toolbar button:hover { background: rgba(255, 220, 120, 0.95); }
 
-    /* === Top-left scene bar (each pill = a scene) === */
-    .scene-bar { position: fixed; top: 14px; left: 14px; display: flex; gap: 10px; flex-wrap: wrap; max-width: 72vw; z-index: 12; }
+    /* === Scene entry points, positioned on the town map itself (was: top-left pill bar).
+       Each pill sits at its scene's LOC_CENTERS x/y -- the same point the ★ progress
+       badge already uses -- so the map is now the actual scene picker, not a detour. === */
+    .scene-bar { position: fixed; inset: 0; z-index: 12; pointer-events: none; }
     .scene-pill {
+      position: absolute; transform: translate(-50%, -50%);
       display: flex; align-items: center; gap: 7px;
       background: rgba(255, 255, 255, 0.95); border: 2px solid #efe3cf; border-radius: 16px;
       padding: 8px 15px; font-size: 14px; font-weight: 600; color: #6b5640; cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); font-family: inherit;
       transition: border-color .15s, background .15s, transform .1s;
+      pointer-events: auto;
     }
-    .scene-pill:hover { transform: translateY(-1px); }
+    .scene-pill:hover { transform: translate(-50%, -50%) translateY(-2px); }
     .scene-pill .scene-ico { font-size: 17px; line-height: 1; }
     .scene-pill.active { border-color: #e8804f; background: #fff7f1; color: #c2502a; box-shadow: 0 3px 12px rgba(232, 128, 79, 0.22); }
 
@@ -799,7 +806,7 @@
       <div id="poe-step-context" class="poe-step">
         <video id="ctx-video" class="poe-video" muted playsinline controls></video>
         <p class="poe-cue">See what happened ↑</p>
-        <div class="poe-btn-row">
+        <div class="poe-btn-row hidden" id="ctx-btn-row">
           <button class="poe-secondary" id="ctx-replay">↻ Watch again</button>
           <button class="poe-next" id="ctx-done">Done watching →</button>
         </div>
@@ -848,7 +855,7 @@
       <!-- Step 2a: action clip — Alex does the chosen action -->
       <div id="poe-step-actplay" class="poe-step hidden">
         <video id="act-video" class="poe-video" playsinline></video>
-        <p class="poe-cue">看看你做了什么…</p>
+        <p class="poe-cue">Watch what you did...</p>
       </div>
 
       <!-- Step 2b: predict emotion -->
@@ -888,10 +895,36 @@
       <!-- Step 3: outcome video -->
       <div id="poe-step-outcome" class="poe-step hidden">
         <video id="out-video" class="poe-video" muted playsinline controls></video>
-        <p class="poe-cue">Is it like you thought?</p>
-        <div class="poe-row">
-          <button class="poe-secondary" id="out-revise">Try another ↺</button>
-          <button class="poe-next" id="out-done">Complete ✓</button>
+
+        <!-- 3a: mismatch check -- compares the predicted reaction (poe-step-predict) against the outcome just shown -->
+        <div id="poe-outcome-check" class="poe-substep">
+          <p class="poe-cue">Is it like you thought?</p>
+          <div class="poe-row">
+            <button class="poe-secondary check-btn" data-check="yes">Yes</button>
+            <button class="poe-secondary check-btn" data-check="kindof">Kind of</button>
+            <button class="poe-secondary check-btn" data-check="no">No</button>
+          </div>
+        </div>
+
+        <!-- 3b: observe -- re-label Sam's feeling after a mismatch; shown at most once per location -->
+        <div id="poe-outcome-observe" class="poe-substep hidden">
+          <p class="poe-cue">Now that you saw it -- how does <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> actually feel?</p>
+          <div class="emotion-grid" id="observe-emotion-grid">
+            <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>Happy</span></button>
+            <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>Sad</span></button>
+            <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>Angry</span></button>
+            <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>Confused</span></button>
+            <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>Scared</span></button>
+            <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>Neutral</span></button>
+          </div>
+        </div>
+
+        <!-- 3c: try another / complete -->
+        <div id="poe-outcome-next" class="poe-substep hidden">
+          <div class="poe-row">
+            <button class="poe-secondary" id="out-revise">Try another ↺</button>
+            <button class="poe-next" id="out-done">Complete ✓</button>
+          </div>
         </div>
       </div>
 
@@ -1208,97 +1241,97 @@
       park_make_friends: {
         context: CB + 'park_make_friends/context_sam-plays_alex-watches.mp4',
         options: {
-          a: { label: '走过去打招呼', action: CB + 'park_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'park_make_friends/reaction_a-approach_sam-waves-back.mp4' },
-          b: { label: '站在旁边看',   action: CB + 'park_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'park_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
-          c: { label: '直接拿玩具',   action: CB + 'park_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'park_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+          a: { label: 'Walk over and say hi', action: CB + 'park_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'park_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: 'Stand and watch',   action: CB + 'park_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'park_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: 'Just take the toy',   action: CB + 'park_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'park_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
         },
       },
       park_join_activity: {
         context: CB + 'park_join_activity/context_sam-builds_alex-watches.mp4',
         options: {
-          a: { label: '问能不能一起玩',   action: CB + 'park_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'park_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
-          b: { label: '站在旁边不敢过去', action: CB + 'park_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'park_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
-          c: { label: '挤过去自己玩',     action: CB + 'park_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'park_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+          a: { label: 'Ask to join in',   action: CB + 'park_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'park_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: 'Stand back, too nervous to join', action: CB + 'park_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'park_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: 'Push in and play alone',     action: CB + 'park_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'park_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
       playground_make_friends: {
         context: CB + 'playground_make_friends/context_sam-plays_alex-watches.mp4',
         options: {
-          a: { label: '走过去打招呼', action: CB + 'playground_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'playground_make_friends/reaction_a-approach_sam-waves-back.mp4' },
-          b: { label: '站在旁边看',   action: CB + 'playground_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'playground_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
-          c: { label: '直接拿玩具',   action: CB + 'playground_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'playground_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+          a: { label: 'Walk over and say hi', action: CB + 'playground_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'playground_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: 'Stand and watch',   action: CB + 'playground_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'playground_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: 'Just take the toy',   action: CB + 'playground_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'playground_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
         },
       },
       playground_join_activity: {
         context: CB + 'playground_join_activity/context_sam-builds_alex-watches.mp4',
         options: {
-          a: { label: '问能不能一起玩',   action: CB + 'playground_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'playground_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
-          b: { label: '站在旁边不敢过去', action: CB + 'playground_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'playground_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
-          c: { label: '挤过去自己玩',     action: CB + 'playground_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'playground_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+          a: { label: 'Ask to join in',   action: CB + 'playground_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'playground_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: 'Stand back, too nervous to join', action: CB + 'playground_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'playground_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: 'Push in and play alone',     action: CB + 'playground_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'playground_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
       classroom_make_friends: {
         context: CB + 'classroom_make_friends/context_sam-plays_alex-watches.mp4',
         options: {
-          a: { label: '走过去打招呼', action: CB + 'classroom_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'classroom_make_friends/reaction_a-approach_sam-waves-back.mp4' },
-          b: { label: '站在旁边看',   action: CB + 'classroom_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'classroom_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
-          c: { label: '直接拿玩具',   action: CB + 'classroom_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'classroom_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+          a: { label: 'Walk over and say hi', action: CB + 'classroom_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'classroom_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: 'Stand and watch',   action: CB + 'classroom_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'classroom_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: 'Just take the toy',   action: CB + 'classroom_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'classroom_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
         },
       },
       classroom_join_activity: {
         context: CB + 'classroom_join_activity/context_sam-builds_alex-watches.mp4',
         options: {
-          a: { label: '问能不能一起玩',   action: CB + 'classroom_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'classroom_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
-          b: { label: '站在旁边不敢过去', action: CB + 'classroom_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'classroom_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
-          c: { label: '挤过去自己玩',     action: CB + 'classroom_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'classroom_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+          a: { label: 'Ask to join in',   action: CB + 'classroom_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'classroom_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: 'Stand back, too nervous to join', action: CB + 'classroom_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'classroom_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: 'Push in and play alone',     action: CB + 'classroom_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'classroom_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
       cafeteria_make_friends: {
         context: CB + 'cafeteria_make_friends/context_sam-plays_alex-watches.mp4',
         options: {
-          a: { label: '走过去打招呼', action: CB + 'cafeteria_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'cafeteria_make_friends/reaction_a-approach_sam-waves-back.mp4' },
-          b: { label: '站在旁边看',   action: CB + 'cafeteria_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'cafeteria_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
-          c: { label: '直接拿玩具',   action: CB + 'cafeteria_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'cafeteria_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+          a: { label: 'Walk over and say hi', action: CB + 'cafeteria_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'cafeteria_make_friends/reaction_a-approach_sam-waves-back.mp4' },
+          b: { label: 'Stand and watch',   action: CB + 'cafeteria_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'cafeteria_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
+          c: { label: 'Just take the toy',   action: CB + 'cafeteria_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'cafeteria_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
         },
       },
       cafeteria_join_activity: {
         context: CB + 'cafeteria_join_activity/context_sam-builds_alex-watches.mp4',
         options: {
-          a: { label: '问能不能一起玩',   action: CB + 'cafeteria_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'cafeteria_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
-          b: { label: '站在旁边不敢过去', action: CB + 'cafeteria_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'cafeteria_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
-          c: { label: '挤过去自己玩',     action: CB + 'cafeteria_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'cafeteria_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+          a: { label: 'Ask to join in',   action: CB + 'cafeteria_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'cafeteria_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
+          b: { label: 'Stand back, too nervous to join', action: CB + 'cafeteria_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'cafeteria_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
+          c: { label: 'Push in and play alone',     action: CB + 'cafeteria_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'cafeteria_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
         },
       },
       park_comfort_friend: {
         context: CB + 'park_comfort_friend/context_sam-sad_alex-notices.mp4',
         options: {
-          a: { label: '安慰她',   action: CB + 'park_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'park_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
-          b: { label: '讲个笑话', action: CB + 'park_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'park_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
-          c: { label: '走开',     action: CB + 'park_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'park_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
+          a: { label: 'Comfort her',   action: CB + 'park_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'park_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
+          b: { label: 'Tell a joke', action: CB + 'park_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'park_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
+          c: { label: 'Walk away',     action: CB + 'park_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'park_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
         },
       },
       playground_comfort_friend: {
         context: CB + 'playground_comfort_friend/context_sam-sad_alex-notices.mp4',
         options: {
-          a: { label: '安慰她',   action: CB + 'playground_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'playground_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
-          b: { label: '讲个笑话', action: CB + 'playground_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'playground_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
-          c: { label: '走开',     action: CB + 'playground_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'playground_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
+          a: { label: 'Comfort her',   action: CB + 'playground_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'playground_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
+          b: { label: 'Tell a joke', action: CB + 'playground_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'playground_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
+          c: { label: 'Walk away',     action: CB + 'playground_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'playground_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
         },
       },
       classroom_comfort_friend: {
         context: CB + 'classroom_comfort_friend/context_sam-sad_alex-notices.mp4',
         options: {
-          a: { label: '安慰她',     action: CB + 'classroom_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'classroom_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
-          b: { label: '讲个笑话',   action: CB + 'classroom_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'classroom_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
-          c: { label: '走开',       action: CB + 'classroom_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'classroom_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
+          a: { label: 'Comfort her',     action: CB + 'classroom_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'classroom_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
+          b: { label: 'Tell a joke',   action: CB + 'classroom_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'classroom_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
+          c: { label: 'Walk away',       action: CB + 'classroom_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'classroom_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
         },
       },
       cafeteria_comfort_friend: {
         context: CB + 'cafeteria_comfort_friend/context_sam-sad_alex-notices.mp4',
         options: {
-          a: { label: '安慰她',     action: CB + 'cafeteria_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'cafeteria_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
-          b: { label: '讲个笑话',   action: CB + 'cafeteria_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'cafeteria_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
-          c: { label: '走开',       action: CB + 'cafeteria_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'cafeteria_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
+          a: { label: 'Comfort her',     action: CB + 'cafeteria_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'cafeteria_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
+          b: { label: 'Tell a joke',   action: CB + 'cafeteria_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'cafeteria_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
+          c: { label: 'Walk away',       action: CB + 'cafeteria_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'cafeteria_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
         },
       },
     };
@@ -1396,6 +1429,17 @@
     }
     let pendingChoice = null;
     let pendingPrediction = null;
+    let pendingCheck = null; // 'yes' | 'kindof' | 'no' -- answer to "Is it like you thought?"
+    const observedScenarios = new Set(); // location ids that already showed the OBSERVE re-label step once
+
+    function resetOutcomeSubsteps() {
+      // Check stays hidden until the outcome video finishes (see $outVideo 'ended' below) --
+      // keeps the child's attention on the video instead of the buttons underneath it.
+      document.getElementById('poe-outcome-check').classList.add('hidden');
+      document.getElementById('poe-outcome-observe').classList.add('hidden');
+      document.getElementById('poe-outcome-next').classList.add('hidden');
+      pendingCheck = null;
+    }
 
     const STEP_PHASE = {
       context: 'interpret',
@@ -1575,6 +1619,7 @@
       $modal.classList.remove('hidden');
       // Start at context step
       showStep('context');
+      document.getElementById('ctx-btn-row').classList.add('hidden'); // reveal on video 'ended', not before
       $ctxVideo.src = currentClips ? currentClips.context : 'assets/videos/context.mp4';
       $ctxVideo.muted = !currentClips;   // new clips carry dialogue → unmute
       $ctxVideo.currentTime = 0;
@@ -1604,10 +1649,16 @@
       if (window.__onTopicDone) window.__onTopicDone();
     }
 
+    // Context video finished -- reveal the replay/done buttons below it, not before
+    $ctxVideo.addEventListener('ended', () => {
+      document.getElementById('ctx-btn-row').classList.remove('hidden');
+    });
+
     // POE flow handlers
     // After context, go to "what would YOU do?" action picker
     // Replay the context video from the start
     document.getElementById('ctx-replay').addEventListener('click', () => {
+      document.getElementById('ctx-btn-row').classList.add('hidden'); // hide again until replay also finishes
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
     });
@@ -1679,9 +1730,9 @@
       });
     });
 
-    document.querySelectorAll('.emotion-btn').forEach((btn) => {
+    document.querySelectorAll('#poe-step-predict .emotion-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+        document.querySelectorAll('#poe-step-predict .emotion-btn').forEach((e) => e.classList.remove('selected'));
         btn.classList.add('selected');
         pendingPrediction = btn.dataset.emotion;
         // After emotion picked, show the lock-in confirmation of both choices
@@ -1714,23 +1765,62 @@
       $outVideo.src = opt ? opt.reaction : (OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a);
       $outVideo.muted = !opt;   // reaction clips carry dialogue → unmute
       $outVideo.currentTime = 0;
+      resetOutcomeSubsteps();
       showStep('outcome');
       $outVideo.play().catch(() => {});
       startGazeCap($modal.dataset.locId, 'outcome', $outVideo);
     });
+
+    // Outcome video finished -- reveal the mismatch check below it, not before
+    $outVideo.addEventListener('ended', () => {
+      document.getElementById('poe-outcome-check').classList.remove('hidden');
+    });
+
+    // Mismatch check -- "Is it like you thought?"
+    document.querySelectorAll('.check-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pendingCheck = btn.dataset.check;
+        // Keyed by (scene, topic), matching the possibility tree's own construct id --
+        // see the "key possibility tree + progress by (scene, topic)" fix.
+        const constructId = $modal.dataset.constructId || '_default';
+        document.getElementById('poe-outcome-check').classList.add('hidden');
+        if (pendingCheck !== 'yes' && !observedScenarios.has(constructId)) {
+          // First mismatch (no/kindof) for this (scene, topic) -- ask the child to re-label what Sam actually felt.
+          observedScenarios.add(constructId);
+          document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
+          document.getElementById('poe-outcome-observe').classList.remove('hidden');
+        } else {
+          // Either it matched, or this (scene, topic) already had its one OBSERVE prompt -- move on.
+          document.getElementById('poe-outcome-next').classList.remove('hidden');
+        }
+      });
+    });
+
+    // Observe -- re-label Sam's feeling after seeing the outcome (shown once per (scene, topic))
+    document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
+        btn.classList.add('selected');
+        setTimeout(() => {
+          document.getElementById('poe-outcome-observe').classList.add('hidden');
+          document.getElementById('poe-outcome-next').classList.remove('hidden');
+        }, 350);
+      });
+    });
+
     document.getElementById('out-revise').addEventListener('click', () => {
       // Stay in the modal: go back to the action step to try a different path here
       $outVideo.pause();
       stopGazeCap();
       pendingChoice = null;
       pendingPrediction = null;
-      document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
+      document.querySelectorAll('#poe-step-predict .emotion-btn').forEach((e) => e.classList.remove('selected'));
       showStep('action');
     });
 
     /* ===== Possibility Tree (Reflect step) =====
-       主干 = this case's social norm (centered, fixed).
-       侧枝 = the child's guesses across rounds (≤3, one per action), stored by
+       Trunk = this case's social norm (centered, fixed).
+       Side branches = the child's guesses across rounds (≤3, one per action), stored by
        constructId in localStorage. The current round's branch grows in. */
     const $treeSvg = document.getElementById('tree-svg');
     const SVGNS = 'http://www.w3.org/2000/svg';
@@ -2058,6 +2148,7 @@
     document.getElementById('reset-progress').addEventListener('click', () => {
       visited.clear();
       doneTopics.clear();
+      observedScenarios.clear();
       localStorage.removeItem('videoasd_visited_v5');
       localStorage.removeItem('videoasd_done_topics_v1');
       // also clear every accumulated possibility tree
@@ -2206,6 +2297,11 @@
         const b = document.createElement('button');
         b.className = 'scene-pill';
         b.dataset.scene = s.id;
+        // Anchored near this scene's ★ badge (LOC_CENTERS), offset a bit below it --
+        // same spot on the map, without the opaque pill covering the star row.
+        const [x, y] = LOC_CENTERS[s.id] || [50, 50];
+        b.style.left = x + '%';
+        b.style.top = (y + 7) + '%';
         b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}` +
                       `<span class="pill-stars"></span>`;
         // Any place, any time. Tapping the one you're in backs out to the town.

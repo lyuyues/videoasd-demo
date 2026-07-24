@@ -41,7 +41,7 @@ function writeVisited(visited) {
 
 function refreshUI() {
   const visited = readVisited();
-  $progress.textContent = `已探索 ${visited.length}/4`;
+  $progress.textContent = `Explored ${visited.length}/4`;
   $zones.forEach((el) => {
     el.classList.toggle('visited', visited.includes(el.dataset.loc));
   });
@@ -58,7 +58,7 @@ function commitVisit(loc) {
 
 function openModal(loc, label) {
   pendingLoc = loc;
-  $modalTitle.textContent = `进入 ${label}`;
+  $modalTitle.textContent = `Enter ${label}`;
   $modal.classList.remove('hidden');
 }
 
