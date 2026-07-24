@@ -2269,14 +2269,27 @@
         [...$bar.children].forEach((p) => {
           const id = p.dataset.scene;
           const n = topicsDoneIn(id);
+          const isActive = id === active;
           p.classList.toggle('today', id === todayScene && active !== todayScene);
-          p.classList.toggle('active', id === active);
+          p.classList.toggle('active', isActive);
           p.classList.toggle('complete', n >= STAR_MAX);
           // Positioned on the map, the other 3 scenes' pills would float over
           // whichever zoomed scene is showing -- only the active one's stays up,
           // doubling as the "tap again to back out" control. All 4 return once
           // active is null (back on the town overview).
-          p.style.display = (!active || id === active) ? '' : 'none';
+          p.style.display = (!active || isActive) ? '' : 'none';
+          if (isActive) {
+            // Its map spot sits wherever that scene's building is -- too central
+            // once it's the lone "back" control over a zoomed scene. Corner instead.
+            p.style.left = '14px';
+            p.style.top = '14px';
+            p.style.transform = 'none';
+          } else {
+            const [x, y] = LOC_CENTERS[id] || [50, 50];
+            p.style.left = x + '%';
+            p.style.top = (y + 7) + '%';
+            p.style.transform = '';
+          }
           const stars = p.querySelector('.pill-stars');
           if (stars) stars.textContent = '★'.repeat(n) + '☆'.repeat(STAR_MAX - n);
         });
@@ -2318,11 +2331,8 @@
         const b = document.createElement('button');
         b.className = 'scene-pill';
         b.dataset.scene = s.id;
-        // Anchored near this scene's ★ badge (LOC_CENTERS), offset a bit below it --
-        // same spot on the map, without the opaque pill covering the star row.
-        const [x, y] = LOC_CENTERS[s.id] || [50, 50];
-        b.style.left = x + '%';
-        b.style.top = (y + 7) + '%';
+        // Position (map spot vs. corner) is owned entirely by renderPills(), which
+        // runs right after this loop and on every state change afterward.
         // Two faces, swapped by .active (already toggled in renderPills): the
         // normal icon/label/stars on the town map, and an explicit "back" label
         // when this is the one scene left showing, zoomed in.
