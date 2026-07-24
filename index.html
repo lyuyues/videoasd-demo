@@ -146,7 +146,8 @@
     .modal.hidden { opacity: 0; pointer-events: none; }
     .modal-card {
       background: white; border-radius: 28px;
-      padding: 32px 40px; max-width: 1180px; width: 94%;
+      padding: 32px 40px calc(32px + env(safe-area-inset-bottom, 0px));
+      max-width: 1180px; width: 94%;
       text-align: center;
       box-shadow: 0 16px 56px rgba(0, 0, 0, 0.22);
       transform: scale(0.96); transition: transform 0.22s ease;
