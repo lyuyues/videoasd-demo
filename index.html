@@ -1573,18 +1573,32 @@
     const currentLevel = () =>
       DIFFICULTY_LEVELS.find((l) => l.id === difficultyLevel) || DIFFICULTY_LEVELS[1];
 
+    // Single source of truth for how many options show, everywhere a choice is
+    // made -- action, predict, and observe were drifting out of sync (action
+    // hard-locked to 3 by applyTopicActions, observe never wired to this at
+    // all). All three now read lv.actions/lv.emotions the same way.
     function applyDifficulty() {
       const lv = currentLevel();
-      // actions: show first N (.action-btn are in ACTION_POOL order)
+      // actions: show first N (.action-btn are in ACTION_POOL order). For a
+      // real clip-backed topic, applyTopicActions() has already relabeled a/b/c
+      // from currentClips -- this only touches display/columns, not labels, so
+      // it's safe to also apply there. The 4th ('d') slot has no real clip yet
+      // (see applyTopicActions) -- only ever appears at Stretch, and falls back
+      // to the legacy OUTCOME_MAP video, a pre-existing placeholder gap.
       const actionBtns = document.querySelectorAll('#poe-step-action .action-btn');
       actionBtns.forEach((btn, i) => { btn.style.display = i < lv.actions ? '' : 'none'; });
       const actionGrid = document.querySelector('#poe-step-action .poe-choices');
       if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${lv.actions}, 1fr)`;
-      // emotions: show first N (.emotion-btn are in EMOTION_POOL order)
-      document.querySelectorAll('#poe-step-predict .emotion-btn')
-        .forEach((btn, i) => { btn.style.display = i < lv.emotions ? '' : 'none'; });
-      const emoGrid = document.querySelector('#poe-step-predict .emotion-grid');
-      if (emoGrid) emoGrid.style.gridTemplateColumns = `repeat(${Math.min(lv.emotions, 3)}, 1fr)`;
+      // emotions: show first N (.emotion-btn are in EMOTION_POOL order) --
+      // identical treatment for predict (guess) and observe (re-label).
+      [
+        { grid: '#poe-step-predict .emotion-grid', btns: '#poe-step-predict .emotion-btn' },
+        { grid: '#observe-emotion-grid', btns: '#observe-emotion-grid .emotion-btn' },
+      ].forEach(({ grid, btns }) => {
+        document.querySelectorAll(btns).forEach((btn, i) => { btn.style.display = i < lv.emotions ? '' : 'none'; });
+        const g = document.querySelector(grid);
+        if (g) g.style.gridTemplateColumns = `repeat(${Math.min(lv.emotions, 3)}, 1fr)`;
+      });
       const diffBtn = document.getElementById('diff-start');
       if (diffBtn) diffBtn.textContent = `Difficulty: ${lv.label}`;
     }
@@ -1756,22 +1770,19 @@
       showStep('action');
     });
 
-    // For clip-backed topics, relabel the 3 action buttons from the topic options.
+    // Relabels the action buttons -- from the topic's clips if it has them,
+    // else back to the legacy generic labels. Display/column count (how many
+    // show) is applyDifficulty()'s job alone, called at the end either way, so
+    // action stays in sync with predict/observe instead of being hard-locked.
     function applyTopicActions() {
       const btns = document.querySelectorAll('#poe-step-action .action-btn');
-      const grid = document.querySelector('#poe-step-action .poe-choices');
       if (currentClips) {
         ['a', 'b', 'c'].forEach((ch, i) => {
           const b = btns[i], o = currentClips.options[ch];
-          if (!b) return;
-          b.style.display = o ? '' : 'none';
-          if (o) {
-            const span = b.querySelector('span'); if (span) span.textContent = o.label;
-            const img = b.querySelector('img'); if (img) img.style.display = 'none';
-          }
+          if (!b || !o) return;
+          const span = b.querySelector('span'); if (span) span.textContent = o.label;
+          const img = b.querySelector('img'); if (img) img.style.display = 'none';
         });
-        if (btns[3]) btns[3].style.display = 'none';
-        if (grid) grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
       } else {
         // Restore legacy labels/icons (a previous clip topic may have changed them)
         ['a', 'b', 'c', 'd'].forEach((ch, i) => {
@@ -1780,8 +1791,8 @@
           const span = b.querySelector('span'); if (span) span.textContent = info.label;
           const img = b.querySelector('img'); if (img) { img.style.display = ''; img.src = info.icon; }
         });
-        applyDifficulty();   // restore per-difficulty visible count
       }
+      applyDifficulty();
     }
 
     // Action picker: play the action clip (clip topics) then go to predict.
