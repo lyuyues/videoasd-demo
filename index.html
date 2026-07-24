@@ -2498,7 +2498,9 @@
 
       /* ===== Grown-up controls: tap the ⚙ icon (top-right) ===== */
       const $toolbar = document.getElementById('toolbar');
-      document.getElementById('parent-tab').addEventListener('click', () => { $toolbar.hidden = false; });
+      // Toggle, not just open -- tapping ⚙ again with the toolbar already showing
+      // did nothing before (only the toolbar's own "Done" button could close it).
+      document.getElementById('parent-tab').addEventListener('click', () => { $toolbar.hidden = !$toolbar.hidden; });
       document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
 
       renderPills();
