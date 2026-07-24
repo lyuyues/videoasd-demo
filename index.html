@@ -763,7 +763,7 @@
       <div class="done-emoji" id="done-emoji">🌸</div>
       <h1 id="done-title">All done!</h1>
       <p id="done-sub"></p>
-      <button class="setup-hand" id="done-back">Back to the map</button>
+      <button class="setup-hand" id="done-back">Back to Main Street</button>
     </div>
   </div>
 
@@ -2337,7 +2337,7 @@
         b.innerHTML =
           `<span class="scene-pill-normal"><span class="scene-ico">${s.ico}</span>${s.label}` +
           `<span class="pill-stars"></span></span>` +
-          `<span class="scene-pill-back">← Back to map</span>`;
+          `<span class="scene-pill-back">← Back to Main Street</span>`;
         // Any place, any time. Tapping the one you're in backs out to the town.
         b.addEventListener('click', () => {
           if (active === s.id) exitScene();
