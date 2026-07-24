@@ -1895,8 +1895,9 @@
       if (highlight) g.classList.add('grow');
       // side by side so neither image covers the other: action (the boy, what
       // the child did) on the left, emotion (the girl's reaction) on the right.
-      const aSize = highlight ? 52 : 44;
-      const eSize = highlight ? 48 : 42;
+      // Bumped up from 52/44 and 48/42 -- expressions weren't legible at the old size.
+      const aSize = highlight ? 65 : 55;
+      const eSize = highlight ? 60 : 52;
       const gap = 4;
       const total = aSize + gap + eSize;
       const rh = Math.max(aSize, eSize) + 16;
