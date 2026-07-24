@@ -1884,10 +1884,14 @@
     }
 
     // Where each side branch attaches on the trunk and where its fruit sits.
+    // x1/y1 (fruit position) nudged out from the trunk to make room for the
+    // larger portraits below -- verified against every highlight/normal
+    // combination to stay on-canvas and clear of the trunk bubble. x0/y0
+    // (line's start, near the trunk) unchanged.
     const BRANCH_SLOTS = [
-      { x0: 262, y0: 252, x1: 118, y1: 238 }, // left low
-      { x0: 258, y0: 214, x1: 404, y1: 196 }, // right mid
-      { x0: 262, y0: 178, x1: 128, y1: 150 }, // left high
+      { x0: 262, y0: 252, x1: 116, y1: 236 }, // left low
+      { x0: 258, y0: 214, x1: 404, y1: 208 }, // right mid
+      { x0: 262, y0: 178, x1: 92,  y1: 136 }, // left high
     ];
 
     function drawFruit(svg, cx, cy, action, emotion, highlight, label) {
@@ -1895,9 +1899,11 @@
       if (highlight) g.classList.add('grow');
       // side by side so neither image covers the other: action (the boy, what
       // the child did) on the left, emotion (the girl's reaction) on the right.
-      // Bumped up from 52/44 and 48/42 -- expressions weren't legible at the old size.
-      const aSize = highlight ? 65 : 55;
-      const eSize = highlight ? 60 : 52;
+      // Bumped again from 65/55 and 60/52 -- verified against BRANCH_SLOTS above as the
+      // largest size that clears the trunk bubble and canvas edges in every
+      // highlight/normal combination without moving the trunk or the tree's own size.
+      const aSize = highlight ? 78 : 66;
+      const eSize = highlight ? 72 : 62;
       const gap = 4;
       const total = aSize + gap + eSize;
       const rh = Math.max(aSize, eSize) + 16;
