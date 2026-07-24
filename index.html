@@ -146,8 +146,7 @@
     .modal.hidden { opacity: 0; pointer-events: none; }
     .modal-card {
       background: white; border-radius: 28px;
-      padding: 32px 40px calc(32px + env(safe-area-inset-bottom, 0px));
-      max-width: 1180px; width: 94%;
+      padding: 32px 40px; max-width: 1180px; width: 94%;
       text-align: center;
       box-shadow: 0 16px 56px rgba(0, 0, 0, 0.22);
       transform: scale(0.96); transition: transform 0.22s ease;
@@ -240,9 +239,18 @@
       align-self: center;
     }
     .poe-next:hover, .poe-secondary:hover { transform: translateY(-2px); }
+    /* Sticky to the bottom of .modal-card's own scroll area (not the page) --
+       stays visible once scrolled into view without needing a further scroll
+       to reach it, regardless of how tall the content above (video, tree)
+       ends up being. Background/shadow read as a bar so it's legible over
+       whatever content is scrolled behind it. */
     .poe-btn-row {
       display: flex; gap: 12px; justify-content: center;
       align-items: center; flex-wrap: wrap;
+      position: sticky; bottom: 0; z-index: 5;
+      background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 10px 0 2px; margin-top: -10px;
     }
     .poe-btn-row.hidden { display: none; }
     .confirm-summary {
@@ -266,7 +274,15 @@
       background: linear-gradient(135deg, #d8d8e0 0%, #b5b5c0 100%);
       box-shadow: 0 4px 12px rgba(120, 120, 140, 0.3);
     }
-    .poe-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    /* Same sticky treatment as .poe-btn-row (see comment there) -- used by the
+       outcome step's check/next button rows. */
+    .poe-row {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      position: sticky; bottom: 0; z-index: 5;
+      background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 10px 0 2px; margin-top: -10px;
+    }
     .poe-choices {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
