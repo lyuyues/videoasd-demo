@@ -1,8 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- Lets iOS open this without Safari's chrome (address bar, tabs) when
+       launched from a Home Screen icon -- Settings-level "fullscreen" isn't
+       a thing Safari offers directly; Add to Home Screen is the way there. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VideoASD">
   <title>My Town — VideoASD</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
