@@ -100,6 +100,8 @@ function gazeFromResult(result) {
 
 /* --------- GazeTracker class -------------------------------------------- */
 export class GazeTracker {
+  static STALE_MS = 700; // no face detected for longer than this -> treat as lost, not just old
+
   constructor() {
     this.landmarker = null;
     this.delegate = null;
@@ -107,6 +109,7 @@ export class GazeTracker {
     this.stream = null;
     this.running = false;
     this.lastBs = { x_bs: 0, y_bs: 0 };
+    this.lastGoodAt = 0; // timestamp of the last frame that actually detected a face
     this.model = this.loadCalibration();
     this.onFrameCallbacks = [];
   }
@@ -194,6 +197,7 @@ export class GazeTracker {
         const gaze = gazeFromResult(result);
         if (gaze) {
           this.lastBs = gaze;
+          this.lastGoodAt = performance.now();
           for (const cb of this.onFrameCallbacks) cb(gaze);
         }
       } catch (e) {
@@ -211,9 +215,15 @@ export class GazeTracker {
     return this.lastBs;
   }
 
-  /** Returns gaze position in [0,1] screen coords, or null if no calibration. */
+  /** Returns gaze position in [0,1] screen coords, or null if no calibration
+   *  or if the last actual face detection is more than STALE_MS old (face
+   *  lost -- looked away, poor light, out of frame). Without this, a lost
+   *  face silently freezes the cursor at its last position -- often a
+   *  corner, since extreme blendshape values right before losing the face
+   *  are common -- rather than visibly showing tracking stopped. */
   getScreenGaze() {
     if (!this.model) return null;
+    if (performance.now() - this.lastGoodAt > GazeTracker.STALE_MS) return null;
     return applyCalibration(this.model, this.lastBs.x_bs, this.lastBs.y_bs);
   }
 }

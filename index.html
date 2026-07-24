@@ -696,8 +696,22 @@
     .scene-pill .pill-stars { font-size: 9px; color: #ffb56a; letter-spacing: -1px; margin-left: 2px; }
     .scene-pill.complete .pill-stars { color: #7fc164; }
 
-    /* Invisible long-press target back to the grown-up controls */
-    #parent-tab { position: fixed; top: 0; right: 0; width: 64px; height: 64px; z-index: 11; }
+    /* Grown-up controls entry point. Was an invisible 64x64 long-press corner --
+       reported unreliable (overlapped the ★ progress badge, long-press timing
+       is finicky on touch) and not discoverable at all. Now a small visible
+       icon, tap to open directly -- being a deliberate, modestly-sized button
+       is itself the guard against a stray tap, so the long-press delay is gone. */
+    #parent-tab {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 8px);
+      right: calc(env(safe-area-inset-right, 0px) + 8px);
+      width: 40px; height: 40px; z-index: 13;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, 0.85); border: none; border-radius: 50%;
+      font-size: 17px; font-family: inherit; padding: 0; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    #parent-tab:hover { background: rgba(255, 255, 255, 0.98); }
 
     /* ===== End of a sitting ===== */
     .done-screen {
@@ -779,8 +793,8 @@
 
   <span class="progress" id="progress">★ 0/12</span>
 
-  <!-- Grown-up controls. Hidden while the child plays; reached by long-pressing
-       the top-right corner (#parent-tab) so a stray tap can't open it. -->
+  <!-- Grown-up controls. Hidden while the child plays; reached by tapping the
+       ⚙ icon (#parent-tab, top-right). -->
   <div class="toolbar" id="toolbar" hidden>
     <button id="cal-start">Calibrate Gaze</button>
     <button id="gaze-toggle" style="display:none;">Show Gaze ●</button>
@@ -789,7 +803,7 @@
     <button id="reset-progress">Reset</button>
     <button id="toolbar-hide">Done ✓</button>
   </div>
-  <div id="parent-tab" title="Long-press for grown-up controls"></div>
+  <button id="parent-tab" title="Grown-up controls">⚙</button>
 
   <!-- Webcam preview (small thumbnail) -->
   <video id="gaze-video" autoplay muted playsinline></video>
@@ -1086,8 +1100,15 @@
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
       $gazeToggle.style.display = '';
-      $gazeToggle.textContent = 'Hide Gaze ●';
+      // Show the cursor tracking live for a few seconds -- proof calibration
+      // actually worked, not just a "success" message -- then turn it off.
+      // Left on indefinitely, it sits in the child's view for the whole
+      // session; the grown-up can still re-show it anytime from the toolbar.
       enableGazeCursor(true);
+      $gazeToggle.textContent = 'Hide Gaze ●';
+      setTimeout(() => {
+        if (gazeTrackingActive) { enableGazeCursor(false); $gazeToggle.textContent = 'Show Gaze ○'; }
+      }, 4000);
       if (window.__afterCalibration) { window.__afterCalibration(); window.__afterCalibration = null; }
     }
 
@@ -1102,7 +1123,13 @@
       gazeDiag.frames++;                 // DIAG: loop alive?
       if (!gazeTrackingActive) return;
       const g = gaze.getScreenGaze();
-      if (!g) return;
+      if (!g) {
+        // No face (or stale >700ms, see gaze.js) -- hide rather than leave the
+        // cursor frozen showing a position that's no longer real tracking.
+        $gazeCursor.classList.remove('show');
+        return;
+      }
+      $gazeCursor.classList.add('show');
       gazeDiag.valid++;                  // DIAG: tracking produced gaze?
       const x = Math.max(0, Math.min(1, g.x)) * window.innerWidth;
       const y = Math.max(0, Math.min(1, g.y)) * window.innerHeight;
@@ -2420,14 +2447,18 @@
          pasted into CLIPS, so it belongs before a sitting, not inside one. The
          study runs on pre-generated, expert-reviewed content — the grown-up
          skips this. It sits in the flow because the pipeline supports authoring. */
-      const AUTHOR_URL = 'http://localhost:5055';
-      // The studio is a local-only tool (see comment above) -- on any deployed
-      // page (e.g. GitHub Pages) localhost:5055 is the *viewer's* machine, which
-      // never has it running. Opening a tab there just shows a browser
-      // connection error, and window.open's return value can't be trusted to
-      // detect that reliably. So don't even try off of localhost -- go straight
-      // to the "isn't running" note, same message, no dead tab.
-      const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+      // Same host the page itself was loaded from, port 5055 -- works whether
+      // this page is opened as localhost (studio on the same machine) or as a
+      // LAN IP (e.g. an iPad reaching a Mac serving both the page and the
+      // studio on the LAN, studio bound to 0.0.0.0 for that to work at all).
+      const AUTHOR_URL = `http://${location.hostname}:5055`;
+      // The studio is a local-only tool (see comment above) -- on the real
+      // deployed page (GitHub Pages) it can never be reached, so don't even
+      // try: window.open's return value can't be trusted to detect a dead
+      // connection reliably, and it'd show a bare browser error tab instead
+      // of the intended note. Denylist (not allowlist) so this still works
+      // when the page itself is served from a LAN IP rather than localhost.
+      const isLocalHost = location.hostname !== 'lyuyues.github.io';
       document.getElementById('setup-author').addEventListener('click', () => {
         const note = document.getElementById('setup-author-note');
         if (!isLocalHost) {
@@ -2455,17 +2486,9 @@
         // a detour. 'today' still marks where the child left off (see renderPills).
       });
 
-      /* ===== Grown-up controls: long-press the top-right corner ===== */
+      /* ===== Grown-up controls: tap the ⚙ icon (top-right) ===== */
       const $toolbar = document.getElementById('toolbar');
-      let pressTimer = null;
-      const startPress = () => {
-        pressTimer = setTimeout(() => { $toolbar.hidden = false; }, 800);
-      };
-      const cancelPress = () => { clearTimeout(pressTimer); };
-      const $tab = document.getElementById('parent-tab');
-      $tab.addEventListener('pointerdown', startPress);
-      $tab.addEventListener('pointerup', cancelPress);
-      $tab.addEventListener('pointerleave', cancelPress);
+      document.getElementById('parent-tab').addEventListener('click', () => { $toolbar.hidden = false; });
       document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
 
       renderPills();
