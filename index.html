@@ -415,6 +415,12 @@
     .scene-pill:hover { transform: translate(-50%, -50%) translateY(-2px); }
     .scene-pill .scene-ico { font-size: 17px; line-height: 1; }
     .scene-pill.active { border-color: #e8804f; background: #fff7f1; color: #c2502a; box-shadow: 0 3px 12px rgba(232, 128, 79, 0.22); }
+    /* Only one pill is ever visible while zoomed into a scene (its own) -- swap
+       its normal icon/label/stars for an explicit "back" label so tapping it
+       to exit reads as a button, not as re-tapping the place you're already in. */
+    .scene-pill-back { display: none; }
+    .scene-pill.active .scene-pill-normal { display: none; }
+    .scene-pill.active .scene-pill-back { display: inline; }
 
     /* === Per-scene topic circles (each circle = a topic) === */
     .scene-circles { position: fixed; inset: 0; z-index: 6; display: none; }
@@ -2311,8 +2317,13 @@
         const [x, y] = LOC_CENTERS[s.id] || [50, 50];
         b.style.left = x + '%';
         b.style.top = (y + 7) + '%';
-        b.innerHTML = `<span class="scene-ico">${s.ico}</span>${s.label}` +
-                      `<span class="pill-stars"></span>`;
+        // Two faces, swapped by .active (already toggled in renderPills): the
+        // normal icon/label/stars on the town map, and an explicit "back" label
+        // when this is the one scene left showing, zoomed in.
+        b.innerHTML =
+          `<span class="scene-pill-normal"><span class="scene-ico">${s.ico}</span>${s.label}` +
+          `<span class="pill-stars"></span></span>` +
+          `<span class="scene-pill-back">← Back to map</span>`;
         // Any place, any time. Tapping the one you're in backs out to the town.
         b.addEventListener('click', () => {
           if (active === s.id) exitScene();
@@ -2405,9 +2416,9 @@
 
       document.getElementById('setup-done').addEventListener('click', () => {
         $setup.classList.add('hidden');
-        // Open straight into the place the child left off, not the town overview:
-        // the topic circles are the actual choice, and the town is a detour.
-        enterScene(sceneById(todayScene));
+        // Land on the town map with all 4 places up, not straight into a scene --
+        // now that the pills sit on the map itself, it's the actual picker, not
+        // a detour. 'today' still marks where the child left off (see renderPills).
       });
 
       /* ===== Grown-up controls: long-press the top-right corner ===== */
