@@ -653,7 +653,11 @@
       border-radius: 20px; padding: 8px 20px; font-size: 13px; font-weight: 700;
       cursor: pointer; font-family: inherit; border: 2px solid transparent;
     }
-    .setup-go { background: linear-gradient(135deg, #ffb56a, #ff9d3f); color: #fff; box-shadow: 0 3px 12px rgba(255, 157, 63, 0.3); }
+    /* Outline, not solid -- these two are optional per-step actions. The solid
+       gradient is reserved for .setup-hand, the one thing everyone must press,
+       so it isn't competing for attention with two steps that can both be skipped. */
+    .setup-go { background: #fff7f1; color: #c2502a; border-color: #ffcd9e; }
+    .setup-go:hover { background: #fff0e0; }
     .setup-skip { background: #f6f7f9; color: #8a8a96; }
     .setup-skip:hover { background: #eceef2; }
     .setup-state { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #7fc164; padding-top: 6px; }
@@ -715,7 +719,7 @@
         <div class="setup-num">1</div>
         <div class="setup-body">
           <h2>Eye calibration</h2>
-          <p>Lets the app see where your child looks while they watch. The game plays exactly the same without it.</p>
+          <p>Optional — tracks where your child looks. Skip and the game plays the same.</p>
           <div class="setup-actions">
             <button class="setup-go" id="setup-cal">Calibrate</button>
             <button class="setup-skip" id="setup-cal-skip">Skip</button>
@@ -728,7 +732,7 @@
         <div class="setup-num">2</div>
         <div class="setup-body">
           <h2>Make a scene</h2>
-          <p>Build a situation of your own — pick a place and a topic, and the studio designs the choices. Skip to use the scenes we prepared.</p>
+          <p>Optional — design your own, or skip to use the prepared scenes.</p>
           <div class="setup-actions">
             <button class="setup-go" id="setup-author">✨ Author</button>
             <button class="setup-skip" id="setup-author-skip">Skip</button>
@@ -2367,9 +2371,21 @@
          study runs on pre-generated, expert-reviewed content — the grown-up
          skips this. It sits in the flow because the pipeline supports authoring. */
       const AUTHOR_URL = 'http://localhost:5055';
+      // The studio is a local-only tool (see comment above) -- on any deployed
+      // page (e.g. GitHub Pages) localhost:5055 is the *viewer's* machine, which
+      // never has it running. Opening a tab there just shows a browser
+      // connection error, and window.open's return value can't be trusted to
+      // detect that reliably. So don't even try off of localhost -- go straight
+      // to the "isn't running" note, same message, no dead tab.
+      const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
       document.getElementById('setup-author').addEventListener('click', () => {
-        const w = window.open(AUTHOR_URL, '_blank');
         const note = document.getElementById('setup-author-note');
+        if (!isLocalHost) {
+          note.hidden = false;
+          note.textContent = 'The studio only runs during local development. Start it with: cd VIDEOASD-backend && python3 expert_ui.py';
+          return;
+        }
+        const w = window.open(AUTHOR_URL, '_blank');
         setTimeout(() => {
           if (!w || w.closed) {
             note.hidden = false;
