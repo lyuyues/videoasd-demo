@@ -678,6 +678,12 @@
       font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit;
       box-shadow: 0 5px 18px rgba(255, 157, 63, 0.34);
     }
+    /* Disabled until both steps above have a decision (done or skipped) --
+       greyed out reads as "not yet", pointing back at steps 1-2 instead of
+       leaving a fully-lit button with nothing to distinguish it as premature. */
+    #setup-done:disabled {
+      background: #e4e4e8; color: #a8a8b4; box-shadow: none; cursor: not-allowed;
+    }
     .setup-foot { font-size: 11px; color: #b0b0bc; text-align: center; margin: 12px 0 0; }
 
     /* Every place is selectable. The suggested one — where the child left off —
@@ -748,7 +754,7 @@
         <div class="setup-state" id="setup-author-state"></div>
       </div>
 
-      <button class="setup-hand" id="setup-done">Hand the tablet to your child →</button>
+      <button class="setup-hand" id="setup-done" disabled>Hand the tablet to your child →</button>
       <p class="setup-foot" id="setup-foot">Long-press the top-right corner to get back here.</p>
     </div>
   </div>
@@ -2369,6 +2375,15 @@
       function markStep(which, label) {
         document.getElementById(`setup-step-${which}`).classList.add('done');
         document.getElementById(`setup-${which}-state`).textContent = label;
+        updateHandButton();
+      }
+      // Enabled once both steps have a decision (calibrated/skipped, authored/skipped) --
+      // covers every path that reaches markStep, including the calibration overlay's
+      // own return callback below.
+      function updateHandButton() {
+        const ready = document.getElementById('setup-step-cal').classList.contains('done') &&
+                      document.getElementById('setup-step-author').classList.contains('done');
+        document.getElementById('setup-done').disabled = !ready;
       }
       document.getElementById('setup-cal').addEventListener('click', () => {
         $setup.classList.add('hidden');
@@ -2434,9 +2449,12 @@
       $tab.addEventListener('pointerleave', cancelPress);
       document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
 
-      // Tell the grown-up where the child is picking up, since they no longer choose it.
+      // The suggested scene is now shown on the map itself (the .today highlight,
+      // set in renderPills) rather than restated here -- hand-over lands on the
+      // map, not inside it, so "Up next: X" would say something that isn't
+      // actually about to happen.
       document.getElementById('setup-foot').textContent =
-        `Up next: ${sceneById(todayScene).label} · ${doneTopics.size} of ${TOPIC_TOTAL} stories explored` +
+        `${doneTopics.size} of ${TOPIC_TOTAL} stories explored so far` +
         ` — long-press the top-right corner to get back here.`;
       renderPills();
 
