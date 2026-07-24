@@ -684,7 +684,6 @@
     #setup-done:disabled {
       background: #e4e4e8; color: #a8a8b4; box-shadow: none; cursor: not-allowed;
     }
-    .setup-foot { font-size: 11px; color: #b0b0bc; text-align: center; margin: 12px 0 0; }
 
     /* Every place is selectable. The suggested one — where the child left off —
        is only highlighted, never enforced. */
@@ -755,7 +754,6 @@
       </div>
 
       <button class="setup-hand" id="setup-done" disabled>Hand the tablet to your child →</button>
-      <p class="setup-foot" id="setup-foot">Long-press the top-right corner to get back here.</p>
     </div>
   </div>
 
@@ -2459,13 +2457,6 @@
       $tab.addEventListener('pointerleave', cancelPress);
       document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
 
-      // The suggested scene is now shown on the map itself (the .today highlight,
-      // set in renderPills) rather than restated here -- hand-over lands on the
-      // map, not inside it, so "Up next: X" would say something that isn't
-      // actually about to happen.
-      document.getElementById('setup-foot').textContent =
-        `${doneTopics.size} of ${TOPIC_TOTAL} stories explored so far` +
-        ` — long-press the top-right corner to get back here.`;
       renderPills();
 
       /* Pick up anything authored in the studio. A case only reaches the child if
