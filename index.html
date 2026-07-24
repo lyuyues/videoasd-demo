@@ -1548,6 +1548,12 @@
       $treeStep.classList.toggle('hidden', which !== 'tree');
       const active = STEP_PHASE[which];
       $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
+      // All steps share one scrollable card; switching which is visible doesn't
+      // reset scroll position on its own. A step shorter than wherever a
+      // previous step left the scroll offset would then render pre-scrolled --
+      // its own cue text pushed above the visible area, an empty gap below it.
+      const $card = document.querySelector('.modal-card.poe-card');
+      if ($card) $card.scrollTop = 0;
     }
 
     /* ===== Difficulty system (v0: single axis = option count) =====
