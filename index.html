@@ -220,10 +220,6 @@
     }
     .poe-video {
       width: 100%; max-width: 1040px;
-      /* Capped so a wide card (tablet landscape) doesn't turn a 16:9 video into
-         enough height to push the buttons below it off-screen -- shrinks by
-         width AND height together, same as an <img>, so aspect ratio holds. */
-      max-height: 46vh; max-height: 46dvh;
       border-radius: 18px; background: #000;
       box-shadow: 0 4px 14px rgba(0,0,0,0.18);
       margin: 0 auto;
@@ -300,7 +296,12 @@
     }
 
     /* === Possibility Tree (Reflect step) === */
-    .tree-wrap { width: 100%; max-width: 540px; margin: 0 auto; }
+    /* SVG scales by width (height:auto below), so to cap its rendered height on
+       short viewports we cap width by the height budget instead, converted
+       through the viewBox's own ratio (520:380). min() keeps the original
+       540px design size wherever there's room, only shrinking when there
+       isn't -- this is what was still needing a scroll to reach the buttons. */
+    .tree-wrap { width: 100%; max-width: min(540px, calc(40dvh * 520 / 380)); margin: 0 auto; }
     .tree-svg { width: 100%; height: auto; display: block; }
     .tree-legend {
       display: flex; gap: 22px; justify-content: center;
