@@ -33,8 +33,10 @@
     .player { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 18px; padding: 24px; }
     .player .cue { font-size: 24px; font-weight: 700; color: #5a4a3a; }
-    .player video { width: min(92vw, 160vh); max-height: 76vh; border-radius: 22px; background: #000;
+    .stage { display: grid; }
+    .stage video { grid-area: 1 / 1; width: min(92vw, 160vh); max-height: 76vh; border-radius: 22px; background: #000;
       box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+    .stage video.off { visibility: hidden; }
     .player .btns { display: flex; gap: 14px; min-height: 52px; }
     .corner { position: fixed; top: 12px; right: 12px; background: rgba(255,255,255,.6); color: #8a8a96;
       font-size: 13px; padding: 6px 10px; border-radius: 10px; }
@@ -75,7 +77,7 @@
   <!-- Child-facing player -->
   <div id="player" class="player hidden">
     <p class="cue" id="cue"></p>
-    <video id="video" playsinline></video>
+    <div class="stage"><video id="vA" playsinline preload="auto"></video><video id="vB" class="off" playsinline preload="auto"></video></div>
     <div class="btns">
       <button class="btn-sec hidden" id="replay">↻ Watch again</button>
       <button class="btn-main hidden" id="finish">Done ✓</button>
@@ -156,7 +158,7 @@
     }
     gaze.onFrame(() => {
       if (!gazeOn || !cap) return;
-      const v = $('video');
+      const v = active();
       if (v.paused || v.ended) return;
       const g = gaze.getScreenGaze();
       if (!g) return;
@@ -188,33 +190,66 @@
         onRatio: +(c.on / (c.on + c.off)).toFixed(3) });
     }
 
-    /* ===== Playback: context → action → reaction, no stops ===== */
-    let playlist = [];   // [{ segment, src }]
+    /* ===== Playback: context → action → reaction as one continuous video =====
+       Segments are fetched up front into blob URLs, and two stacked <video>
+       elements alternate: while one plays, the next segment is already loaded in
+       the hidden one, so the hand-off on 'ended' is a swap, not a fresh load. */
+    let playlist = [];   // [{ segment, src, url }]  url = blob URL (or src if prefetch failed)
     let idx = 0;
     let viewing = 0;     // 1 = first viewing, 2+ = replays
+    const vids = [$('vA'), $('vB')];
+    let cur = 0;
+    const active = () => vids[cur];
+
+    async function prefetch(list) {
+      await Promise.all(list.map(async (seg) => {
+        try {
+          const r = await fetch(seg.src);
+          if (!r.ok) throw new Error(r.status);
+          seg.url = URL.createObjectURL(await r.blob());
+        } catch { seg.url = seg.src; }   // fall back to streaming
+      }));
+    }
+    function releaseBlobs() {
+      playlist.forEach((seg) => { if (seg.url && seg.url.startsWith('blob:')) URL.revokeObjectURL(seg.url); });
+    }
+    function loadInto(el, seg) { el.src = seg.url; el.load(); }
+    function show(i) {
+      cur = i;
+      vids[i].classList.remove('off');
+      vids[1 - i].classList.add('off');
+    }
 
     function playSegment(i) {
       idx = i;
-      const v = $('video'), seg = playlist[i];
-      v.src = seg.src;
+      const v = active(), seg = playlist[i];
       v.currentTime = 0;
       v.play().catch(() => {});
       startCap(seg.segment);
       logEvent('baseline_segment_started', { segment: seg.segment, viewing });
+      if (i + 1 < playlist.length) loadInto(vids[1 - cur], playlist[i + 1]);   // stage the next one
     }
-    $('video').addEventListener('ended', () => {
+    vids.forEach((el) => el.addEventListener('ended', () => {
+      if (el !== active()) return;
       stopCap();
       logEvent('baseline_segment_ended', { segment: playlist[idx].segment, viewing });
-      if (idx + 1 < playlist.length) { playSegment(idx + 1); return; }
+      if (idx + 1 < playlist.length) {
+        show(1 - cur);
+        playSegment(idx + 1);
+        return;
+      }
       logEvent('baseline_viewing_ended', { viewing });
       $('replay').classList.remove('hidden');
       $('finish').classList.remove('hidden');
-    });
+    }));
 
     function startViewing() {
       viewing++;
       $('replay').classList.add('hidden');
       $('finish').classList.add('hidden');
+      vids[1].removeAttribute('src');
+      loadInto(vids[0], playlist[0]);
+      show(0);
       playSegment(0);
     }
 
@@ -228,12 +263,18 @@
         localStorage.setItem('videoasd_baseline_last', JSON.stringify({ scene, topic }));
       } catch { /* not critical */ }
       ctx = { participant, construct: `${scene}_${topic}`, option };
+      releaseBlobs();
       playlist = [
         { segment: 'context', src: clips.context },
         { segment: 'action', src: o.action },
         { segment: 'reaction', src: o.reaction },
       ];
       viewing = 0;
+      $('start').disabled = true;
+      $('start').textContent = 'Loading…';
+      await prefetch(playlist);
+      $('start').disabled = false;
+      $('start').textContent = '▶ Start';
       if ($('use-gaze').checked) await startGaze();
       logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
       $('cue').textContent = `Let's watch: ${TOPICS[topic]}`;
@@ -251,6 +292,7 @@
 
     $('finish').addEventListener('click', () => {
       logEvent('baseline_completed', { viewings: viewing });
+      vids.forEach((el) => el.pause());
       $('player').classList.add('hidden');
       $('done').classList.remove('hidden');
       gaze.stop(); gaze.stopCamera(); gazeOn = false;
@@ -258,9 +300,8 @@
 
     // Researcher escape hatch: back to setup (logs an abort if mid-run)
     $('corner').addEventListener('click', () => {
-      const v = $('video');
       if (!$('player').classList.contains('hidden')) {
-        v.pause(); stopCap();
+        vids.forEach((el) => el.pause()); stopCap();
         logEvent('baseline_aborted', { segment: playlist[idx] && playlist[idx].segment, viewing });
       }
       gaze.stop(); gaze.stopCamera(); gazeOn = false;
