@@ -318,7 +318,7 @@
        through the viewBox's own ratio (520:380). min() keeps the original
        540px design size wherever there's room, only shrinking when there
        isn't -- this is what was still needing a scroll to reach the buttons. */
-    .tree-wrap { width: 100%; max-width: min(540px, calc(40dvh * 520 / 380)); margin: 0 auto; }
+    .tree-wrap { width: 100%; max-width: min(540px, calc(40dvh * 520 / 420)); margin: 0 auto; }
     .tree-svg { width: 100%; height: auto; display: block; }
     .tree-legend {
       display: flex; gap: 22px; justify-content: center;
@@ -326,7 +326,7 @@
     }
     .tree-legend span { display: inline-flex; align-items: center; gap: 6px; }
     .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-    .legend-dot.trunk { background: #b08968; }
+    .legend-dot.trunk { background: #9cc0e6; }
     .legend-dot.mine  { background: #f4a259; }
     /* current round's branch grows in; trunk + old branches are static */
     @keyframes tree-line-draw { from { stroke-dashoffset: 300; } to { stroke-dashoffset: 0; } }
@@ -533,6 +533,12 @@
     .report-focus canvas { width: 100%; height: auto; display: block; }
     .report-stat { font-size: 13px; color: #8a8a96; margin-top: 6px; text-align: center; }
     .report-empty { color: #8a8a96; font-size: 14px; padding: 24px 0; }
+    .report-section { font-size: 17px; color: #3a3a44; margin: 6px 0 -6px; text-align: left; }
+    .report-tree svg { width: 100%; max-width: 480px; height: auto; display: block; margin: 0 auto; }
+    .report-table { width: 100%; max-width: 480px; margin: 8px auto 0; border-collapse: collapse; font-size: 13px; color: #5a4a3a; }
+    .report-table th, .report-table td { padding: 5px 6px; border-bottom: 1px solid #eef1f5; text-align: left; vertical-align: middle; }
+    .report-table th { color: #8a8a96; font-weight: 600; }
+    .report-table img { width: 22px; height: 22px; vertical-align: middle; margin-right: 4px; }
     /* AOI per-region dwell bars */
     .aoi-bars { margin: 12px auto 0; max-width: 480px; display: flex; flex-direction: column; gap: 7px; }
     .aoi-bar { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #5a4a3a; }
@@ -837,6 +843,7 @@
     <button id="diff-start">Difficulty</button>
     <button id="report-open">Report</button>
     <button id="baseline-open" title="Passive video-modeling baseline condition (same session and data store)" onclick="location.href='baseline.html'">▶ Baseline</button>
+    <button id="export-data" title="Download the interaction + gaze log as JSON">⬇ Export</button>
     <button id="reset-progress">Reset</button>
     <button id="toolbar-hide">Done ✓</button>
   </div>
@@ -1004,10 +1011,10 @@
         <div id="tree-reward" class="tree-reward"></div>
         <p class="poe-cue">Your story tree 🌳</p>
         <div class="tree-wrap">
-          <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 380" aria-label="possibility tree"></svg>
+          <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 420" aria-label="possibility tree"></svg>
           <div class="tree-legend">
+            <span><i class="legend-dot mine"></i> What you did · what you thought</span>
             <span><i class="legend-dot trunk"></i> What happened</span>
-            <span><i class="legend-dot mine"></i> What you thought</span>
           </div>
         </div>
         <div class="poe-btn-row">
@@ -1032,7 +1039,7 @@
   <div id="report-modal" class="modal hidden">
     <div class="modal-card" style="max-width: 760px;">
       <h2>Session report</h2>
-      <p class="modal-sub">Where your child looked</p>
+      <p class="modal-sub">What your child predicted, and where they looked</p>
       <div class="report-body" id="report-body"></div>
       <p class="modal-hint">Focus areas are approximate — webcam gaze, shown as general zones, not exact points.</p>
     </div>
@@ -1418,6 +1425,7 @@
     let pendingChoice = null;
     let pendingPrediction = null;
     let pendingCheck = null; // 'yes' | 'kindof' | 'no' -- answer to "Is it like you thought?"
+    let pendingObserved = null; // child's re-label of Sam's feeling after a mismatch (OBSERVE step)
     const observedScenarios = new Set(); // location ids that already showed the OBSERVE re-label step once
 
     function resetOutcomeSubsteps() {
@@ -1426,6 +1434,8 @@
       document.getElementById('poe-outcome-check').classList.add('hidden');
       document.getElementById('poe-outcome-next').classList.add('hidden');
       pendingCheck = null;
+      pendingCheck = null;
+      pendingObserved = null;
     }
 
     const STEP_PHASE = {
@@ -1495,10 +1505,13 @@
       // it's safe to also apply there. The 4th ('d') slot has no real clip yet
       // (see applyTopicActions) -- only ever appears at Stretch, and falls back
       // to the legacy OUTCOME_MAP video, a pre-existing placeholder gap.
+      // A clip-backed topic caps the count at the actions it actually has videos
+      // for, so Stretch never offers the placeholder 4th action with a wrong clip.
+      const nActions = currentClips ? Math.min(lv.actions, Object.keys(currentClips.options).length) : lv.actions;
       const actionBtns = document.querySelectorAll('#poe-step-action .action-btn');
-      actionBtns.forEach((btn, i) => { btn.style.display = i < lv.actions ? '' : 'none'; });
+      actionBtns.forEach((btn, i) => { btn.style.display = i < nActions ? '' : 'none'; });
       const actionGrid = document.querySelector('#poe-step-action .poe-choices');
-      if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${lv.actions}, 1fr)`;
+      if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${nActions}, 1fr)`;
       // emotions: show first N (.emotion-btn are in EMOTION_POOL order) --
       // identical treatment for predict (guess) and observe (re-label).
       [
@@ -1543,14 +1556,32 @@
       if (e.target === $diffModal) $diffModal.classList.add('hidden');
     });
 
-    // Minimal logging: record the level (+ choice) per completed round
-    function logRound(loc) {
+    /* ===== Research event log =====
+       Every interaction is appended to localStorage 'videoasd_events', tagged with
+       a session id (fresh per tab, rotated on Reset = the participant boundary) and
+       condition 'prr'. baseline.html writes to the same log with condition
+       'baseline'. Export (grown-up toolbar) downloads it as JSON. */
+    const EVENTS_KEY = 'videoasd_events';
+    function newSessionId() {
+      const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem('videoasd_session', id);
+      return id;
+    }
+    let sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
+    const cid = () => $modal.dataset.constructId || $modal.dataset.locId || '_default';
+    function logEvent(type, data) {
       try {
-        const log = JSON.parse(localStorage.getItem('videoasd_log') || '[]');
-        log.push({ t: Date.now(), loc, level: difficultyLevel,
-                   action: pendingChoice, emotion: pendingPrediction });
-        localStorage.setItem('videoasd_log', JSON.stringify(log));
-      } catch (e) { /* ignore */ }
+        const log = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
+        log.push({ ts: Date.now(), session: sessionId, condition: 'prr',
+          participant: localStorage.getItem('videoasd_participant') || '', type, ...data });
+        localStorage.setItem(EVENTS_KEY, JSON.stringify(log));
+      } catch (e) { /* storage full or blocked */ }
+    }
+    // Construct-level summary, logged once when the child leaves a topic.
+    function logRound(id) {
+      logEvent('construct_committed', { construct: id, level: difficultyLevel,
+        finalAction: pendingChoice, finalEmotion: pendingPrediction,
+        alternativesExplored: Object.keys(loadGuesses(id)).length });
     }
 
     /* ===== Gaze capture → static focus report (caregiver) =====
@@ -1611,6 +1642,9 @@
         all[c.key] = prev;
         localStorage.setItem(GAZE_KEY, JSON.stringify(all));
       } catch (e) { /* ignore */ }
+      const [loc, clip] = c.key.split('|');
+      logEvent('gaze_summary', { construct: loc, clip, on: buf.on, off: buf.off,
+        onRatio: +(buf.on / (buf.on + buf.off)).toFixed(3) });
     }
 
     function openModal(loc) {
@@ -1633,7 +1667,8 @@
       $ctxVideo.muted = !currentClips;   // new clips carry dialogue → unmute
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
-      startGazeCap(loc.id, 'context', $ctxVideo);
+      startGazeCap($modal.dataset.constructId, 'context', $ctxVideo);
+      logEvent('construct_opened', { construct: cid(), level: difficultyLevel });
     }
     function commitAndClose() {
       const id = $modal.dataset.locId;
@@ -1709,6 +1744,8 @@
     document.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         pendingChoice = btn.dataset.choice;
+        logEvent('action_selected', { construct: cid(), action: pendingChoice,
+          isAlternative: !(pendingChoice in loadGuesses(cid())) });
         const opt = currentClips && currentClips.options[pendingChoice];
         if (opt) {
           $actVideo.src = opt.action;
@@ -1741,6 +1778,7 @@
         document.querySelectorAll('#poe-step-predict .emotion-btn').forEach((e) => e.classList.remove('selected'));
         btn.classList.add('selected');
         pendingPrediction = btn.dataset.emotion;
+        logEvent('prediction_selected', { construct: cid(), action: pendingChoice, emotion: pendingPrediction });
         // After emotion picked, show the lock-in confirmation of both choices
         setTimeout(showConfirm, 350);
       });
@@ -1748,7 +1786,7 @@
 
     // Populate and show the lock-in summary of the two predictions
     function showConfirm() {
-      const action = ACTION_INFO[pendingChoice] || ACTION_INFO.a;
+      const action = actionInfo(pendingChoice);
       document.getElementById('confirm-action-icon').src = action.icon;
       document.getElementById('confirm-action-text').textContent = action.label;
       const emo = pendingPrediction || 'neutral';
@@ -1774,7 +1812,8 @@
       resetOutcomeSubsteps();
       showStep('outcome');
       $outVideo.play().catch(() => {});
-      startGazeCap($modal.dataset.locId, 'outcome', $outVideo);
+      startGazeCap(cid(), 'outcome', $outVideo);
+      logEvent('prediction_locked', { construct: cid(), action: pendingChoice, emotion: pendingPrediction });
     });
 
     // Outcome video finished -- reveal the mismatch check below it, not before
@@ -1786,6 +1825,7 @@
     document.querySelectorAll('.check-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         pendingCheck = btn.dataset.check;
+        logEvent('mismatch_check', { construct: cid(), action: pendingChoice, emotion: pendingPrediction, check: pendingCheck });
         // Keyed by (scene, topic), matching the possibility tree's own construct id --
         // see the "key possibility tree + progress by (scene, topic)" fix.
         const constructId = $modal.dataset.constructId || '_default';
@@ -1809,6 +1849,8 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
         btn.classList.add('selected');
+        pendingObserved = btn.dataset.emotion;
+        logEvent('observed_relabel', { construct: cid(), action: pendingChoice, emotion: pendingObserved });
         setTimeout(() => {
           // Back to the outcome step (video + the try-another/complete choice) --
           // the check panel stays hidden (already answered), only "next" shows.
@@ -1820,6 +1862,7 @@
 
     document.getElementById('out-revise').addEventListener('click', () => {
       // Stay in the modal: go back to the action step to try a different path here
+      logEvent('revision_initiated', { construct: cid(), trigger: 'out-revise' });
       $outVideo.pause();
       stopGazeCap();
       pendingChoice = null;
@@ -1828,37 +1871,38 @@
       showStep('action');
     });
 
-    /* ===== Possibility Tree (Reflect step) =====
-       Trunk = this case's social norm (centered, fixed).
-       Side branches = the child's guesses across rounds (≤3, one per action), stored by
-       constructId in localStorage. The current round's branch grows in. */
+    /* ===== Possibility Tree (Reflect step + caregiver report) =====
+       Trunk top = the shared story (context still).
+       Side branches = the child's explored actions in this construct (≤3, one per action).
+       Each fruit pairs what the child did + what they thought she'd feel (top row)
+       with a still of what actually happened (bottom). Nothing is marked right or
+       wrong: the tree shows the child's predictions next to the outcomes, side by side. */
     const $treeSvg = document.getElementById('tree-svg');
     const SVGNS = 'http://www.w3.org/2000/svg';
     const XLINK = 'http://www.w3.org/1999/xlink';
 
-    // Social norm per case: the canonical action -> reaction. The norm belongs to
-    // the topic (what the social situation calls for), not the scene it plays in —
-    // comforting a friend reads the same in the park as in the cafeteria. Keyed by
-    // topic; add a full `scene_topic` key to override one scene's case.
-    // PLACEHOLDER values — researcher should set these per case.
-    const CONSTRUCT_NORM = {
-      make_friends:   { action: 'a', emotion: 'happy' },
-      join_activity:  { action: 'a', emotion: 'happy' },
-      comfort_friend: { action: 'a', emotion: 'happy' },
-      _default:       { action: 'a', emotion: 'happy' },
-    };
-    const topicOf = (id) => String(id).split('_').slice(1).join('_');
-    const normFor = (id) =>
-      CONSTRUCT_NORM[id] || CONSTRUCT_NORM[topicOf(id)] || CONSTRUCT_NORM._default;
+    const thumb = (mp4) => mp4.replace(/\.mp4$/, '.jpg');   // stills extracted per clip (ffmpeg)
+    // Action label + picture for the current topic (clip topics) or the legacy icon set.
+    function actionInfo(action, constructId) {
+      const clips = constructId ? CLIPS[constructId] : currentClips;
+      const o = clips && clips.options[action];
+      if (o) return { icon: thumb(o.action), label: o.label, outcome: thumb(o.reaction) };
+      const info = ACTION_INFO[action] || ACTION_INFO.a;
+      return { icon: info.icon, label: info.label, outcome: null };
+    }
 
     const treeKey = (id) => 'videoasd_tree_' + id;
+    // { action: { predicted, check, observed } } — older saves stored just the emotion string
     function loadGuesses(id) {
-      try { return JSON.parse(localStorage.getItem(treeKey(id)) || '{}'); }
-      catch { return {}; }
+      try {
+        const g = JSON.parse(localStorage.getItem(treeKey(id)) || '{}');
+        for (const k in g) if (typeof g[k] === 'string') g[k] = { predicted: g[k] };
+        return g;
+      } catch { return {}; }
     }
-    function saveGuess(id, action, emotion) {
+    function saveGuess(id, action, entry) {
       const g = loadGuesses(id);
-      g[action] = emotion;              // one branch per action; latest reaction wins
+      g[action] = entry;                // one branch per action; latest round wins
       localStorage.setItem(treeKey(id), JSON.stringify(g));
       return g;
     }
@@ -1870,100 +1914,105 @@
       return n;
     }
     function svgImg(x, y, w, h, href) {
-      const im = svgEl('image', { x, y, width: w, height: h, href });
+      const im = svgEl('image', { x, y, width: w, height: h, href, preserveAspectRatio: 'xMidYMid slice' });
       im.setAttributeNS(XLINK, 'href', href);  // legacy fallback
       return im;
     }
-
-    // Where each side branch attaches on the trunk and where its fruit sits.
-    // x1/y1 (fruit position) nudged out from the trunk to make room for the
-    // larger portraits below -- verified against every highlight/normal
-    // combination to stay on-canvas and clear of the trunk bubble. x0/y0
-    // (line's start, near the trunk) unchanged.
-    const BRANCH_SLOTS = [
-      { x0: 262, y0: 252, x1: 116, y1: 236 }, // left low
-      { x0: 258, y0: 214, x1: 404, y1: 208 }, // right mid
-      { x0: 262, y0: 178, x1: 92,  y1: 136 }, // left high
-    ];
-
-    function drawFruit(svg, cx, cy, action, emotion, highlight, label) {
-      const g = svgEl('g', {});
-      if (highlight) g.classList.add('grow');
-      // side by side so neither image covers the other: action (the boy, what
-      // the child did) on the left, emotion (the girl's reaction) on the right.
-      // Bumped again from 65/55 and 60/52 -- verified against BRANCH_SLOTS above as the
-      // largest size that clears the trunk bubble and canvas edges in every
-      // highlight/normal combination without moving the trunk or the tree's own size.
-      const aSize = highlight ? 78 : 66;
-      const eSize = highlight ? 72 : 62;
-      const gap = 4;
-      const total = aSize + gap + eSize;
-      const rh = Math.max(aSize, eSize) + 16;
-      const rw = total + 22;
-      g.appendChild(svgEl('rect', { x: cx - rw / 2, y: cy - rh / 2, width: rw, height: rh,
-        rx: rh / 2, fill: highlight ? '#ffe6c2' : '#eef5e2' }));
-      const left = cx - total / 2;
-      const aInfo = ACTION_INFO[action] || ACTION_INFO.a;
-      g.appendChild(svgImg(left, cy - aSize / 2, aSize, aSize, aInfo.icon));
-      g.appendChild(svgImg(left + aSize + gap, cy - eSize / 2, eSize, eSize, emoSrc(emotion)));
-      if (label) {
-        const t = svgEl('text', { x: cx, y: cy - rh / 2 - 8,
-          'text-anchor': 'middle', 'font-size': 13, fill: '#8a8a96',
-          'font-weight': 600, 'font-family': 'inherit' });
-        t.textContent = label;
-        g.appendChild(t);
-      }
-      svg.appendChild(g);
+    function svgText(svg, x, y, str, size, color) {
+      const t = svgEl('text', { x, y, 'text-anchor': 'middle', 'font-size': size || 12,
+        fill: color || '#8a8a96', 'font-weight': 600, 'font-family': 'inherit' });
+      t.textContent = str;
+      svg.appendChild(t);
     }
 
-    function renderTree(constructId, currentAction) {
-      const svg = $treeSvg;
+    // Branch attach point on the trunk → fruit centre.
+    const BRANCH_SLOTS = [
+      { x0: 256, y0: 300, x1: 112, y1: 278 }, // left low
+      { x0: 264, y0: 236, x1: 408, y1: 214 }, // right
+      { x0: 256, y0: 180, x1: 112, y1: 138 }, // left high
+    ];
+
+    // Fruit: [action still][predicted face] on top, outcome still below.
+    function drawFruit(svg, cx, cy, info, entry, highlight) {
+      const g = svgEl('g', {});
+      if (highlight) g.classList.add('grow');
+      const aw = 72, ah = 40, fs = 40, gap = 6;
+      const rw = aw + gap + fs + 16, rh = ah + 12;
+      g.appendChild(svgEl('rect', { x: cx - rw / 2, y: cy - rh / 2, width: rw, height: rh,
+        rx: 12, fill: highlight ? '#ffe6c2' : '#eef5e2' }));
+      const left = cx - (aw + gap + fs) / 2;
+      g.appendChild(svgImg(left, cy - ah / 2, aw, ah, info.icon));
+      g.appendChild(svgImg(left + aw + gap, cy - fs / 2, fs, fs, emoSrc(entry.predicted || 'neutral')));
+      svg.appendChild(g);
+      svgText(svg, cx, cy - rh / 2 - 6, highlight ? 'You did · you thought' : info.label, 11);
+      if (info.outcome) {
+        const oy = cy + rh / 2 + 4;
+        const og = svgEl('g', {});
+        if (highlight) og.classList.add('grow');
+        og.appendChild(svgEl('rect', { x: cx - 41, y: oy - 2, width: 82, height: 50, rx: 8, fill: '#d9e8f7' }));
+        og.appendChild(svgImg(cx - 38, oy + 1, 76, 43, info.outcome));
+        svg.appendChild(og);
+        svgText(svg, cx, oy + 60, 'What happened', 10);
+      }
+    }
+
+    function renderTree(svg, constructId, currentAction) {
       svg.innerHTML = '';
-      const norm = normFor(constructId);
-      const guesses = loadGuesses(constructId);   // { action: emotion }
+      const guesses = loadGuesses(constructId);
+      const clips = CLIPS[constructId];
 
-      svg.appendChild(svgEl('ellipse', { cx: 260, cy: 344, rx: 152, ry: 18, fill: '#dceccb' }));
-      svg.appendChild(svgEl('path', {
-        d: 'M250 344 Q255 240 260 150 Q265 240 270 344 Z', fill: '#b08968' }));
+      svg.appendChild(svgEl('ellipse', { cx: 260, cy: 404, rx: 160, ry: 16, fill: '#dceccb' }));
+      svg.appendChild(svgEl('path', { d: 'M250 404 Q255 250 260 92 Q265 250 270 404 Z', fill: '#b08968' }));
 
-      // trunk top = the social norm (centered, neutral label)
-      drawFruit(svg, 260, 118, norm.action, norm.emotion, false, 'What happened');
+      // trunk top = the shared starting point (context still)
+      if (clips) {
+        svg.appendChild(svgEl('rect', { x: 205, y: 36, width: 110, height: 66, rx: 10, fill: '#fff4dd' }));
+        svg.appendChild(svgImg(212, 42, 96, 54, thumb(clips.context)));
+      }
+      svgText(svg, 260, 26, 'The story', 12);
 
-      // side branches = the child's guesses (≤3, one per action)
-      Object.keys(guesses).forEach((act, i) => {
-        const slot = BRANCH_SLOTS[i % BRANCH_SLOTS.length];
+      Object.keys(guesses).slice(0, BRANCH_SLOTS.length).forEach((act, i) => {
+        const slot = BRANCH_SLOTS[i];
         const isCurrent = act === currentAction;
         const line = svgEl('line', { x1: slot.x0, y1: slot.y0, x2: slot.x1, y2: slot.y1,
           stroke: '#b08968', 'stroke-width': 8, 'stroke-linecap': 'round' });
         if (isCurrent) line.classList.add('grow');
         svg.appendChild(line);
-        drawFruit(svg, slot.x1, slot.y1, act, guesses[act], isCurrent,
-          isCurrent ? 'You thought' : '');
+        drawFruit(svg, slot.x1, slot.y1, actionInfo(act, constructId), guesses[act], isCurrent);
       });
     }
 
     function goToTree() {
       $outVideo.pause();
       stopGazeCap();
-      const id = $modal.dataset.constructId || $modal.dataset.locId || '_default';
-      saveGuess(id, pendingChoice || 'a', pendingPrediction || 'neutral');
-      renderTree(id, pendingChoice || 'a');
+      const id = cid();
+      const action = pendingChoice || 'a';
+      const emotion = pendingPrediction || 'neutral';
+      const isRevision = action in loadGuesses(id); // same action re-tried
+      saveGuess(id, action, { predicted: emotion, check: pendingCheck, observed: pendingObserved });
+      renderTree($treeSvg, id, action);
       showStep('tree');
-      const matched = (pendingPrediction || 'neutral') === normFor(id).emotion;
-      showTreeReward(matched);
+      const explored = Object.keys(loadGuesses(id)).length;
+      showTreeReward(!isRevision, explored);
+      logEvent('guess_committed', { construct: id, action, emotion,
+        check: pendingCheck, observed: pendingObserved,
+        isAlternative: !isRevision, isRevision, alternativesExplored: explored });
     }
 
-    /* ===== Reward on the reflect step ===== */
-    function showTreeReward(matched) {
+    /* ===== Reward on the reflect step — rewards exploration, never correctness ===== */
+    function showTreeReward(isNewPath, explored) {
       const el = document.getElementById('tree-reward');
       if (!el) return;
-      el.innerHTML = matched
-        ? '<div class="tr-star">⭐</div><div class="tr-stars">⭐ ⭐ ⭐</div><div class="tr-msg">You guessed it! Amazing!</div>'
-        : '<div class="tr-star">🌱</div><div class="tr-stars">⭐</div><div class="tr-msg">Nice exploring — you found a new path!</div>';
+      const total = (currentClips && Object.keys(currentClips.options).length) || STAR_MAX;
+      const stars = '⭐ '.repeat(explored) + '☆ '.repeat(Math.max(0, total - explored));
+      el.innerHTML = isNewPath
+        ? `<div class="tr-star">🌱</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">You found a new path!</div>`
+        : `<div class="tr-star">🔁</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">You tried it again — nice looking!</div>`;
       el.classList.remove('show');
       void el.offsetWidth;            // restart the pop animation
       el.classList.add('show');
-      // sparkle burst around the star
+      if (!isNewPath) return;
+      // sparkle burst for a newly grown branch
       const n = 8, r = 72;
       for (let i = 0; i < n; i++) {
         const s = document.createElement('span');
@@ -1980,6 +2029,7 @@
     document.getElementById('out-done').addEventListener('click', goToTree);
     document.getElementById('tree-done').addEventListener('click', commitAndClose);
     document.getElementById('tree-again').addEventListener('click', () => {
+      logEvent('revision_initiated', { construct: cid(), trigger: 'tree-again' });
       pendingChoice = null;
       pendingPrediction = null;
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
@@ -1992,8 +2042,10 @@
 
     // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
     const AOI_VER = '6';  // cache-bust bundled AOI assets
-    const AOI_FILES = { context: `assets/aoi/context.json?v=${AOI_VER}` };
-    const AOI_FRAME = { context: `assets/aoi/context_frame.jpg?v=${AOI_VER}` }; // canonical still (best-detected frame)
+    // Keyed by the full gaze key "scene_topic|clip". The bundled assets/aoi/context.*
+    // annotate a retired legacy clip, so no current clip maps to them yet.
+    const AOI_FILES = {};
+    const AOI_FRAME = {}; // canonical still (best-detected frame) per key
     const aoiCache = {};
     async function loadAOI(clip) {
       if (clip in aoiCache) return aoiCache[clip];
@@ -2066,15 +2118,51 @@
       });
     }
 
+    const CHECK_LABEL = { yes: 'Yes', kindof: 'Kind of', no: 'No' };
+    const constructTitle = (id) => {
+      const [scene, ...t] = String(id).split('_');
+      return scene.charAt(0).toUpperCase() + scene.slice(1) + (t.length ? ' · ' + t.join(' ') : '');
+    };
+    const emoCell = (e) => e ? `<img src="${emoSrc(e)}" alt="">${EMOTION_LABEL[e] || e}` : '—';
+
+    // Story trees: one per explored (scene, topic) — the tree the child saw, plus a row per action.
+    function renderReportTrees() {
+      const ids = Object.keys(localStorage).filter((k) => k.startsWith('videoasd_tree_'))
+        .map((k) => k.replace('videoasd_tree_', '')).sort();
+      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">🌳 Story trees</h3>');
+      if (!ids.length) {
+        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">No stories explored yet.</p>');
+        return;
+      }
+      ids.forEach((id) => {
+        const guesses = loadGuesses(id);
+        const wrap = document.createElement('div');
+        wrap.className = 'report-clip report-tree';
+        wrap.innerHTML = `<h3>${constructTitle(id)}</h3>`;
+        const svg = svgEl('svg', { viewBox: '0 0 520 420' });
+        wrap.appendChild(svg);
+        renderTree(svg, id, null);
+        const rows = Object.entries(guesses).map(([act, g]) =>
+          `<tr><td>${actionInfo(act, id).label}</td><td>${emoCell(g.predicted)}</td>` +
+          `<td>${CHECK_LABEL[g.check] || '—'}</td><td>${emoCell(g.observed)}</td></tr>`).join('');
+        wrap.insertAdjacentHTML('beforeend',
+          `<table class="report-table"><tr><th>Action</th><th>Predicted she'd feel</th>` +
+          `<th>Like they thought?</th><th>Said she felt</th></tr>${rows}</table>`);
+        $reportBody.appendChild(wrap);
+      });
+    }
+
     async function openReport() {
       const data = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
       const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
       const keys = Object.keys(data);
-      $reportBody.innerHTML =
+      $reportBody.innerHTML = '';
+      $reportModal.classList.remove('hidden');
+      renderReportTrees();
+      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 Where your child looked</h3>' +
         `<p class="report-stat" style="text-align:left;background:#f5f3ff;padding:8px 10px;border-radius:8px">` +
         `ⓘ active:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
-        `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`;
-      $reportModal.classList.remove('hidden');
+        `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`);
       if (!keys.length) {
         $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">No gaze data saved yet.</p>');
         return;
@@ -2084,19 +2172,19 @@
         const [loc, clip] = key.split('|');
         const total = (d.on || 0) + (d.off || 0);
         const onPct = total ? Math.round((d.on / total) * 100) : 0;
-        const aoi = await loadAOI(clip);
+        const aoi = await loadAOI(key);
         const wrap = document.createElement('div');
         wrap.className = 'report-clip';
         wrap.innerHTML =
-          `<h3>${loc} · ${clip}</h3>` +
+          `<h3>${constructTitle(loc)} · ${clip}</h3>` +
           `<div class="report-focus"></div>` +
           `<div class="report-stat">Looked at the video ${onPct}% of the time</div>` +
           `<div class="aoi-bars"></div>`;
         const focus = wrap.querySelector('.report-focus');
         // prefer the bundled canonical still (best-detected frame) so AOI boxes
         // are guaranteed present + correctly placed; else the live-captured still.
-        const repFrame = (aoi && AOI_FRAME[clip])
-          ? { url: AOI_FRAME[clip], t: aoi.repT || 0 }
+        const repFrame = (aoi && AOI_FRAME[key])
+          ? { url: AOI_FRAME[key], t: aoi.repT || 0 }
           : frames[key];
         if (repFrame) {
           const cv = document.createElement('canvas');
@@ -2115,6 +2203,23 @@
       }
     }
     document.getElementById('report-open').addEventListener('click', openReport);
+    document.getElementById('export-data').addEventListener('click', () => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        currentSession: sessionId,
+        events: JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'),
+        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        trees: Object.fromEntries(Object.keys(localStorage)
+          .filter((k) => k.startsWith('videoasd_tree_'))
+          .map((k) => [k.replace('videoasd_tree_', ''), loadGuesses(k.replace('videoasd_tree_', ''))])),
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `videoasd_data_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
     $reportModal.addEventListener('click', (e) => {
       if (e.target === $reportModal) $reportModal.classList.add('hidden');
     });
@@ -2174,6 +2279,10 @@
         .forEach((k) => localStorage.removeItem(k));
       localStorage.removeItem('videoasd_gaze');
       localStorage.removeItem('videoasd_gaze_frames');
+      // Reset = new participant: rotate the session id. The event log itself is
+      // kept (every event carries its session id) -- export before resetting.
+      sessionId = newSessionId();
+      logEvent('session_reset', {});
       updateProgress();
       markVisited();
       walkTarget = BEAR_HOME.clone();
