@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VideoASD — Baseline (passive video modeling)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(180deg, #cfeaff 0%, #f0f8ff 60%, #e8f5ee 100%);
+      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+      color: #5a4a3a; min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+    button { font: inherit; cursor: pointer; border: none; }
+
+    /* Researcher setup */
+    .setup { max-width: 560px; margin: 48px auto; background: #fff; border-radius: 24px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.12); padding: 28px 32px; }
+    .setup h1 { font-size: 22px; color: #3a3a44; margin-bottom: 4px; }
+    .setup .sub { font-size: 14px; color: #8a8a96; margin-bottom: 18px; line-height: 1.5; }
+    .setup label { display: block; font-size: 13px; font-weight: 700; color: #6b5640; margin: 14px 0 6px; }
+    .setup select, .setup input[type=text] { width: 100%; padding: 10px 12px; border: 2px solid #e6e8ee;
+      border-radius: 12px; font: inherit; background: #f8fafc; color: #5a4a3a; }
+    .setup .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 14px; }
+    .setup .note { font-size: 12px; color: #8a8a96; margin-top: 4px; }
+    .row { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .btn-main { background: linear-gradient(135deg, #ffb56a, #ff9d3f); color: #fff; font-weight: 700;
+      padding: 12px 24px; border-radius: 16px; font-size: 16px; }
+    .btn-sec { background: #f1f3f7; color: #5a4a3a; padding: 12px 18px; border-radius: 16px; font-size: 14px; }
+
+    /* Child-facing player */
+    .player { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 18px; padding: 24px; }
+    .player .cue { font-size: 24px; font-weight: 700; color: #5a4a3a; }
+    .player video { width: min(92vw, 160vh); max-height: 76vh; border-radius: 22px; background: #000;
+      box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+    .player .btns { display: flex; gap: 14px; min-height: 52px; }
+    .corner { position: fixed; top: 12px; right: 12px; background: rgba(255,255,255,.6); color: #8a8a96;
+      font-size: 13px; padding: 6px 10px; border-radius: 10px; }
+    .done-card { text-align: center; }
+    .done-card .big { font-size: 64px; }
+    #gaze-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <!-- Researcher setup (not shown to the child) -->
+  <div id="setup" class="setup">
+    <h1>Baseline: passive video modeling</h1>
+    <p class="sub">Plays one scenario straight through (context → modeled action → its outcome) with no choices or predictions. Events and gaze are logged in this browser alongside the PRR app's gaze data; export them from here.</p>
+
+    <label for="pid">Participant ID</label>
+    <input id="pid" type="text" placeholder="e.g. P03" />
+
+    <label for="scene">Setting</label>
+    <select id="scene"></select>
+
+    <label for="topic">Topic</label>
+    <select id="topic"></select>
+
+    <label for="option">Modeled action</label>
+    <select id="option"></select>
+    <p class="note">Default: the approach action (a), shown as the model to imitate. Pending advisor confirmation.</p>
+
+    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">Track gaze (uses the calibration saved in the main app)</label></div>
+    <p class="note" id="gaze-status"></p>
+
+    <div class="row">
+      <button class="btn-main" id="start">▶ Start</button>
+      <button class="btn-sec" id="export">⬇ Export data</button>
+      <a class="btn-sec" href="index.html" style="text-decoration:none">← Main app</a>
+    </div>
+  </div>
+
+  <!-- Child-facing player -->
+  <div id="player" class="player hidden">
+    <p class="cue" id="cue"></p>
+    <video id="video" playsinline></video>
+    <div class="btns">
+      <button class="btn-sec hidden" id="replay">↻ Watch again</button>
+      <button class="btn-main hidden" id="finish">Done ✓</button>
+    </div>
+  </div>
+
+  <div id="done" class="player hidden">
+    <div class="done-card"><div class="big">🌟</div><p class="cue">All done — great watching!</p></div>
+  </div>
+
+  <button id="corner" class="corner hidden">⚙ Setup</button>
+  <video id="gaze-video" autoplay muted playsinline></video>
+
+  <script type="module">
+    import { CLIPS } from './clips.js';
+    import { GazeTracker } from './gaze.js';
+
+    const SCENES = { playground: 'Playground', classroom: 'Classroom', cafeteria: 'Cafeteria', park: 'Park' };
+    const TOPICS = { make_friends: 'Make a friend', join_activity: 'Join an activity', comfort_friend: 'Comfort a friend' };
+    const $ = (id) => document.getElementById(id);
+
+    /* ===== Logging: same store and session id as the PRR app ===== */
+    const EVENTS_KEY = 'videoasd_events';
+    function newSessionId() {
+      const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem('videoasd_session', id);
+      return id;
+    }
+    const sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
+    let ctx = {};   // { participant, construct, option }
+    function logEvent(type, data) {
+      try {
+        const log = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
+        log.push({ ts: Date.now(), session: sessionId, condition: 'baseline', ...ctx, type, ...data });
+        localStorage.setItem(EVENTS_KEY, JSON.stringify(log));
+      } catch (e) { /* storage full or blocked — skip */ }
+    }
+
+    /* ===== Setup form ===== */
+    Object.entries(SCENES).forEach(([id, label]) => $('scene').add(new Option(label, id)));
+    Object.entries(TOPICS).forEach(([id, label]) => $('topic').add(new Option(label, id)));
+    function fillOptions() {
+      const clips = CLIPS[`${$('scene').value}_${$('topic').value}`];
+      $('option').innerHTML = '';
+      Object.entries(clips.options).forEach(([k, o]) => $('option').add(new Option(`${k} · ${o.label}`, k)));
+      $('option').value = 'a';
+    }
+    $('scene').addEventListener('change', fillOptions);
+    $('topic').addEventListener('change', fillOptions);
+    try {
+      $('pid').value = localStorage.getItem('videoasd_participant') || '';
+      const last = JSON.parse(localStorage.getItem('videoasd_baseline_last') || 'null');
+      if (last) { $('scene').value = last.scene; $('topic').value = last.topic; }
+    } catch { /* first run */ }
+    fillOptions();
+
+    /* ===== Gaze (optional) ===== */
+    const gaze = new GazeTracker();
+    $('gaze-status').textContent = gaze.hasCalibration()
+      ? 'Saved calibration found.'
+      : 'No saved calibration — calibrate in the main app first (Calibrate Gaze), or run without gaze.';
+    $('use-gaze').checked = gaze.hasCalibration();
+    $('use-gaze').disabled = !gaze.hasCalibration();
+    let gazeOn = false;
+    let cap = null;   // { key, segment, pts: [], on, off }
+
+    async function startGaze() {
+      try {
+        if (!gaze.landmarker) await gaze.init($('gaze-video'));
+        await gaze.startCamera();
+        gaze.start();
+        gazeOn = true;
+      } catch (e) {
+        console.error('[baseline] gaze failed:', e);
+        gazeOn = false;
+        logEvent('gaze_unavailable', { error: String(e.message || e) });
+      }
+    }
+    gaze.onFrame(() => {
+      if (!gazeOn || !cap) return;
+      const v = $('video');
+      if (v.paused || v.ended) return;
+      const g = gaze.getScreenGaze();
+      if (!g) return;
+      const x = Math.max(0, Math.min(1, g.x)) * innerWidth;
+      const y = Math.max(0, Math.min(1, g.y)) * innerHeight;
+      const r = v.getBoundingClientRect();
+      const vx = (x - r.left) / r.width, vy = (y - r.top) / r.height;
+      if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) {
+        cap.pts.push([+vx.toFixed(3), +vy.toFixed(3), +v.currentTime.toFixed(2)]);
+        cap.on++;
+      } else {
+        cap.off++;
+      }
+    });
+    function startCap(segment) {
+      cap = gazeOn ? { key: `${ctx.construct}|baseline-${segment}`, segment, pts: [], on: 0, off: 0 } : null;
+    }
+    function stopCap() {
+      const c = cap; cap = null;
+      if (!c || (c.on + c.off) === 0) return;
+      try {   // same store and shape as the PRR app's gaze capture
+        const all = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
+        const prev = all[c.key] || { pts: [], on: 0, off: 0 };
+        prev.pts.push(...c.pts); prev.on += c.on; prev.off += c.off;
+        all[c.key] = prev;
+        localStorage.setItem('videoasd_gaze', JSON.stringify(all));
+      } catch { /* storage full — summary below still logged */ }
+      logEvent('gaze_summary', { segment: c.segment, on: c.on, off: c.off,
+        onRatio: +(c.on / (c.on + c.off)).toFixed(3) });
+    }
+
+    /* ===== Playback: context → action → reaction, no stops ===== */
+    let playlist = [];   // [{ segment, src }]
+    let idx = 0;
+    let viewing = 0;     // 1 = first viewing, 2+ = replays
+
+    function playSegment(i) {
+      idx = i;
+      const v = $('video'), seg = playlist[i];
+      v.src = seg.src;
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      startCap(seg.segment);
+      logEvent('baseline_segment_started', { segment: seg.segment, viewing });
+    }
+    $('video').addEventListener('ended', () => {
+      stopCap();
+      logEvent('baseline_segment_ended', { segment: playlist[idx].segment, viewing });
+      if (idx + 1 < playlist.length) { playSegment(idx + 1); return; }
+      logEvent('baseline_viewing_ended', { viewing });
+      $('replay').classList.remove('hidden');
+      $('finish').classList.remove('hidden');
+    });
+
+    function startViewing() {
+      viewing++;
+      $('replay').classList.add('hidden');
+      $('finish').classList.add('hidden');
+      playSegment(0);
+    }
+
+    $('start').addEventListener('click', async () => {
+      const scene = $('scene').value, topic = $('topic').value, option = $('option').value;
+      const clips = CLIPS[`${scene}_${topic}`];
+      const o = clips.options[option];
+      const participant = $('pid').value.trim();
+      try {
+        localStorage.setItem('videoasd_participant', participant);
+        localStorage.setItem('videoasd_baseline_last', JSON.stringify({ scene, topic }));
+      } catch { /* not critical */ }
+      ctx = { participant, construct: `${scene}_${topic}`, option };
+      playlist = [
+        { segment: 'context', src: clips.context },
+        { segment: 'action', src: o.action },
+        { segment: 'reaction', src: o.reaction },
+      ];
+      viewing = 0;
+      if ($('use-gaze').checked) await startGaze();
+      logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
+      $('cue').textContent = `Let's watch: ${TOPICS[topic]}`;
+      $('setup').classList.add('hidden');
+      $('done').classList.add('hidden');
+      $('player').classList.remove('hidden');
+      $('corner').classList.remove('hidden');
+      startViewing();
+    });
+
+    $('replay').addEventListener('click', () => {
+      logEvent('baseline_replay', { viewing: viewing + 1 });
+      startViewing();
+    });
+
+    $('finish').addEventListener('click', () => {
+      logEvent('baseline_completed', { viewings: viewing });
+      $('player').classList.add('hidden');
+      $('done').classList.remove('hidden');
+      gaze.stop(); gaze.stopCamera(); gazeOn = false;
+    });
+
+    // Researcher escape hatch: back to setup (logs an abort if mid-run)
+    $('corner').addEventListener('click', () => {
+      const v = $('video');
+      if (!$('player').classList.contains('hidden')) {
+        v.pause(); stopCap();
+        logEvent('baseline_aborted', { segment: playlist[idx] && playlist[idx].segment, viewing });
+      }
+      gaze.stop(); gaze.stopCamera(); gazeOn = false;
+      $('player').classList.add('hidden');
+      $('done').classList.add('hidden');
+      $('corner').classList.add('hidden');
+      $('setup').classList.remove('hidden');
+    });
+
+    // Export: same payload shape as the main app's Export
+    $('export').addEventListener('click', () => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        currentSession: sessionId,
+        events: JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'),
+        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        trees: Object.fromEntries(Object.keys(localStorage)
+          .filter((k) => k.startsWith('videoasd_tree_'))
+          .map((k) => [k.replace('videoasd_tree_', ''), JSON.parse(localStorage.getItem(k))])),
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `videoasd_data_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
