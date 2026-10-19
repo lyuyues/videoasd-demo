@@ -1,0 +1,499 @@
+<meta charset="UTF-8">
+<title>交朋友测验卷</title>
+<style>
+:root {
+  --bg: #FAF7EF; --surface: #FFFFFF; --surface-2: #F1EFE3; --ink: #2B2E28;
+  --ink-soft: #6E7568; --ink-faint: #9AA192; --line: #E1E1D3; --accent: #4F7A5C;
+  --accent-ink: #2F4B3A; --accent-soft: #E4EDE3; --accent-soft-2: #D8E6DB;
+  --band-a: #4F7A5C; --band-b: #A9762F; --band-c: #4C6E8C;
+  --radio-idle: #C3CBB8; --radio-idle-bg: #FFFFFF; --focus: #2F6B8C;
+  --good: #3E7A4C; --bad: #B24B3C;
+  --serif: Georgia, "Songti SC", "Noto Serif SC", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Segoe UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #181A16; --surface: #20231D; --surface-2: #262A21; --ink: #EDEFE7;
+    --ink-soft: #ABB39F; --ink-faint: #757C6B; --line: #343A2C; --accent: #74AC87;
+    --accent-ink: #C9E5D3; --accent-soft: #26362A; --accent-soft-2: #2C3D30;
+    --band-a: #3E6B4F; --band-b: #8C6326; --band-c: #3C5C78;
+    --radio-idle: #4A5240; --radio-idle-bg: #20231D; --focus: #7FB6D9;
+    --good: #6FBE82; --bad: #E08770;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181A16; --surface: #20231D; --surface-2: #262A21; --ink: #EDEFE7;
+  --ink-soft: #ABB39F; --ink-faint: #757C6B; --line: #343A2C; --accent: #74AC87;
+  --accent-ink: #C9E5D3; --accent-soft: #26362A; --accent-soft-2: #2C3D30;
+  --band-a: #3E6B4F; --band-b: #8C6326; --band-c: #3C5C78;
+  --radio-idle: #4A5240; --radio-idle-bg: #20231D; --focus: #7FB6D9;
+  --good: #6FBE82; --bad: #E08770;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+  -webkit-font-smoothing: antialiased; font-size: 17px; line-height: 1.6; }
+main { max-width: 700px; margin: 0 auto; padding: 40px 24px 100px; }
+.sheet-head { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 28px 28px 24px; margin-bottom: 28px; position: relative; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4px; text-wrap: balance; }
+.subhead { color: var(--ink-soft); font-size: 15px; margin: 0 0 20px; }
+.id-row { display: flex; flex-wrap: wrap; gap: 14px 24px; padding-top: 18px; border-top: 1px dashed var(--line); }
+.id-field { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+.id-field input { border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent;
+  color: var(--ink); font-size: 15px; font-family: var(--sans); width: 140px; padding: 2px 0; }
+.id-field input:focus { outline: none; border-color: var(--accent); }
+.lang-toggle { position: absolute; top: 24px; right: 24px; background: var(--surface-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 700;
+  cursor: pointer; }
+.section-band { display: flex; align-items: baseline; gap: 12px; color: #fff; border-radius: 12px;
+  padding: 14px 20px; margin: 40px 0 20px; }
+.section-band.a { background: var(--band-a); } .section-band.b { background: var(--band-b); }
+.section-band.c { background: var(--band-c); }
+.section-band .num { font-family: var(--serif); font-size: 22px; font-weight: 700; }
+.section-band .label { font-size: 15.5px; opacity: .95; }
+.section-band .sub { font-size: 14px; opacity: .9; margin-left: auto; font-variant-numeric: tabular-nums; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 22px 24px 20px; margin-bottom: 16px; }
+.item.is-correct { border-color: var(--good); }
+.item.is-incorrect { border-color: var(--bad); }
+.item.is-unconfirmed { border-color: var(--ink-faint); }
+.item.is-partial { border-color: var(--band-b); }
+.item-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.item-num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft);
+  color: var(--accent-ink); font-weight: 700; font-size: 15px; display: flex; align-items: center;
+  justify-content: center; font-variant-numeric: tabular-nums; }
+.item-text { font-size: 18px; font-weight: 600; line-height: 1.55; padding-top: 4px; }
+.item-img { width: 100%; max-width: 480px; display: block; margin: 4px auto 16px; border-radius: 10px; border: 1px solid var(--line); }
+.unconfirmed { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--bad);
+  border: 1px solid var(--bad); border-radius: 20px; padding: 1px 8px; margin-left: 8px; vertical-align: middle; }
+.prompt { font-size: 15.5px; color: var(--ink-soft); font-weight: 600; margin: 16px 0 10px 46px; }
+.options { display: flex; flex-direction: column; gap: 8px; margin-left: 46px; }
+.options.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.opt { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 11px 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.opt:hover { border-color: var(--radio-idle); }
+.opt input[type="radio"] { appearance: none; -webkit-appearance: none; flex: none; width: 22px; height: 22px;
+  border-radius: 6px; border: 2px solid var(--radio-idle); background: var(--radio-idle-bg); position: relative; cursor: pointer; }
+.opt input[type="radio"]:checked { border-color: var(--accent); background: var(--accent); }
+.opt input[type="radio"]:checked::after { content: ""; position: absolute; left: 6px; top: 2px; width: 6px;
+  height: 11px; border: solid white; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.opt input[type="radio"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt .opt-text { font-size: 16.5px; color: var(--ink); line-height: 1.4; }
+.opt .emoji { font-size: 20px; line-height: 1; flex: none; }
+.options.tf { display: flex; flex-direction: row; gap: 14px; margin-left: 46px; }
+.options.tf .opt { flex: 1; justify-content: center; padding: 14px; }
+.options.tf .opt-text { font-size: 17px; font-weight: 700; }
+.feedback { margin: 10px 0 0 46px; font-size: 14px; font-weight: 700; display: none; }
+.feedback.correct { display: block; color: var(--good); }
+.feedback.incorrect { display: block; color: var(--bad); }
+.feedback.unconfirmed { display: block; color: var(--ink-faint); font-style: italic; }
+.feedback.partial { display: block; color: var(--band-b); }
+.action-bar { position: sticky; bottom: 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  background: var(--bg); padding: 16px 0 8px; margin-top: 32px; border-top: 1px solid var(--line); }
+button { font-family: var(--sans); font-size: 15px; font-weight: 700; border-radius: 10px; padding: 12px 20px;
+  border: none; cursor: pointer; }
+button.primary { background: var(--accent); color: #fff; }
+button.secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.results { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 24px;
+  margin-top: 20px; display: none; }
+.results.show { display: block; }
+.results h2 { margin: 0 0 12px; font-family: var(--serif); font-size: 20px; }
+.results table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.results td { padding: 4px 0; }
+.results td.n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.results .total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; font-size: 17px; font-weight: 700; }
+footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-top: 48px; }
+@media (max-width: 480px) {
+  .options.grid2 { grid-template-columns: 1fr; } .prompt, .options { margin-left: 0; } .feedback { margin-left: 0; }
+  .lang-toggle { position: static; margin-bottom: 12px; }
+}
+@media print {
+  body { background: #fff; } .item { border-color: #ccc; }
+  .section-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .opt input[type="radio"]:checked { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .action-bar, .results, .lang-toggle { display: none !important; }
+}
+</style>
+<main>
+  <div class="sheet-head">
+    <button class="lang-toggle i18n" id="langToggle" data-zh="EN" data-en="中文">EN</button>
+    <div class="eyebrow">VideoASD · Post-quiz</div>
+    <h1><span class="i18n" data-zh="交朋友测验卷" data-en="Making Friends Quiz">交朋友测验卷</span></h1>
+    <p class="subhead"><span class="i18n" data-zh="场景：自助餐厅" data-en="Scene: Cafeteria">场景：自助餐厅</span></p>
+    <div class="id-row">
+      <div class="id-field"><span class="i18n" data-zh="Kid 编号（不写姓名）" data-en="Kid ID (no names)">Kid 编号（不写姓名）</span> <input type="text" id="childId"></div>
+      <div class="id-field"><span class="i18n" data-zh="施测日期" data-en="Test date">施测日期</span> <input type="text" id="testDate"></div>
+      <div class="id-field"><span class="i18n" data-zh="施测人" data-en="Tester">施测人</span> <input type="text" id="tester"></div>
+    </div>
+  </div>
+
+  <div class="section-band a"><span class="num"><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></span><span class="label"><span class="i18n" data-zh="你会怎么做？Sam 会有什么感觉？" data-en="What would you do? How would Sam feel?">你会怎么做？Sam 会有什么感觉？</span></span><span class="sub" id="sub-a">0 / 3</span></div>
+  <img class="item-img" src="assets/make_friends_post_part1.jpg" alt="" loading="lazy">
+  
+  <div class="item" data-item="1">
+    <div class="item-head">
+      <span class="item-num">1</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，Sam 一个人在午餐时间叠杯子。你想跟 Sam 交一个新朋友，你会先怎么做？" data-en="At the cafeteria table, Sam is stacking cups alone during lunch. You want to make a new friend with Sam. What would you do first?">在餐厅桌子旁，Sam 一个人在午餐时间叠杯子。你想跟 Sam 交一个新朋友，你会先怎么做？</span></p>
+    </div>
+    <div class="options grid2"><label class="opt"><input type="radio" name="q1-action" value="a"><span class="i18n opt-text" data-zh="走过去打招呼" data-en="Walk over and say hi">走过去打招呼</span></label><label class="opt"><input type="radio" name="q1-action" value="b"><span class="i18n opt-text" data-zh="站着看" data-en="Stand and watch">站着看</span></label><label class="opt"><input type="radio" name="q1-action" value="c"><span class="i18n opt-text" data-zh="直接把玩具拿走" data-en="Just take the toy">直接把玩具拿走</span></label><label class="opt"><input type="radio" name="q1-action" value="d"><span class="i18n opt-text" data-zh="坐在旁边，开始玩一样的东西" data-en="Sit nearby and start playing the same thing">坐在旁边，开始玩一样的东西</span></label></div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="2">
+    <div class="item-head">
+      <span class="item-num">2</span>
+      <p class="item-text"><span class="i18n" data-zh="根据你刚才选的行动，你觉得 Sam 会有什么感觉？" data-en="Based on the action you just picked, How do you think Sam would feel?">根据你刚才选的行动，你觉得 Sam 会有什么感觉？</span></p>
+    </div>
+    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><span class="emoji" aria-hidden="true">😊</span><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Sad"><span class="emoji" aria-hidden="true">😢</span><span class="i18n opt-text" data-zh="难过" data-en="Sad">难过</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><span class="emoji" aria-hidden="true">😠</span><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Scared"><span class="emoji" aria-hidden="true">😨</span><span class="i18n opt-text" data-zh="害怕" data-en="Scared">害怕</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><span class="emoji" aria-hidden="true">😲</span><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><span class="emoji" aria-hidden="true">😐</span><span class="i18n opt-text" data-zh="中性" data-en="Neutral">中性</span></label></div>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="section-band b"><span class="num"><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></span><span class="label"><span class="i18n" data-zh="这样做，对不对？" data-en="Is this the right thing to do?">这样做，对不对？</span></span><span class="sub" id="sub-b">0 / 4</span></div>
+  <img class="item-img" src="assets/make_friends_post_part2.jpg" alt="" loading="lazy">
+  
+  <div class="item" data-item="3">
+    <div class="item-head">
+      <span class="item-num">3</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，Sam 一个人在涂色。有个小朋友走过去跟他打招呼。这样做可以不可以？" data-en="At the cafeteria table, Sam is coloring alone. A kid walks over and says hi. Is it okay to do this?">在餐厅桌子旁，Sam 一个人在涂色。有个小朋友走过去跟他打招呼。这样做可以不可以？</span></p>
+    </div>
+    <div class="options tf">
+      <label class="opt"><input type="radio" name="q3" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
+      <label class="opt"><input type="radio" name="q3" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
+    </div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="4">
+    <div class="item-head">
+      <span class="item-num">4</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，Sam 一个人在折纸。有个小朋友直接把 Sam 的折纸拿走。这样做可以不可以？" data-en="At the cafeteria table, Sam is folding paper alone. A kid just takes Sam's paper. Is it okay to do this?">在餐厅桌子旁，Sam 一个人在折纸。有个小朋友直接把 Sam 的折纸拿走。这样做可以不可以？</span></p>
+    </div>
+    <div class="options tf">
+      <label class="opt"><input type="radio" name="q4" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
+      <label class="opt"><input type="radio" name="q4" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
+    </div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="5">
+    <div class="item-head">
+      <span class="item-num">5</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，Sam 一个人在涂色。有个小朋友站在旁边看，Sam 看起来没什么特别的感觉。你能想到会有这个反应吗？" data-en="At the cafeteria table, Sam is coloring alone. A kid stands nearby and watches, and Sam doesn't look like he feels anything special. Could you have guessed this reaction?">在餐厅桌子旁，Sam 一个人在涂色。有个小朋友站在旁边看，Sam 看起来没什么特别的感觉。你能想到会有这个反应吗？</span></p>
+    </div>
+    <div class="options tf">
+      <label class="opt"><input type="radio" name="q5" value="true"><span class="i18n opt-text" data-zh="想得到" data-en="Yes, I could guess it">想得到</span></label>
+      <label class="opt"><input type="radio" name="q5" value="false"><span class="i18n opt-text" data-zh="想不到" data-en="No, I couldn't guess it">想不到</span></label>
+    </div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="6">
+    <div class="item-head">
+      <span class="item-num">6</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，Sam 一个人在涂色。有个小朋友走过去跟他打招呼，Sam 看起来很生气。你能想到会有这个反应吗？" data-en="At the cafeteria table, Sam is coloring alone. A kid walks over and says hi, and Sam looks angry. Could you have guessed this reaction?">在餐厅桌子旁，Sam 一个人在涂色。有个小朋友走过去跟他打招呼，Sam 看起来很生气。你能想到会有这个反应吗？</span></p>
+    </div>
+    <div class="options tf">
+      <label class="opt"><input type="radio" name="q6" value="true"><span class="i18n opt-text" data-zh="想得到" data-en="Yes, I could guess it">想得到</span></label>
+      <label class="opt"><input type="radio" name="q6" value="false"><span class="i18n opt-text" data-zh="想不到" data-en="No, I couldn't guess it">想不到</span></label>
+    </div>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="section-band c"><span class="num"><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></span><span class="label"><span class="i18n" data-zh="为什么会这样？" data-en="Why did this happen?">为什么会这样？</span></span><span class="sub" id="sub-c">0 / 4</span></div>
+  <img class="item-img" src="assets/make_friends_post_part3.jpg" alt="" loading="lazy">
+  
+  <div class="item" data-item="7">
+    <div class="item-head">
+      <span class="item-num">7</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友走过去跟他打招呼，Sam 看起来很开心。你觉得 Sam 为什么会开心？" data-en="By the cafeteria window, Sam is lining up toy cars alone. A kid walks over and says hi, and Sam looks happy. Why do you think Sam feels happy?">在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友走过去跟他打招呼，Sam 看起来很开心。你觉得 Sam 为什么会开心？</span></p>
+    </div>
+    <div class="options"><label class="opt"><input type="radio" name="q7" value="R1"><span class="i18n opt-text" data-zh="因为 Sam 喜欢别人友好地跟他打招呼" data-en="Because Sam likes it when someone is friendly and says hi">因为 Sam 喜欢别人友好地跟他打招呼</span></label><label class="opt"><input type="radio" name="q7" value="R2"><span class="i18n opt-text" data-zh="因为那个小朋友也想一起排玩具车" data-en="Because the other kid wanted to line up the cars too">因为那个小朋友也想一起排玩具车</span></label><label class="opt"><input type="radio" name="q7" value="R3"><span class="i18n opt-text" data-zh="因为 Sam 觉得有人可以一起玩了" data-en="Because Sam felt like he now had someone to play with">因为 Sam 觉得有人可以一起玩了</span></label><label class="opt"><input type="radio" name="q7" value="R4"><span class="i18n opt-text" data-zh="因为 Sam 看到有人突然走过来，有点惊讶" data-en="Because Sam was startled by someone suddenly walking over">因为 Sam 看到有人突然走过来，有点惊讶</span></label></div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="8">
+    <div class="item-head">
+      <span class="item-num">8</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友站在旁边看，Sam 看起来没什么特别的感觉。你觉得 Sam 为什么没什么感觉？" data-en="By the cafeteria window, Sam is lining up toy cars alone. A kid stands nearby and watches, and Sam doesn't look like he feels anything special. Why do you think Sam doesn't have much reaction?">在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友站在旁边看，Sam 看起来没什么特别的感觉。你觉得 Sam 为什么没什么感觉？</span></p>
+    </div>
+    <div class="options"><label class="opt"><input type="radio" name="q8" value="R1"><span class="i18n opt-text" data-zh="因为没发生什么特别的事，Sam 没什么好反应的" data-en="Because nothing really happened for Sam to react to">因为没发生什么特别的事，Sam 没什么好反应的</span></label><label class="opt"><input type="radio" name="q8" value="R2"><span class="i18n opt-text" data-zh="因为 Sam 没注意到旁边有人在看" data-en="Because Sam didn't notice someone was watching">因为 Sam 没注意到旁边有人在看</span></label><label class="opt"><input type="radio" name="q8" value="R3"><span class="i18n opt-text" data-zh="因为 Sam 正专心排玩具车，顾不上别的" data-en="Because Sam was too focused on lining up the cars to notice anything else">因为 Sam 正专心排玩具车，顾不上别的</span></label><label class="opt"><input type="radio" name="q8" value="R4"><span class="i18n opt-text" data-zh="因为 Sam 有点害羞，不知道要不要理那个小朋友" data-en="Because Sam felt shy and unsure whether to respond">因为 Sam 有点害羞，不知道要不要理那个小朋友</span></label></div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="9">
+    <div class="item-head">
+      <span class="item-num">9</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友直接把玩具车拿走了，Sam 看起来很生气。你觉得 Sam 为什么会生气？" data-en="By the cafeteria window, Sam is lining up toy cars alone. A kid just takes the toy cars, and Sam looks angry. Why do you think Sam feels angry?">在餐厅窗边，Sam 一个人在排列玩具车。有个小朋友直接把玩具车拿走了，Sam 看起来很生气。你觉得 Sam 为什么会生气？</span></p>
+    </div>
+    <div class="options"><label class="opt"><input type="radio" name="q9" value="R1"><span class="i18n opt-text" data-zh="因为 Sam 不喜欢自己的玩具没经过同意就被拿走" data-en="Because Sam doesn't like it when his toy is taken without asking">因为 Sam 不喜欢自己的玩具没经过同意就被拿走</span></label><label class="opt"><input type="radio" name="q9" value="R2"><span class="i18n opt-text" data-zh="因为 Sam 只是想自己安安静静排玩具车，不喜欢被打扰" data-en="Because Sam just wanted to line up his cars quietly and doesn't like being disturbed">因为 Sam 只是想自己安安静静排玩具车，不喜欢被打扰</span></label><label class="opt"><input type="radio" name="q9" value="R3"><span class="i18n opt-text" data-zh="因为那个小朋友看起来根本不在乎 Sam 的感受" data-en="Because the other kid didn't seem to care how Sam felt">因为那个小朋友看起来根本不在乎 Sam 的感受</span></label><label class="opt"><input type="radio" name="q9" value="R4"><span class="i18n opt-text" data-zh="因为 Sam 担心那个小朋友以后还会这样" data-en="Because Sam worries the other kid might do this again">因为 Sam 担心那个小朋友以后还会这样</span></label></div>
+    <div class="feedback"></div>
+  </div>
+  <div class="item" data-item="10">
+    <div class="item-head">
+      <span class="item-num">10</span>
+      <p class="item-text"><span class="i18n" data-zh="在餐厅角落，Sam 一个人在贴贴纸。有个小朋友走过去跟他打招呼，Sam 看起来很开心。你觉得 Sam 为什么会开心？" data-en="In the cafeteria corner, Sam is putting on stickers alone. A kid walks over and says hi, and Sam looks happy. Why do you think Sam feels happy?">在餐厅角落，Sam 一个人在贴贴纸。有个小朋友走过去跟他打招呼，Sam 看起来很开心。你觉得 Sam 为什么会开心？</span></p>
+    </div>
+    <div class="options"><label class="opt"><input type="radio" name="q10" value="R1"><span class="i18n opt-text" data-zh="因为 Sam 喜欢别人友好地跟他打招呼" data-en="Because Sam likes it when someone is friendly and says hi">因为 Sam 喜欢别人友好地跟他打招呼</span></label><label class="opt"><input type="radio" name="q10" value="R2"><span class="i18n opt-text" data-zh="因为那个小朋友也想一起贴贴纸" data-en="Because the other kid wanted to put on stickers too">因为那个小朋友也想一起贴贴纸</span></label><label class="opt"><input type="radio" name="q10" value="R3"><span class="i18n opt-text" data-zh="因为 Sam 觉得有人可以一起玩了" data-en="Because Sam felt like he now had someone to play with">因为 Sam 觉得有人可以一起玩了</span></label><label class="opt"><input type="radio" name="q10" value="R4"><span class="i18n opt-text" data-zh="因为 Sam 看到有人突然走过来，有点惊讶" data-en="Because Sam was startled by someone suddenly walking over">因为 Sam 看到有人突然走过来，有点惊讶</span></label></div>
+    <div class="feedback"></div>
+  </div>
+
+  <div class="action-bar">
+    <button class="primary i18n" id="scoreBtn" data-zh="完成并保存" data-en="Finish &amp; save">完成并保存</button>
+    <button class="secondary i18n" id="exportJsonBtn" data-zh="导出 JSON" data-en="Export JSON" disabled>导出 JSON</button>
+    <button class="secondary i18n" id="exportCsvBtn" data-zh="导出 CSV" data-en="Export CSV" disabled>导出 CSV</button>
+  </div>
+
+  <p id="saveStatus" style="margin:10px 0 0;font-size:14px;color:var(--ink-faint)"></p>
+
+  <div class="results" id="results">
+    <h2><span class="i18n" data-zh="结果" data-en="Results">结果</span></h2>
+    <table>
+      <tr><td><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></td><td class="n" id="res-a"></td></tr>
+      <tr><td><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></td><td class="n" id="res-b"></td></tr>
+      <tr><td><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></td><td class="n" id="res-c"></td></tr>
+      <tr class="total"><td><span class="i18n" data-zh="总分" data-en="Total">总分</span></td><td class="n" id="res-total"></td></tr>
+    </table>
+  </div>
+
+  <footer>VideoASD · Post-quiz · <span class="i18n" data-zh="交朋友测验卷" data-en="Making Friends Quiz">交朋友测验卷</span> · <span class="i18n" data-zh="自助餐厅" data-en="Cafeteria">自助餐厅</span></footer>
+</main>
+<script>
+const ANSWERS = {"1": {"type": 1, "mode": "action", "points": {"a": 2, "b": 0, "c": -1, "d": 1}}, "2": {"type": 1, "mode": "emotion", "depends_on": 1, "emotion_map": {"a": "Happy", "b": "Neutral", "c": "Angry", "d": "Neutral"}}, "3": {"type": 2, "correct": true}, "4": {"type": 2, "correct": false}, "5": {"type": 2, "correct": true}, "6": {"type": 2, "correct": false}, "7": {"type": 3, "reason": "R1"}, "8": {"type": 3, "reason": "R1"}, "9": {"type": 3, "reason": "R1"}, "10": {"type": 3, "reason": "R1"}};
+const UI = {"zh": {"child_id": "Kid 编号（不写姓名）", "test_date": "施测日期", "tester": "施测人", "scene_prefix": "场景：", "score_btn": "完成并保存", "export_json_btn": "导出 JSON", "export_csv_btn": "导出 CSV", "results_heading": "结果", "part1": "第一部分", "part2": "第二部分", "part3": "第三部分", "total": "总分", "correct_fb": "✓ 正确", "incorrect_fb": "✗ 不正确", "unconfirmed_badge": "⚠ 待确认", "lang_toggle": "EN"}, "en": {"child_id": "Kid ID (no names)", "test_date": "Test date", "tester": "Tester", "scene_prefix": "Scene: ", "score_btn": "Finish & save", "export_json_btn": "Export JSON", "export_csv_btn": "Export CSV", "results_heading": "Results", "part1": "Part 1", "part2": "Part 2", "part3": "Part 3", "total": "Total", "correct_fb": "✓ Correct", "incorrect_fb": "✗ Incorrect", "unconfirmed_badge": "⚠ Unconfirmed", "lang_toggle": "中文"}};
+const TOTAL_A = 3, TOTAL_B = 4, TOTAL_C = 4;
+let LANG = "zh";
+
+function applyLang(lang) {
+  LANG = lang;
+  document.querySelectorAll(".i18n").forEach(el => {
+    const v = el.dataset[lang];
+    if (v !== undefined) el.textContent = v;
+  });
+  document.documentElement.setAttribute("lang", lang === "zh" ? "zh-CN" : "en");
+  try { localStorage.setItem("quizLang", lang); } catch (e) {}
+}
+
+document.getElementById("langToggle").addEventListener("click", () => {
+  applyLang(LANG === "zh" ? "en" : "zh");
+});
+
+let savedLang = "zh";
+try { savedLang = localStorage.getItem("quizLang") || "zh"; } catch (e) {}
+applyLang(savedLang);
+
+function getResponse(n, type, mode) {
+  if (type === 1) {
+    if (mode === "action") {
+      const a = document.querySelector(`input[name="q${n}-action"]:checked`);
+      return { action: a ? a.value : null };
+    }
+    if (mode === "emotion") {
+      const e = document.querySelector(`input[name="q${n}-emotion"]:checked`);
+      return { emotion: e ? e.value : null };
+    }
+    const a = document.querySelector(`input[name="q${n}-action"]:checked`);
+    const e = document.querySelector(`input[name="q${n}-emotion"]:checked`);
+    return { action: a ? a.value : null, emotion: e ? e.value : null };
+  }
+  const r = document.querySelector(`input[name="q${n}"]:checked`);
+  return r ? r.value : null;
+}
+
+function isCorrect(n, type, resp, mode, emotionOverride) {
+  const ans = ANSWERS[n];
+  if (type === 1) {
+    if (mode === "action") return resp.action === ans.action;
+    if (mode === "emotion") return resp.emotion === (emotionOverride !== undefined ? emotionOverride : ans.emotion);
+    return resp.action === ans.action && resp.emotion === ans.emotion;
+  }
+  if (type === 2) return resp !== null && (resp === "true") === ans.correct;
+  if (type === 3) return resp === ans.reason;
+  return false;
+}
+
+// Q1 strategy-effectiveness points (make_friends/join_activity only — see ACTION_POINTS
+// in generate_quiz.py). Returns null if unanswered, otherwise the point value for the
+// action picked (can be negative for 冲突/c).
+function actionPoints(n, resp, mode) {
+  const ans = ANSWERS[n];
+  if (mode !== "action" || !ans.points) return null;
+  if (resp.action === null) return null;
+  return ans.points[resp.action];
+}
+
+function score() {
+  let subA = 0, subB = 0, subC = 0;
+  const records = [];
+  const fbCorrect = UI[LANG].correct_fb, fbIncorrect = UI[LANG].incorrect_fb;
+  const fbUnconfirmed = LANG === "zh"
+    ? "⚠ 这个行动的情绪答案还没定案，不计分"
+    : "⚠ No confirmed emotion answer for this action yet — not scored";
+  for (const [nStr, ans] of Object.entries(ANSWERS)) {
+    const n = parseInt(nStr, 10);
+    const type = ans.type;
+    const mode = ans.mode;
+    const resp = getResponse(n, type, mode);
+    const answered = type === 1
+      ? (mode === "action" ? resp.action !== null : mode === "emotion" ? resp.emotion !== null : (resp.action !== null && resp.emotion !== null))
+      : resp !== null;
+
+    let unconfirmed = false;
+    let emotionOverride;
+    if (type === 1 && mode === "emotion" && ans.depends_on) {
+      const actionResp = getResponse(ans.depends_on, 1, "action");
+      if (ans.emotion_map) {
+        if (actionResp.action !== null && ans.emotion_map[actionResp.action] !== undefined) {
+          emotionOverride = ans.emotion_map[actionResp.action];
+        } else {
+          unconfirmed = true;
+        }
+      } else {
+        unconfirmed = actionResp.action !== ans.condition_action;
+      }
+    }
+
+    const points = actionPoints(n, resp, mode); // null unless this is a Q1 points-scored item
+    const usesPoints = points !== null || (mode === "action" && !!ans.points);
+    const correct = !unconfirmed && answered && !usesPoints && isCorrect(n, type, resp, mode, emotionOverride);
+
+    const item = document.querySelector(`.item[data-item="${n}"]`);
+    item.classList.remove("is-correct", "is-incorrect", "is-unconfirmed", "is-partial");
+    const fb = item.querySelector(".feedback");
+
+    if (usesPoints) {
+      const maxPts = Math.max(...Object.values(ans.points));
+      if (!answered) {
+        fb.className = "feedback"; fb.textContent = "";
+      } else if (points === maxPts) {
+        subA += points;
+        item.classList.add("is-correct");
+        fb.className = "feedback correct";
+        fb.textContent = (LANG === "zh" ? `✓ +${points} 分（最有效）` : `✓ +${points} pts (most effective)`);
+      } else if (points > 0) {
+        subA += points;
+        item.classList.add("is-partial");
+        fb.className = "feedback partial";
+        fb.textContent = (LANG === "zh" ? `+${points} 分（部分有效）` : `+${points} pts (partially effective)`);
+      } else if (points === 0) {
+        item.classList.add("is-partial");
+        fb.className = "feedback partial";
+        fb.textContent = (LANG === "zh" ? `0 分（无效但无害）` : `0 pts (ineffective, no harm)`);
+      } else {
+        subA += points;
+        item.classList.add("is-incorrect");
+        fb.className = "feedback incorrect";
+        fb.textContent = (LANG === "zh" ? `${points} 分（适得其反）` : `${points} pts (counterproductive)`);
+      }
+    } else if (unconfirmed) {
+      item.classList.add("is-unconfirmed");
+      fb.className = "feedback unconfirmed"; fb.textContent = fbUnconfirmed;
+    } else if (!answered) {
+      fb.className = "feedback"; fb.textContent = "";
+    } else if (correct) {
+      if (type === 1) subA++; else if (type === 2) subB++; else subC++;
+      item.classList.add("is-correct");
+      fb.className = "feedback correct"; fb.textContent = fbCorrect;
+    } else {
+      item.classList.add("is-incorrect");
+      fb.className = "feedback incorrect"; fb.textContent = fbIncorrect;
+    }
+
+    records.push({
+      item: n, type: type,
+      response: type === 1 ? JSON.stringify(resp) : String(resp),
+      answered: answered,
+      correct: usesPoints ? null : correct,
+      points: usesPoints ? points : null,
+      unconfirmed: unconfirmed
+    });
+  }
+  document.getElementById("sub-a").textContent = `${subA} / ${TOTAL_A}`;
+  document.getElementById("sub-b").textContent = `${subB} / ${TOTAL_B}`;
+  document.getElementById("sub-c").textContent = `${subC} / ${TOTAL_C}`;
+  document.getElementById("res-a").textContent = `${subA} / ${TOTAL_A}`;
+  document.getElementById("res-b").textContent = `${subB} / ${TOTAL_B}`;
+  document.getElementById("res-c").textContent = `${subC} / ${TOTAL_C}`;
+  document.getElementById("res-total").textContent = `${subA + subB + subC} / ${TOTAL_A + TOTAL_B + TOTAL_C}`;
+  document.getElementById("results").classList.add("show");
+  document.getElementById("exportJsonBtn").disabled = false;
+  document.getElementById("exportCsvBtn").disabled = false;
+  return records;
+}
+
+// Study mode: scores are computed for the saved record only. Nothing on screen says
+// right/wrong -- the child can see the tablet, and feedback on a pre-quiz would teach.
+function hideFeedback() {
+  document.querySelectorAll(".item").forEach(i => i.classList.remove("is-correct", "is-incorrect", "is-unconfirmed", "is-partial"));
+  document.querySelectorAll(".feedback").forEach(f => { f.className = "feedback"; f.textContent = ""; });
+  ["sub-a", "sub-b", "sub-c"].forEach(id => document.getElementById(id).textContent = "");
+  document.getElementById("results").classList.remove("show");
+}
+function totals() {
+  const n = id => document.getElementById(id).textContent;
+  return { part1: n("res-a"), part2: n("res-b"), part3: n("res-c"), total: n("res-total") };
+}
+function saveName(ext) {
+  const id = (document.getElementById("childId").value || "NOID").trim().replace(/[^A-Za-z0-9_-]/g, "");
+  return `${id || "NOID"}_make_friends_post.${ext}`;
+}
+// Study server (home desktop): POST the record so it survives the tab. On GitHub Pages
+// there is no /api, the request fails, and the manual Export buttons are the fallback.
+async function saveToServer(out) {
+  const el = document.getElementById("saveStatus");
+  try {
+    const r = await fetch("/api/save-session", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "quiz", participantId: out.child_id, condition: "make_friends-post",
+                             sessionId: String(Date.now()), ...out }) });
+    if (!r.ok) throw new Error(r.status);
+    el.textContent = (LANG === "zh" ? "已保存 ✓" : "Saved ✓");
+  } catch (e) {
+    el.textContent = (LANG === "zh" ? "没有自动保存，请点「导出 JSON」" : "Not auto-saved — please use Export JSON");
+  }
+}
+
+let lastRecords = null;
+document.getElementById("scoreBtn").addEventListener("click", () => {
+  if (!document.getElementById("childId").value.trim()) {
+    document.getElementById("saveStatus").textContent = (LANG === "zh" ? "请先填 Kid 编号" : "Enter the Kid ID first");
+    document.getElementById("childId").focus();
+    return;
+  }
+  lastRecords = score();
+  const out = { ...meta(), scores: totals(), records: lastRecords };
+  hideFeedback();
+  saveToServer(out);
+});
+
+function meta() {
+  return {
+    child_id: document.getElementById("childId").value,
+    test_date: document.getElementById("testDate").value,
+    tester: document.getElementById("tester").value,
+    topic: "make_friends",
+    version: "post",
+  };
+}
+
+function download(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("exportJsonBtn").addEventListener("click", () => {
+  if (!lastRecords) return;
+  const out = { ...meta(), records: lastRecords };
+  download(saveName("json"), JSON.stringify({ ...out, scores: totals() }, null, 2));
+});
+
+document.getElementById("exportCsvBtn").addEventListener("click", () => {
+  if (!lastRecords) return;
+  const m = meta();
+  const header = ["child_id","test_date","tester","topic","version","item","type","response","answered","correct","points","unconfirmed"];
+  const rows = lastRecords.map(r => [m.child_id, m.test_date, m.tester, m.topic, m.version, r.item, r.type, r.response, r.answered, r.correct, r.points, r.unconfirmed]);
+  const csv = [header, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  download(saveName("csv"), csv);
+});
+</script>

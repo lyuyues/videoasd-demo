@@ -10,7 +10,7 @@
 import {
   FaceLandmarker,
   FilesetResolver,
-} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm';
+} from './assets/vendor/mediapipe-tasks-vision/vision_bundle.mjs';  // vendored: CDNs are unreliable from mainland China
 
 const WASM_BASE = 'assets/mediapipe';
 const MODEL_URL = 'assets/mediapipe/face_landmarker.task';

@@ -786,6 +786,19 @@
       <h1 class="setup-title">Before you start</h1>
       <p class="setup-sub">For the grown-up · about a minute</p>
 
+      <div class="setup-step" id="setup-step-pid">
+        <div class="setup-num">0</div>
+        <div class="setup-body">
+          <h2>Kid ID · Kid 编号</h2>
+          <p>As on the assignment sheet, e.g. Kid03. No names.</p>
+          <div class="setup-actions">
+            <input id="setup-pid" type="text" autocomplete="off" placeholder="Kid03"
+                   style="font:inherit;padding:8px 12px;border:1.5px solid #c9c3b8;border-radius:10px;width:9em">
+          </div>
+        </div>
+        <div class="setup-state" id="setup-pid-state"></div>
+      </div>
+
       <div class="setup-step" id="setup-step-cal">
         <div class="setup-num">1</div>
         <div class="setup-body">
@@ -1048,8 +1061,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three": "./assets/vendor/three/three.module.js",
+      "three/addons/": "./assets/vendor/three/examples/jsm/"
     }
   }
   </script>
@@ -1059,6 +1072,7 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { GazeTracker, fitAffine2D } from './gaze.js';
     import { CB, CLIPS } from './clips.js';
+    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1569,12 +1583,14 @@
     }
     let sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
     const cid = () => $modal.dataset.constructId || $modal.dataset.locId || '_default';
+    let eventsDirty = false;   // set by logEvent, cleared by autosave
     function logEvent(type, data) {
       try {
         const log = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
         log.push({ ts: Date.now(), session: sessionId, condition: 'prr',
           participant: localStorage.getItem('videoasd_participant') || '', type, ...data });
         localStorage.setItem(EVENTS_KEY, JSON.stringify(log));
+        eventsDirty = true;
       } catch (e) { /* storage full or blocked */ }
     }
     // Construct-level summary, logged once when the child leaves a topic.
@@ -1582,6 +1598,7 @@
       logEvent('construct_committed', { construct: id, level: difficultyLevel,
         finalAction: pendingChoice, finalEmotion: pendingPrediction,
         alternativesExplored: Object.keys(loadGuesses(id)).length });
+      autosave();
     }
 
     /* ===== Gaze capture → static focus report (caregiver) =====
@@ -2202,9 +2219,9 @@
         $reportBody.appendChild(wrap);
       }
     }
-    document.getElementById('report-open').addEventListener('click', openReport);
-    document.getElementById('export-data').addEventListener('click', () => {
-      const payload = {
+    document.getElementById('report-open').addEventListener('click', () => { openReport(); autosave(); });
+    function buildPayload() {
+      return {
         exportedAt: new Date().toISOString(),
         currentSession: sessionId,
         events: JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'),
@@ -2213,6 +2230,23 @@
           .filter((k) => k.startsWith('videoasd_tree_'))
           .map((k) => [k.replace('videoasd_tree_', ''), loadGuesses(k.replace('videoasd_tree_', ''))])),
       };
+    }
+    // Study server: snapshot of this session (its events only) -> /api/save-session.
+    function serverPayload() {
+      const p = buildPayload();
+      return { kind: 'system', condition: 'prr', sessionId,
+        participantId: localStorage.getItem('videoasd_participant') || '',
+        ...p, events: p.events.filter((e) => e.session === sessionId) };
+    }
+    function autosave() { eventsDirty = false; saveSnapshot(serverPayload()); }
+    setInterval(() => { if (eventsDirty) autosave(); }, 60000);
+    addEventListener('pagehide', () => beaconSnapshot(serverPayload()));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') beaconSnapshot(serverPayload());
+    });
+    document.getElementById('export-data').addEventListener('click', () => {
+      const payload = buildPayload();
+      autosave();
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;
@@ -2281,6 +2315,7 @@
       localStorage.removeItem('videoasd_gaze_frames');
       // Reset = new participant: rotate the session id. The event log itself is
       // kept (every event carries its session id) -- export before resetting.
+      saveSnapshot(serverPayload());
       sessionId = newSessionId();
       logEvent('session_reset', {});
       updateProgress();
@@ -2500,8 +2535,22 @@
       // Enabled once both steps have a decision (calibrated/skipped, authored/skipped) --
       // covers every path that reaches markStep, including the calibration overlay's
       // own return callback below.
+      // Kid ID: required on the study server (every saved file is named by it);
+      // optional on the public Pages demo.
+      const $pid = document.getElementById('setup-pid');
+      $pid.value = localStorage.getItem('videoasd_participant') || '';
+      const pidOk = () => !onStudyServer || /^[A-Za-z0-9_-]+$/.test($pid.value.trim());
+      $pid.addEventListener('input', () => {
+        const v = $pid.value.trim();
+        try { localStorage.setItem('videoasd_participant', v); } catch (e) { /* not critical */ }
+        document.getElementById('setup-step-pid').classList.toggle('done', !!v && pidOk());
+        document.getElementById('setup-pid-state').textContent = v && pidOk() ? `${v} ✓` : '';
+        updateHandButton();
+      });
+      $pid.dispatchEvent(new Event('input'));
       function updateHandButton() {
-        const ready = document.getElementById('setup-step-cal').classList.contains('done') &&
+        const ready = pidOk() &&
+                      document.getElementById('setup-step-cal').classList.contains('done') &&
                       document.getElementById('setup-step-author').classList.contains('done');
         document.getElementById('setup-done').disabled = !ready;
       }

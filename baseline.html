@@ -52,7 +52,7 @@
     <p class="sub">Plays one scenario straight through (context → modeled action → its outcome) with no choices or predictions. Events and gaze are logged in this browser alongside the PRR app's gaze data; export them from here.</p>
 
     <label for="pid">Participant ID</label>
-    <input id="pid" type="text" placeholder="e.g. P03" />
+    <input id="pid" type="text" placeholder="e.g. Kid03" />
 
     <label for="scene">Setting</label>
     <select id="scene"></select>
@@ -94,6 +94,7 @@
   <script type="module">
     import { CLIPS } from './clips.js';
     import { GazeTracker } from './gaze.js';
+    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js';
 
     const SCENES = { playground: 'Playground', classroom: 'Classroom', cafeteria: 'Cafeteria', park: 'Park' };
     const TOPICS = { make_friends: 'Make a friend', join_activity: 'Join an activity', comfort_friend: 'Comfort a friend' };
@@ -258,6 +259,10 @@
       const clips = CLIPS[`${scene}_${topic}`];
       const o = clips.options[option];
       const participant = $('pid').value.trim();
+      if (onStudyServer && !/^[A-Za-z0-9_-]+$/.test(participant)) {
+        $('pid').focus(); $('pid').style.borderColor = '#c0392b';
+        return;   // every saved file is named by the Kid ID
+      }
       try {
         localStorage.setItem('videoasd_participant', participant);
         localStorage.setItem('videoasd_baseline_last', JSON.stringify({ scene, topic }));
@@ -292,6 +297,7 @@
 
     $('finish').addEventListener('click', () => {
       logEvent('baseline_completed', { viewings: viewing });
+      saveSnapshot(serverPayload());
       vids.forEach((el) => el.pause());
       $('player').classList.add('hidden');
       $('done').classList.remove('hidden');
@@ -303,6 +309,7 @@
       if (!$('player').classList.contains('hidden')) {
         vids.forEach((el) => el.pause()); stopCap();
         logEvent('baseline_aborted', { segment: playlist[idx] && playlist[idx].segment, viewing });
+        saveSnapshot(serverPayload());
       }
       gaze.stop(); gaze.stopCamera(); gazeOn = false;
       $('player').classList.add('hidden');
@@ -310,6 +317,15 @@
       $('corner').classList.add('hidden');
       $('setup').classList.remove('hidden');
     });
+
+    // Study server: this session's events + gaze -> /api/save-session (see save.js).
+    function serverPayload() {
+      const events = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]').filter((e) => e.session === sessionId);
+      return { kind: 'system', condition: 'baseline', sessionId, participantId: ctx.participant || '',
+        construct: ctx.construct, option: ctx.option, events,
+        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}') };
+    }
+    addEventListener('pagehide', () => { if (ctx.participant) beaconSnapshot(serverPayload()); });
 
     // Export: same payload shape as the main app's Export
     $('export').addEventListener('click', () => {

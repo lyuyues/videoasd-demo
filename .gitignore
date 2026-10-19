@@ -15,3 +15,10 @@ node_modules/
 
 # Logs
 *.log
+
+# Study server: participant data and secrets never go to git
+session_data/
+deploy/study.env
+cert.pem
+key.pem
+__pycache__/
