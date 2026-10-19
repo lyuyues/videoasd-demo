@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VideoASD — Baseline (passive video modeling)</title>
+  <title>VideoASD — 对照组（被动视频示范）</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -48,29 +48,29 @@
 <body>
   <!-- Researcher setup (not shown to the child) -->
   <div id="setup" class="setup">
-    <h1>Baseline: passive video modeling</h1>
-    <p class="sub">Plays one scenario straight through (context → modeled action → its outcome) with no choices or predictions. Events and gaze are logged in this browser alongside the PRR app's gaze data; export them from here.</p>
+    <h1>对照组：被动视频示范</h1>
+    <p class="sub">连续播放一个情境（情境 → 示范行动 → 结果），没有选择也没有预测。事件和视线记录与主程序的视线数据一起保存在本浏览器中，可在此页导出。</p>
 
-    <label for="pid">Participant ID</label>
-    <input id="pid" type="text" placeholder="e.g. Kid03" />
+    <label for="pid">Kid 编号</label>
+    <input id="pid" type="text" placeholder="例如 Kid03" />
 
-    <label for="scene">Setting</label>
+    <label for="scene">场景</label>
     <select id="scene"></select>
 
-    <label for="topic">Topic</label>
+    <label for="topic">主题</label>
     <select id="topic"></select>
 
-    <label for="option">Modeled action</label>
+    <label for="option">示范行动</label>
     <select id="option"></select>
-    <p class="note">Default: the approach action (a), shown as the model to imitate. Pending advisor confirmation.</p>
+    <p class="note">默认：主动接近的行动 (a)，作为示范供模仿。待导师确认。</p>
 
-    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">Track gaze (uses the calibration saved in the main app)</label></div>
+    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">记录视线（使用主程序中保存的校准）</label></div>
     <p class="note" id="gaze-status"></p>
 
     <div class="row">
-      <button class="btn-main" id="start">▶ Start</button>
-      <button class="btn-sec" id="export">⬇ Export data</button>
-      <a class="btn-sec" href="index.html" style="text-decoration:none">← Main app</a>
+      <button class="btn-main" id="start">▶ 开始</button>
+      <button class="btn-sec" id="export">⬇ 导出数据</button>
+      <a class="btn-sec" href="index.html" style="text-decoration:none">← 主程序</a>
     </div>
   </div>
 
@@ -79,16 +79,16 @@
     <p class="cue" id="cue"></p>
     <div class="stage"><video id="vA" playsinline preload="auto"></video><video id="vB" class="off" playsinline preload="auto"></video></div>
     <div class="btns">
-      <button class="btn-sec hidden" id="replay">↻ Watch again</button>
-      <button class="btn-main hidden" id="finish">Done ✓</button>
+      <button class="btn-sec hidden" id="replay">↻ 再看一遍</button>
+      <button class="btn-main hidden" id="finish">完成 ✓</button>
     </div>
   </div>
 
   <div id="done" class="player hidden">
-    <div class="done-card"><div class="big">🌟</div><p class="cue">All done — great watching!</p></div>
+    <div class="done-card"><div class="big">🌟</div><p class="cue">看完啦 — 看得真棒！</p></div>
   </div>
 
-  <button id="corner" class="corner hidden">⚙ Setup</button>
+  <button id="corner" class="corner hidden">⚙ 设置</button>
   <video id="gaze-video" autoplay muted playsinline></video>
 
   <script type="module">
@@ -96,8 +96,8 @@
     import { GazeTracker } from './gaze.js';
     import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js';
 
-    const SCENES = { playground: 'Playground', classroom: 'Classroom', cafeteria: 'Cafeteria', park: 'Park' };
-    const TOPICS = { make_friends: 'Make a friend', join_activity: 'Join an activity', comfort_friend: 'Comfort a friend' };
+    const SCENES = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
+    const TOPICS = { make_friends: '交朋友', join_activity: '加入活动', comfort_friend: '安慰朋友' };
     const $ = (id) => document.getElementById(id);
 
     /* ===== Logging: same store and session id as the PRR app ===== */
@@ -138,8 +138,8 @@
     /* ===== Gaze (optional) ===== */
     const gaze = new GazeTracker();
     $('gaze-status').textContent = gaze.hasCalibration()
-      ? 'Saved calibration found.'
-      : 'No saved calibration — calibrate in the main app first (Calibrate Gaze), or run without gaze.';
+      ? '已找到保存的校准。'
+      : '没有保存的校准 — 请先在主程序中校准（眼动校准），或不记录视线直接运行。';
     $('use-gaze').checked = gaze.hasCalibration();
     $('use-gaze').disabled = !gaze.hasCalibration();
     let gazeOn = false;
@@ -276,13 +276,13 @@
       ];
       viewing = 0;
       $('start').disabled = true;
-      $('start').textContent = 'Loading…';
+      $('start').textContent = '加载中…';
       await prefetch(playlist);
       $('start').disabled = false;
-      $('start').textContent = '▶ Start';
+      $('start').textContent = '▶ 开始';
       if ($('use-gaze').checked) await startGaze();
       logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
-      $('cue').textContent = `Let's watch: ${TOPICS[topic]}`;
+      $('cue').textContent = `一起来看：${TOPICS[topic]}`;
       $('setup').classList.add('hidden');
       $('done').classList.add('hidden');
       $('player').classList.remove('hidden');

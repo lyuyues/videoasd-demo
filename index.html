@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -10,7 +10,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="VideoASD">
-  <title>My Town — VideoASD</title>
+  <title>我的小镇 — VideoASD</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -783,14 +783,14 @@
        scene pick falls through to the next unfinished one. -->
   <div id="setup" class="setup">
     <div class="setup-card">
-      <h1 class="setup-title">Before you start</h1>
-      <p class="setup-sub">For the grown-up · about a minute</p>
+      <h1 class="setup-title">开始之前</h1>
+      <p class="setup-sub">请家长/老师完成 · 大约一分钟</p>
 
       <div class="setup-step" id="setup-step-pid">
         <div class="setup-num">0</div>
         <div class="setup-body">
-          <h2>Kid ID · Kid 编号</h2>
-          <p>As on the assignment sheet, e.g. Kid03. No names.</p>
+          <h2>Kid 编号</h2>
+          <p>按分组表填写，例如 Kid03。不要写姓名。</p>
           <div class="setup-actions">
             <input id="setup-pid" type="text" autocomplete="off" placeholder="Kid03"
                    style="font:inherit;padding:8px 12px;border:1.5px solid #c9c3b8;border-radius:10px;width:9em">
@@ -802,11 +802,11 @@
       <div class="setup-step" id="setup-step-cal">
         <div class="setup-num">1</div>
         <div class="setup-body">
-          <h2>Eye calibration</h2>
-          <p>Optional — tracks where your child looks. Skip and the game plays the same.</p>
+          <h2>眼动校准</h2>
+          <p>可选 — 记录孩子看向哪里。跳过也不影响游戏。</p>
           <div class="setup-actions">
-            <button class="setup-go" id="setup-cal">Calibrate</button>
-            <button class="setup-skip" id="setup-cal-skip">Skip</button>
+            <button class="setup-go" id="setup-cal">开始校准</button>
+            <button class="setup-skip" id="setup-cal-skip">跳过</button>
           </div>
         </div>
         <div class="setup-state" id="setup-cal-state"></div>
@@ -815,18 +815,18 @@
       <div class="setup-step" id="setup-step-author">
         <div class="setup-num">2</div>
         <div class="setup-body">
-          <h2>Make a scene</h2>
-          <p>Optional — design your own, or skip to use the prepared scenes.</p>
+          <h2>制作场景</h2>
+          <p>可选 — 自己设计场景，或跳过，使用准备好的场景。</p>
           <div class="setup-actions">
-            <button class="setup-go" id="setup-author">✨ Author</button>
-            <button class="setup-skip" id="setup-author-skip">Skip</button>
+            <button class="setup-go" id="setup-author">✨ 制作</button>
+            <button class="setup-skip" id="setup-author-skip">跳过</button>
           </div>
           <p class="setup-note" id="setup-author-note" hidden></p>
         </div>
         <div class="setup-state" id="setup-author-state"></div>
       </div>
 
-      <button class="setup-hand" id="setup-done" disabled>Hand the tablet to your child →</button>
+      <button class="setup-hand" id="setup-done" disabled>把平板交给孩子 →</button>
     </div>
   </div>
 
@@ -834,9 +834,9 @@
   <div id="done-screen" class="done-screen hidden">
     <div class="done-card">
       <div class="done-emoji" id="done-emoji">🌸</div>
-      <h1 id="done-title">All done!</h1>
+      <h1 id="done-title">完成啦！</h1>
       <p id="done-sub"></p>
-      <button class="setup-hand" id="done-back">Back to Main Street</button>
+      <button class="setup-hand" id="done-back">回到小镇</button>
     </div>
   </div>
 
@@ -851,16 +851,16 @@
   <!-- Grown-up controls. Hidden while the child plays; reached by tapping the
        ⚙ icon (#parent-tab, top-right). -->
   <div class="toolbar" id="toolbar" hidden>
-    <button id="cal-start">Calibrate Gaze</button>
-    <button id="gaze-toggle" style="display:none;">Show Gaze ●</button>
-    <button id="diff-start">Difficulty</button>
-    <button id="report-open">Report</button>
-    <button id="baseline-open" title="Passive video-modeling baseline condition (same session and data store)" onclick="location.href='baseline.html'">▶ Baseline</button>
-    <button id="export-data" title="Download the interaction + gaze log as JSON">⬇ Export</button>
-    <button id="reset-progress">Reset</button>
-    <button id="toolbar-hide">Done ✓</button>
+    <button id="cal-start">眼动校准</button>
+    <button id="gaze-toggle" style="display:none;">显示视线 ●</button>
+    <button id="diff-start">难度</button>
+    <button id="report-open">报告</button>
+    <button id="baseline-open" title="被动视频示范对照条件（同一会话和数据存储）" onclick="location.href='baseline.html'">▶ 对照组</button>
+    <button id="export-data" title="下载交互和视线记录（JSON）">⬇ 导出</button>
+    <button id="reset-progress">重置</button>
+    <button id="toolbar-hide">完成 ✓</button>
   </div>
-  <button id="parent-tab" title="Grown-up controls">⚙</button>
+  <button id="parent-tab" title="家长/老师设置">⚙</button>
 
   <!-- Webcam preview (small thumbnail) -->
   <video id="gaze-video" autoplay muted playsinline></video>
@@ -870,10 +870,10 @@
 
   <!-- Calibration overlay -->
   <div id="cal-overlay">
-    <button id="cal-cancel">Cancel</button>
+    <button id="cal-cancel">取消</button>
     <div class="cal-instructions" id="cal-instructions">
-      Gaze calibration — look at the <strong>yellow dot</strong>, then click it.<br>
-      After all 9 dots, calibration completes automatically.
+      眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>
+      点完全部 9 个圆点后，校准自动完成。
     </div>
     <div class="cal-dots" id="cal-dots"></div>
     <div class="cal-progress" id="cal-progress">0 / 9</div>
@@ -882,61 +882,61 @@
   <div id="modal" class="modal hidden">
     <div class="modal-card poe-card">
       <div class="poe-header">
-        <h2 id="modal-title">Enter ...</h2>
+        <h2 id="modal-title">...</h2>
         <div class="ier-phases">
-          <span class="ier-chip" data-phase="interpret">INTERPRET</span>
-          <span class="ier-chip" data-phase="action">ACTION</span>
-          <span class="ier-chip" data-phase="reaction">REACTION</span>
-          <span class="ier-chip" data-phase="reflect">REFLECT</span>
+          <span class="ier-chip" data-phase="interpret">理解</span>
+          <span class="ier-chip" data-phase="action">行动</span>
+          <span class="ier-chip" data-phase="reaction">反应</span>
+          <span class="ier-chip" data-phase="reflect">反思</span>
         </div>
       </div>
 
       <!-- Step 1: context video -->
       <div id="poe-step-context" class="poe-step">
         <video id="ctx-video" class="poe-video" muted playsinline controls></video>
-        <p class="poe-cue">See what happened ↑</p>
+        <p class="poe-cue">看看发生了什么 ↑</p>
         <div class="poe-btn-row hidden" id="ctx-btn-row">
-          <button class="poe-secondary" id="ctx-replay">↻ Watch again</button>
-          <button class="poe-next" id="ctx-done">Done watching →</button>
+          <button class="poe-secondary" id="ctx-replay">↻ 再看一遍</button>
+          <button class="poe-next" id="ctx-done">看完了 →</button>
         </div>
       </div>
 
       <!-- Step 2: choose action — visual path picker -->
       <div id="poe-step-choose" class="poe-step hidden">
-        <p class="poe-cue">Choose a path to walk down ↓</p>
+        <p class="poe-cue">选一条路走过去 ↓</p>
         <div class="path-picker" id="path-picker">
           <img id="path-picker-img" src="" alt="">
           <button class="path-hotspot" data-choice="a" id="path-hotspot-a">
-            <span class="path-hotspot-label" id="path-label-a">Comfort them</span>
+            <span class="path-hotspot-label" id="path-label-a">安慰她</span>
           </button>
           <button class="path-hotspot" data-choice="b" id="path-hotspot-b">
-            <span class="path-hotspot-label" id="path-label-b">Crack a joke</span>
+            <span class="path-hotspot-label" id="path-label-b">讲个笑话</span>
           </button>
           <button class="path-hotspot" data-choice="c" id="path-hotspot-c">
-            <span class="path-hotspot-label" id="path-label-c">Ignore them</span>
+            <span class="path-hotspot-label" id="path-label-c">不理她</span>
           </button>
         </div>
       </div>
 
       <!-- Step 2: choose YOUR action -->
       <div id="poe-step-action" class="poe-step hidden">
-        <p class="poe-cue">What would <img src="assets/boy_head.png" alt="you" class="inline-portrait"> do?</p>
+        <p class="poe-cue"><img src="assets/boy_head.png" alt="你" class="inline-portrait"> 会怎么做？</p>
         <div class="poe-choices">
           <button class="poe-choice action-btn" data-choice="a">
             <img class="action-icon" src="assets/actions/comfort.png" alt="">
-            <span>Comfort them</span>
+            <span>安慰她</span>
           </button>
           <button class="poe-choice action-btn" data-choice="b">
             <img class="action-icon" src="assets/actions/joke.png" alt="">
-            <span>Crack a joke</span>
+            <span>讲个笑话</span>
           </button>
           <button class="poe-choice action-btn" data-choice="c">
             <img class="action-icon" src="assets/actions/ignore.png" alt="">
-            <span>Ignore them</span>
+            <span>不理她</span>
           </button>
           <button class="poe-choice action-btn" data-choice="d">
             <img class="action-icon" src="assets/actions/ask.png" alt="">
-            <span>Ask for help</span>
+            <span>找人帮忙</span>
           </button>
         </div>
       </div>
@@ -944,40 +944,40 @@
       <!-- Step 2a: action clip — Alex does the chosen action -->
       <div id="poe-step-actplay" class="poe-step hidden">
         <video id="act-video" class="poe-video" playsinline></video>
-        <p class="poe-cue">Watch what you did...</p>
+        <p class="poe-cue">看看你做了什么……</p>
       </div>
 
       <!-- Step 2b: predict emotion -->
       <div id="poe-step-predict" class="poe-step hidden">
-        <p class="poe-cue">How do you think <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> will feel after?</p>
+        <p class="poe-cue">你觉得 <img src="assets/emotions/sam_neutral.png" alt="她" class="inline-portrait"> 之后会有什么感觉？</p>
         <div class="emotion-grid">
-          <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>Happy</span></button>
-          <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>Sad</span></button>
-          <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>Angry</span></button>
-          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>Confused</span></button>
-          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>Scared</span></button>
-          <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>Neutral</span></button>
+          <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>开心</span></button>
+          <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
+          <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
+          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>困惑</span></button>
+          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>中性</span></button>
         </div>
       </div>
 
       <!-- Step 2c: lock-in confirmation -->
       <div id="poe-step-confirm" class="poe-step hidden">
-        <p class="poe-cue">Ready to see what happens?</p>
+        <p class="poe-cue">准备好看看会发生什么了吗？</p>
         <div class="confirm-summary">
           <div class="confirm-item">
-            <span class="confirm-label">You'll</span>
+            <span class="confirm-label">你会</span>
             <img id="confirm-action-icon" class="confirm-icon" src="" alt="">
             <span id="confirm-action-text" class="confirm-text"></span>
           </div>
           <div class="confirm-item">
-            <span class="confirm-label">You think she'll feel</span>
+            <span class="confirm-label">你觉得她会感到</span>
             <img id="confirm-emotion-icon" class="confirm-icon" src="" alt="">
             <span id="confirm-emotion-text" class="confirm-text"></span>
           </div>
         </div>
         <div class="poe-btn-row">
-          <button class="poe-secondary" id="confirm-change">Change ↺</button>
-          <button class="poe-next" id="confirm-lock">Lock it in ✓</button>
+          <button class="poe-secondary" id="confirm-change">改一改 ↺</button>
+          <button class="poe-next" id="confirm-lock">就这样 ✓</button>
         </div>
       </div>
 
@@ -987,19 +987,19 @@
 
         <!-- 3a: mismatch check -- compares the predicted reaction (poe-step-predict) against the outcome just shown -->
         <div id="poe-outcome-check" class="poe-substep">
-          <p class="poe-cue">Is it like you thought?</p>
+          <p class="poe-cue">跟你想的一样吗？</p>
           <div class="poe-row">
-            <button class="poe-secondary check-btn" data-check="yes">Yes</button>
-            <button class="poe-secondary check-btn" data-check="kindof">Kind of</button>
-            <button class="poe-secondary check-btn" data-check="no">No</button>
+            <button class="poe-secondary check-btn" data-check="yes">一样</button>
+            <button class="poe-secondary check-btn" data-check="kindof">有点像</button>
+            <button class="poe-secondary check-btn" data-check="no">不一样</button>
           </div>
         </div>
 
         <!-- 3c: try another / complete -->
         <div id="poe-outcome-next" class="poe-substep hidden">
           <div class="poe-row">
-            <button class="poe-secondary" id="out-revise">Try another ↺</button>
-            <button class="poe-next" id="out-done">Complete ✓</button>
+            <button class="poe-secondary" id="out-revise">换一个试试 ↺</button>
+            <button class="poe-next" id="out-done">完成 ✓</button>
           </div>
         </div>
       </div>
@@ -1008,31 +1008,31 @@
            once per location. Own step (not a substep of outcome, like predict) so it
            doesn't have to share a scrollable view with the outcome video. -->
       <div id="poe-step-observe" class="poe-step hidden">
-        <p class="poe-cue">Now that you saw it -- how does <img src="assets/emotions/sam_neutral.png" alt="she" class="inline-portrait"> actually feel?</p>
+        <p class="poe-cue">看完以后，你觉得 <img src="assets/emotions/sam_neutral.png" alt="她" class="inline-portrait"> 其实是什么感觉？</p>
         <div class="emotion-grid" id="observe-emotion-grid">
-          <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>Happy</span></button>
-          <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>Sad</span></button>
-          <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>Angry</span></button>
-          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>Confused</span></button>
-          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>Scared</span></button>
-          <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>Neutral</span></button>
+          <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>开心</span></button>
+          <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
+          <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
+          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>困惑</span></button>
+          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>中性</span></button>
         </div>
       </div>
 
       <!-- Step 4: reflect — possibility tree -->
       <div id="poe-step-tree" class="poe-step hidden">
         <div id="tree-reward" class="tree-reward"></div>
-        <p class="poe-cue">Your story tree 🌳</p>
+        <p class="poe-cue">你的故事树 🌳</p>
         <div class="tree-wrap">
-          <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 420" aria-label="possibility tree"></svg>
+          <svg id="tree-svg" class="tree-svg" viewBox="0 0 520 420" aria-label="故事树"></svg>
           <div class="tree-legend">
-            <span><i class="legend-dot mine"></i> What you did · what you thought</span>
-            <span><i class="legend-dot trunk"></i> What happened</span>
+            <span><i class="legend-dot mine"></i> 你做了什么 · 你怎么想</span>
+            <span><i class="legend-dot trunk"></i> 结果怎么样</span>
           </div>
         </div>
         <div class="poe-btn-row">
-          <button class="poe-secondary" id="tree-again">Try another ↺</button>
-          <button class="poe-next" id="tree-done">Done ✓</button>
+          <button class="poe-secondary" id="tree-again">换一个试试 ↺</button>
+          <button class="poe-next" id="tree-done">完成 ✓</button>
         </div>
       </div>
     </div>
@@ -1041,20 +1041,20 @@
   <!-- Difficulty picker (caregiver) -->
   <div id="diff-modal" class="modal hidden">
     <div class="modal-card" style="max-width: 580px;">
-      <h2>Choose difficulty</h2>
-      <p class="modal-sub">How many choices the child sees</p>
+      <h2>选择难度</h2>
+      <p class="modal-sub">孩子能看到几个选项</p>
       <div class="diff-cards" id="diff-cards"></div>
-      <p class="modal-hint">Caregiver setting · applies to the next scene</p>
+      <p class="modal-hint">家长/老师设置 · 下一个场景生效</p>
     </div>
   </div>
 
   <!-- Caregiver report: static gaze focus map -->
   <div id="report-modal" class="modal hidden">
     <div class="modal-card" style="max-width: 760px;">
-      <h2>Session report</h2>
-      <p class="modal-sub">What your child predicted, and where they looked</p>
+      <h2>本次报告</h2>
+      <p class="modal-sub">孩子的预测，以及孩子看向哪里</p>
       <div class="report-body" id="report-body"></div>
-      <p class="modal-hint">Focus areas are approximate — webcam gaze, shown as general zones, not exact points.</p>
+      <p class="modal-hint">关注区域为近似值 — 基于摄像头视线估计，只显示大致区域，不是精确位置。</p>
     </div>
   </div>
 
@@ -1121,17 +1121,17 @@
       renderCalDots();
       try {
         if (!gaze.landmarker) {
-          document.getElementById('cal-instructions').innerHTML = 'Loading MediaPipe model ...';
+          document.getElementById('cal-instructions').innerHTML = '正在加载 MediaPipe 模型……';
           await gaze.init($gazeVideo);
         }
         await gaze.startCamera();
         gaze.start();
         document.getElementById('cal-instructions').innerHTML =
-          'Gaze calibration — look at the <strong>yellow dot</strong>, then click it.<br>After all 9 dots, calibration completes automatically.';
+          '眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>点完全部 9 个圆点后，校准自动完成。';
       } catch (e) {
         console.error('[gaze] init failed:', e);
         document.getElementById('cal-instructions').innerHTML =
-          `<span style="color:#ff8888">Failed to load: ${e.message || e}</span><br>Check camera permissions`;
+          `<span style="color:#ff8888">加载失败：${e.message || e}</span><br>请检查摄像头权限`;
       }
     }
 
@@ -1152,7 +1152,7 @@
       const model = fitAffine2D(calSamples);
       if (!model) {
         document.getElementById('cal-instructions').innerHTML =
-          '<span style="color:#ff8888">Calibration failed: sample data anomaly, please retry</span>';
+          '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
         setTimeout(() => { calIdx = 0; renderCalDots(); }, 1500);
         return;
       }
@@ -1166,9 +1166,9 @@
       // Left on indefinitely, it sits in the child's view for the whole
       // session; the grown-up can still re-show it anytime from the toolbar.
       enableGazeCursor(true);
-      $gazeToggle.textContent = 'Hide Gaze ●';
+      $gazeToggle.textContent = '隐藏视线 ●';
       setTimeout(() => {
-        if (gazeTrackingActive) { enableGazeCursor(false); $gazeToggle.textContent = 'Show Gaze ○'; }
+        if (gazeTrackingActive) { enableGazeCursor(false); $gazeToggle.textContent = '显示视线 ○'; }
       }, 4000);
       if (window.__afterCalibration) { window.__afterCalibration(); window.__afterCalibration = null; }
     }
@@ -1209,13 +1209,13 @@
     $gazeToggle.addEventListener('click', () => {
       const next = !gazeTrackingActive;
       enableGazeCursor(next);
-      $gazeToggle.textContent = next ? 'Hide Gaze ●' : 'Show Gaze ○';
+      $gazeToggle.textContent = next ? '隐藏视线 ●' : '显示视线 ○';
     });
 
     // If already calibrated from previous session, show toggle right away
     if (gaze.hasCalibration()) {
       $gazeToggle.style.display = '';
-      $gazeToggle.textContent = 'Show Gaze ○';
+      $gazeToggle.textContent = '显示视线 ○';
       console.log('[gaze] loaded saved calibration');
     }
 
@@ -1321,14 +1321,14 @@
 
     // Display info for the lock-in summary
     const ACTION_INFO = {
-      a: { icon: 'assets/actions/comfort.png', label: 'Comfort them' },
-      b: { icon: 'assets/actions/joke.png', label: 'Crack a joke' },
-      c: { icon: 'assets/actions/ignore.png', label: 'Ignore them' },
-      d: { icon: 'assets/actions/ask.png', label: 'Ask for help' },  // PLACEHOLDER 4th action
+      a: { icon: 'assets/actions/comfort.png', label: '安慰她' },
+      b: { icon: 'assets/actions/joke.png', label: '讲个笑话' },
+      c: { icon: 'assets/actions/ignore.png', label: '不理她' },
+      d: { icon: 'assets/actions/ask.png', label: '找人帮忙' },  // PLACEHOLDER 4th action
     };
     const EMOTION_LABEL = {
-      happy: 'Happy', sad: 'Sad', angry: 'Angry',
-      confused: 'Confused', scared: 'Scared', neutral: 'Neutral',
+      happy: '开心', sad: '难过', angry: '生气',
+      confused: '困惑', scared: '害怕', neutral: '中性',
     };
     const $ctxVideo = document.getElementById('ctx-video');
     const $outVideo = document.getElementById('out-video');
@@ -1387,27 +1387,27 @@
     const ZONE_PATHS = {
       playground: {
         img: 'assets/zones/playground.png',
-        a: { x: 28, y: 50, label: 'To the swings' },     // swings — left side
-        b: { x: 52, y: 50, label: 'To the sandbox' },     // sandbox — center
-        c: { x: 72, y: 48, label: 'To the slide' },     // slide — right
+        a: { x: 28, y: 50, label: '去秋千' },     // swings — left side
+        b: { x: 52, y: 50, label: '去沙坑' },     // sandbox — center
+        c: { x: 72, y: 48, label: '去滑梯' },     // slide — right
       },
       classroom: {
         img: 'assets/zones/classroom.png',
-        a: { x: 30, y: 70, label: 'To the reading nook' },   // reading nook — left/front
-        b: { x: 55, y: 58, label: 'To the front door' },     // front door — center-back
-        c: { x: 78, y: 70, label: 'To the art display' },     // art display — right
+        a: { x: 30, y: 70, label: '去阅读角' },   // reading nook — left/front
+        b: { x: 55, y: 58, label: '去前门' },     // front door — center-back
+        c: { x: 78, y: 70, label: '去作品墙' },     // art display — right
       },
       cafeteria: {
         img: 'assets/zones/cafeteria.png',
-        a: { x: 28, y: 65, label: 'To the round table' },     // round table — left/front
-        b: { x: 55, y: 50, label: 'To the long table' },     // long table — center
-        c: { x: 78, y: 65, label: 'To the snack counter' },   // snack counter — right
+        a: { x: 28, y: 65, label: '去圆桌' },     // round table — left/front
+        b: { x: 55, y: 50, label: '去长桌' },     // long table — center
+        c: { x: 78, y: 65, label: '去零食柜台' },   // snack counter — right
       },
       park: {
         img: 'assets/zones/park.png',
-        a: { x: 28, y: 58, label: 'To the fountain' },     // fountain — left
-        b: { x: 55, y: 65, label: 'To the bench' },     // bench — center-front
-        c: { x: 78, y: 55, label: 'To the flower circle' },     // flower circle — right
+        a: { x: 28, y: 58, label: '去喷泉' },     // fountain — left
+        b: { x: 55, y: 65, label: '去长椅' },     // bench — center-front
+        c: { x: 78, y: 55, label: '去花坛' },     // flower circle — right
       },
     };
 
@@ -1495,9 +1495,9 @@
     // meaning. 'd' is a PLACEHOLDER (icon assets/actions/ask.png, outcome reuses
     // outcome_a.mp4). Replace with real content.
     const DIFFICULTY_LEVELS = [
-      { id: 1, label: 'Gentle',  actions: 2, emotions: 2 },
-      { id: 2, label: 'Core',    actions: 3, emotions: 3 },
-      { id: 3, label: 'Stretch', actions: 4, emotions: 4 },
+      { id: 1, label: '简单',  actions: 2, emotions: 2 },
+      { id: 2, label: '标准',    actions: 3, emotions: 3 },
+      { id: 3, label: '挑战', actions: 4, emotions: 4 },
     ];
     // Future axes (cueAmbiguity / tomOrder / hintAmount / socialComplexity /
     // independent emotionGranularity): add as new per-level columns once experts
@@ -1537,7 +1537,7 @@
         if (g) g.style.gridTemplateColumns = `repeat(${Math.min(lv.emotions, 3)}, 1fr)`;
       });
       const diffBtn = document.getElementById('diff-start');
-      if (diffBtn) diffBtn.textContent = `Difficulty: ${lv.label}`;
+      if (diffBtn) diffBtn.textContent = `难度：${lv.label}`;
     }
 
     // Caregiver difficulty picker (3 cards rendered from the config)
@@ -1551,7 +1551,7 @@
         card.innerHTML =
           `<div class="diff-card-dots">${'●'.repeat(lv.actions)}</div>` +
           `<div class="diff-card-title">${lv.label}</div>` +
-          `<div class="diff-card-meta">${lv.actions} actions · ${lv.emotions} feelings</div>`;
+          `<div class="diff-card-meta">${lv.actions} 个行动 · ${lv.emotions} 种感觉</div>`;
         card.addEventListener('click', () => {
           difficultyLevel = lv.id;
           localStorage.setItem('videoasd_difficulty', String(lv.id));
@@ -1666,7 +1666,7 @@
 
     function openModal(loc) {
       applyDifficulty();
-      $modalTitle.textContent = `Enter ${loc.label}`;
+      $modalTitle.textContent = loc.label;
       $modal.dataset.locId = loc.id;
       // Action choice gets picked inside modal at the action step
       pendingChoice = null;
@@ -1961,7 +1961,7 @@
       g.appendChild(svgImg(left, cy - ah / 2, aw, ah, info.icon));
       g.appendChild(svgImg(left + aw + gap, cy - fs / 2, fs, fs, emoSrc(entry.predicted || 'neutral')));
       svg.appendChild(g);
-      svgText(svg, cx, cy - rh / 2 - 6, highlight ? 'You did · you thought' : info.label, 11);
+      svgText(svg, cx, cy - rh / 2 - 6, highlight ? '你做的 · 你想的' : info.label, 11);
       if (info.outcome) {
         const oy = cy + rh / 2 + 4;
         const og = svgEl('g', {});
@@ -1969,7 +1969,7 @@
         og.appendChild(svgEl('rect', { x: cx - 41, y: oy - 2, width: 82, height: 50, rx: 8, fill: '#d9e8f7' }));
         og.appendChild(svgImg(cx - 38, oy + 1, 76, 43, info.outcome));
         svg.appendChild(og);
-        svgText(svg, cx, oy + 60, 'What happened', 10);
+        svgText(svg, cx, oy + 60, '结果', 10);
       }
     }
 
@@ -1986,7 +1986,7 @@
         svg.appendChild(svgEl('rect', { x: 205, y: 36, width: 110, height: 66, rx: 10, fill: '#fff4dd' }));
         svg.appendChild(svgImg(212, 42, 96, 54, thumb(clips.context)));
       }
-      svgText(svg, 260, 26, 'The story', 12);
+      svgText(svg, 260, 26, '故事', 12);
 
       Object.keys(guesses).slice(0, BRANCH_SLOTS.length).forEach((act, i) => {
         const slot = BRANCH_SLOTS[i];
@@ -2023,8 +2023,8 @@
       const total = (currentClips && Object.keys(currentClips.options).length) || STAR_MAX;
       const stars = '⭐ '.repeat(explored) + '☆ '.repeat(Math.max(0, total - explored));
       el.innerHTML = isNewPath
-        ? `<div class="tr-star">🌱</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">You found a new path!</div>`
-        : `<div class="tr-star">🔁</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">You tried it again — nice looking!</div>`;
+        ? `<div class="tr-star">🌱</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">你发现了一条新路！</div>`
+        : `<div class="tr-star">🔁</div><div class="tr-stars">${stars.trim()}</div><div class="tr-msg">你又试了一次 — 看得真仔细！</div>`;
       el.classList.remove('show');
       void el.offsetWidth;            // restart the pop animation
       el.classList.add('show');
@@ -2084,7 +2084,7 @@
       return 'bg';
     }
     const AOI_BOXCOL = { eyes: '#19c3ff', mouth: '#ff4db8', face: '#ffd24d', body: '#46d36a' };
-    const AOI_NAME = { eyes: 'Eyes', mouth: 'Mouth', face: 'Face', body: 'Body', bg: 'Elsewhere' };
+    const AOI_NAME = { eyes: '眼睛', mouth: '嘴巴', face: '脸', body: '身体', bg: '其他地方' };
     const AOI_BARCOL = { ...AOI_BOXCOL, bg: '#c2c8d0' };
 
     // frame + child's gaze dots + AOI boxes (drawn at the representative frame's time)
@@ -2135,10 +2135,13 @@
       });
     }
 
-    const CHECK_LABEL = { yes: 'Yes', kindof: 'Kind of', no: 'No' };
+    const CHECK_LABEL = { yes: '一样', kindof: '有点像', no: '不一样' };
+    const SCENE_ZH = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
+    const TOPIC_ZH = { make_friends: '交朋友', join_activity: '加入活动', comfort_friend: '安慰朋友' };
     const constructTitle = (id) => {
       const [scene, ...t] = String(id).split('_');
-      return scene.charAt(0).toUpperCase() + scene.slice(1) + (t.length ? ' · ' + t.join(' ') : '');
+      const topic = t.join('_');
+      return (SCENE_ZH[scene] || scene) + (topic ? ' · ' + (TOPIC_ZH[topic] || t.join(' ')) : '');
     };
     const emoCell = (e) => e ? `<img src="${emoSrc(e)}" alt="">${EMOTION_LABEL[e] || e}` : '—';
 
@@ -2146,9 +2149,9 @@
     function renderReportTrees() {
       const ids = Object.keys(localStorage).filter((k) => k.startsWith('videoasd_tree_'))
         .map((k) => k.replace('videoasd_tree_', '')).sort();
-      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">🌳 Story trees</h3>');
+      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">🌳 故事树</h3>');
       if (!ids.length) {
-        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">No stories explored yet.</p>');
+        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有探索过故事。</p>');
         return;
       }
       ids.forEach((id) => {
@@ -2163,8 +2166,8 @@
           `<tr><td>${actionInfo(act, id).label}</td><td>${emoCell(g.predicted)}</td>` +
           `<td>${CHECK_LABEL[g.check] || '—'}</td><td>${emoCell(g.observed)}</td></tr>`).join('');
         wrap.insertAdjacentHTML('beforeend',
-          `<table class="report-table"><tr><th>Action</th><th>Predicted she'd feel</th>` +
-          `<th>Like they thought?</th><th>Said she felt</th></tr>${rows}</table>`);
+          `<table class="report-table"><tr><th>行动</th><th>预测她的感觉</th>` +
+          `<th>跟想的一样吗？</th><th>看完后说她的感觉</th></tr>${rows}</table>`);
         $reportBody.appendChild(wrap);
       });
     }
@@ -2176,12 +2179,12 @@
       $reportBody.innerHTML = '';
       $reportModal.classList.remove('hidden');
       renderReportTrees();
-      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 Where your child looked</h3>' +
+      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 孩子看向哪里</h3>' +
         `<p class="report-stat" style="text-align:left;background:#f5f3ff;padding:8px 10px;border-radius:8px">` +
         `ⓘ active:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
         `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`);
       if (!keys.length) {
-        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">No gaze data saved yet.</p>');
+        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有保存视线数据。</p>');
         return;
       }
       for (const key of keys) {
@@ -2195,7 +2198,7 @@
         wrap.innerHTML =
           `<h3>${constructTitle(loc)} · ${clip}</h3>` +
           `<div class="report-focus"></div>` +
-          `<div class="report-stat">Looked at the video ${onPct}% of the time</div>` +
+          `<div class="report-stat">${onPct}% 的时间在看视频</div>` +
           `<div class="aoi-bars"></div>`;
         const focus = wrap.querySelector('.report-focus');
         // prefer the bundled canonical still (best-detected frame) so AOI boxes
@@ -2208,13 +2211,13 @@
           focus.appendChild(cv);
           drawFocus(cv, repFrame, d.pts || [], aoi);
         } else {
-          focus.innerHTML = '<p class="report-empty" style="padding:14px">(no frame captured)</p>';
+          focus.innerHTML = '<p class="report-empty" style="padding:14px">（没有截取到画面）</p>';
         }
         const barsEl = wrap.querySelector('.aoi-bars');
         if (aoi && (d.pts || []).length) {
           renderBars(barsEl, aoiStats(d.pts, aoi));
         } else {
-          barsEl.innerHTML = '<p class="report-stat" style="text-align:left">(AOI breakdown not available for this clip)</p>';
+          barsEl.innerHTML = '<p class="report-stat" style="text-align:left">（此片段暂无关注区域分析）</p>';
         }
         $reportBody.appendChild(wrap);
       }
@@ -2281,7 +2284,7 @@
         let stars = '';
         for (let i = 0; i < STAR_MAX; i++) stars += (i < n ? '★' : '☆');
         badge.innerHTML = `<span class="ls-row">${stars}</span>` +
-          (full ? '<span class="ls-bloom">🌸 full!</span>' : '');
+          (full ? '<span class="ls-bloom">🌸 满啦！</span>' : '');
         $locStars.appendChild(badge);
       });
       $progress.textContent = `★ ${doneTopics.size}/${TOPIC_TOTAL}`;
@@ -2371,25 +2374,25 @@
        Curated/frozen table — researcher edits SCENES (incl. circle x/y %). */
     (function () {
       const SCENES = [
-        { id: 'playground', ico: '🛝', label: 'Playground', img: 'assets/zones/playground.png', topics: [
-          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 28, y: 54 },
-          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 52, y: 47 },
-          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 56 },
+        { id: 'playground', ico: '🛝', label: '游乐场', img: 'assets/zones/playground.png', topics: [
+          { id: 'make_friends',   emoji: '🙋', label: '交朋友',    x: 28, y: 54 },
+          { id: 'join_activity',  emoji: '🧩', label: '加入活动', x: 52, y: 47 },
+          { id: 'comfort_friend', emoji: '💛', label: '安慰朋友', x: 74, y: 56 },
         ] },
-        { id: 'classroom', ico: '🏫', label: 'Classroom', img: 'assets/zones/classroom.png', topics: [
-          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 28, y: 58 },
-          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 52, y: 50 },
-          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 60 },
+        { id: 'classroom', ico: '🏫', label: '教室', img: 'assets/zones/classroom.png', topics: [
+          { id: 'make_friends',   emoji: '🙋', label: '交朋友',    x: 28, y: 58 },
+          { id: 'join_activity',  emoji: '🧩', label: '加入活动', x: 52, y: 50 },
+          { id: 'comfort_friend', emoji: '💛', label: '安慰朋友', x: 74, y: 60 },
         ] },
-        { id: 'cafeteria', ico: '🍽️', label: 'Cafeteria', img: 'assets/zones/cafeteria.png', topics: [
-          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 30, y: 56 },
-          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 54, y: 49 },
-          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 74, y: 58 },
+        { id: 'cafeteria', ico: '🍽️', label: '餐厅', img: 'assets/zones/cafeteria.png', topics: [
+          { id: 'make_friends',   emoji: '🙋', label: '交朋友',    x: 30, y: 56 },
+          { id: 'join_activity',  emoji: '🧩', label: '加入活动', x: 54, y: 49 },
+          { id: 'comfort_friend', emoji: '💛', label: '安慰朋友', x: 74, y: 58 },
         ] },
-        { id: 'park', ico: '🌳', label: 'Park', img: 'assets/zones/park.png', topics: [
-          { id: 'comfort_friend', emoji: '💛', label: 'Comfort a friend', x: 30, y: 54 },
-          { id: 'make_friends',   emoji: '🙋', label: 'Make a friend',    x: 54, y: 60 },
-          { id: 'join_activity',  emoji: '🧩', label: 'Join an activity', x: 76, y: 52 },
+        { id: 'park', ico: '🌳', label: '公园', img: 'assets/zones/park.png', topics: [
+          { id: 'comfort_friend', emoji: '💛', label: '安慰朋友', x: 30, y: 54 },
+          { id: 'make_friends',   emoji: '🙋', label: '交朋友',    x: 54, y: 60 },
+          { id: 'join_activity',  emoji: '🧩', label: '加入活动', x: 76, y: 52 },
         ] },
       ];
       const TOWN_BG = "url('assets/town_imagen.png')";
@@ -2484,7 +2487,7 @@
         b.innerHTML =
           `<span class="scene-pill-normal"><span class="scene-ico">${s.ico}</span>${s.label}` +
           `<span class="pill-stars"></span></span>` +
-          `<span class="scene-pill-back">← Back to Main Street</span>`;
+          `<span class="scene-pill-back">← 回到小镇</span>`;
         // Any place, any time. Tapping the one you're in backs out to the town.
         b.addEventListener('click', () => {
           if (active === s.id) exitScene();
@@ -2510,11 +2513,11 @@
         const next = SCENES.find((s) => !sceneComplete(s.id));
         document.getElementById('done-emoji').textContent = all ? '🏆' : '🌸';
         document.getElementById('done-title').textContent =
-          all ? 'You explored every place!' : 'All done here!';
+          all ? '你探索了所有地方！' : '这里完成啦！';
         document.getElementById('done-sub').textContent = all
-          ? `${TOPIC_TOTAL} of ${TOPIC_TOTAL} stories explored.`
-          : `${sceneById(sceneId).label} is complete — ${doneTopics.size} of ${TOPIC_TOTAL} stories so far.` +
-            (next ? ` Next up: ${next.label}.` : '');
+          ? `${TOPIC_TOTAL} 个故事全部探索完了。`
+          : `${sceneById(sceneId).label}完成了 — 目前已探索 ${doneTopics.size} / ${TOPIC_TOTAL} 个故事。` +
+            (next ? `下一站：${next.label}。` : '');
         $doneScreen.classList.remove('hidden');
       }
       document.getElementById('done-back').addEventListener('click', () => {
@@ -2559,11 +2562,11 @@
         // Hand off to the existing 9-dot calibration; it returns here either way.
         window.__afterCalibration = (result) => {
           $setup.classList.remove('hidden');
-          if (result !== 'cancelled') markStep('cal', 'calibrated ✓');
+          if (result !== 'cancelled') markStep('cal', '已校准 ✓');
         };
         document.getElementById('cal-start').click();
       });
-      document.getElementById('setup-cal-skip').addEventListener('click', () => markStep('cal', 'skipped'));
+      document.getElementById('setup-cal-skip').addEventListener('click', () => markStep('cal', '已跳过'));
 
       /* Step 2 — the expert generation studio (VIDEOASD-backend/expert_ui.py).
          Opens in its own tab: it authors a scene with Veo and its output is
@@ -2586,21 +2589,21 @@
         const note = document.getElementById('setup-author-note');
         if (!isLocalHost) {
           note.hidden = false;
-          note.textContent = 'The studio only runs during local development. Start it with: cd VIDEOASD-backend && python3 expert_ui.py';
+          note.textContent = '制作工具只能在本地开发环境运行。启动方式：cd VIDEOASD-backend && python3 expert_ui.py';
           return;
         }
         const w = window.open(AUTHOR_URL, '_blank');
         setTimeout(() => {
           if (!w || w.closed) {
             note.hidden = false;
-            note.textContent = 'The studio isn\'t running. Start it with: cd VIDEOASD-backend && python3 expert_ui.py';
+            note.textContent = '制作工具没有运行。启动方式：cd VIDEOASD-backend && python3 expert_ui.py';
           } else {
             note.hidden = true;
-            markStep('author', 'studio open ↗');
+            markStep('author', '制作工具已打开 ↗');
           }
         }, 800);
       });
-      document.getElementById('setup-author-skip').addEventListener('click', () => markStep('author', 'skipped'));
+      document.getElementById('setup-author-skip').addEventListener('click', () => markStep('author', '已跳过'));
 
       document.getElementById('setup-done').addEventListener('click', () => {
         $setup.classList.add('hidden');
@@ -2635,8 +2638,8 @@
         const note = document.getElementById('setup-author-note');
         note.hidden = false;
         note.textContent =
-          `${reachable.length} authored scene${reachable.length === 1 ? '' : 's'} ready to play` +
-          (stray.length ? ` · ${stray.length} not on the map yet (${stray.join(', ')}) — needs zone art and a SCENES entry` : '');
+          `${reachable.length} 个自制场景可以玩了` +
+          (stray.length ? ` · ${stray.length} 个还不在地图上（${stray.join(', ')}）— 需要场景图和 SCENES 条目` : '');
         if (active) renderCircles(sceneById(active));
       });
     })();
