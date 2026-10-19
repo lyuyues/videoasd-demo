@@ -162,19 +162,23 @@
       margin-bottom: 14px; gap: 12px;
     }
     .poe-header h2 { font-size: 20px; margin: 0; }
-    .ier-phases { display: flex; gap: 4px; }
+    /* Phase indicator -- a read-only progress trail, not buttons: no fill or
+       border, steps joined by ›, the current one underlined. */
+    .ier-phases { display: flex; align-items: center; gap: 2px; pointer-events: none; user-select: none; }
     .ier-chip {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.6px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.6px;
       color: #cbd5e1;
-      background: #f8fafc;
-      padding: 5px 12px; border-radius: 20px;
-      transition: all 0.3s ease;
+      padding: 2px 0 4px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.3s ease, border-color 0.3s ease;
     }
+    .ier-chip + .ier-chip::before {
+      content: '›'; color: #cbd5e1; font-weight: 400; margin: 0 7px;
+    }
+    .ier-chip.past { color: #94a3b8; }
     .ier-chip.active {
       color: #6d28d9;
-      background: #f5f3ff;
-      box-shadow: 0 0 0 1px #ddd6fe;
+      border-bottom-color: #a78bfa;
     }
     .poe-step { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
     .poe-step.hidden { display: none; }
@@ -1070,9 +1074,9 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { GazeTracker, fitAffine2D } from './gaze.js';
-    import { CB, CLIPS } from './clips.js';
-    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js';
+    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261018b';
+    import { CB, CLIPS } from './clips.js?v=20261018b';
+    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261018b';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1475,7 +1479,11 @@
       $observeStep.classList.toggle('hidden', which !== 'observe');
       $treeStep.classList.toggle('hidden', which !== 'tree');
       const active = STEP_PHASE[which];
-      $ierChips.forEach((c) => c.classList.toggle('active', c.dataset.phase === active));
+      const activeIdx = [...$ierChips].findIndex((c) => c.dataset.phase === active);
+      $ierChips.forEach((c, i) => {
+        c.classList.toggle('active', i === activeIdx);
+        c.classList.toggle('past', i < activeIdx);
+      });
       // All steps share one scrollable card; switching which is visible doesn't
       // reset scroll position on its own. A step shorter than wherever a
       // previous step left the scroll offset would then render pre-scrolled --
