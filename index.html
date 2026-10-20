@@ -784,6 +784,8 @@
 <body>
   <div class="bg-diorama"></div>
   <canvas id="canvas"></canvas>
+  <!-- Town overview: drawn, tappable map (town.js). Hidden while inside a scene. -->
+  <div id="town"></div>
   <!-- Per-scene topic circles (each circle = a topic); shown when a scene pill is active -->
   <div class="scene-circles" id="scene-circles"></div>
 
@@ -1085,6 +1087,7 @@
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { CB, CLIPS } from './clips.js?v=20261019';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
+    import { mountTown } from './town.js?v=20261019';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -2074,11 +2077,22 @@
     const $reportBody = document.getElementById('report-body');
 
     // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
-    const AOI_VER = '6';  // cache-bust bundled AOI assets
-    // Keyed by the full gaze key "scene_topic|clip". The bundled assets/aoi/context.*
-    // annotate a retired legacy clip, so no current clip maps to them yet.
+    const AOI_VER = '7';  // cache-bust bundled AOI assets
+    // Keyed by the full gaze key "scene_topic|clip". Tracks come from running
+    // MediaPipe Face/Pose Landmarker over the clip itself (tools/make_aoi.py), so the
+    // boxes follow the characters frame by frame. The bundled assets/aoi/context.*
+    // annotate a retired legacy clip and stay unmapped.
+    const AOI_KEYS = [
+      'classroom_make_friends|context', 'classroom_make_friends|outcome',
+      'playground_make_friends|context', 'playground_make_friends|outcome',
+    ];
     const AOI_FILES = {};
     const AOI_FRAME = {}; // canonical still (best-detected frame) per key
+    AOI_KEYS.forEach((k) => {
+      const slug = k.replace('|', '__');
+      AOI_FILES[k] = `assets/aoi/${slug}.json?v=${AOI_VER}`;
+      AOI_FRAME[k] = `assets/aoi/${slug}_frame.jpg?v=${AOI_VER}`;
+    });
     const aoiCache = {};
     async function loadAOI(clip) {
       if (clip in aoiCache) return aoiCache[clip];
@@ -2429,6 +2443,17 @@
       const todayScene = firstUnfinished();
       const sceneById = (id) => SCENES.find((s) => s.id === id);
 
+      // The drawn town is the overview now: its buildings are the scene picker and
+      // its signposts carry the stars, so the old bear canvas, the floating ★ badges
+      // and the on-map pills stay hidden there.
+      const town = mountTown(document.getElementById('town'), {
+        onPick: (id) => enterScene(sceneById(id)),
+        starsFor: topicsDoneIn,
+        maxStars: STAR_MAX,
+      });
+      $canvas.style.display = 'none';
+      if ($stars) $stars.style.display = 'none';
+
       function renderPills() {
         [...$bar.children].forEach((p) => {
           const id = p.dataset.scene;
@@ -2441,7 +2466,7 @@
           // whichever zoomed scene is showing -- only the active one's stays up,
           // doubling as the "tap again to back out" control. All 4 return once
           // active is null (back on the town overview).
-          p.style.display = (!active || isActive) ? '' : 'none';
+          p.style.display = isActive ? '' : 'none';
           if (isActive) {
             // Its map spot sits wherever that scene's building is -- too central
             // once it's the lone "back" control over a zoomed scene. Corner instead.
@@ -2457,6 +2482,7 @@
           const stars = p.querySelector('.pill-stars');
           if (stars) stars.textContent = '★'.repeat(n) + '☆'.repeat(STAR_MAX - n);
         });
+        town.refresh(active ? null : todayScene);
       }
       function renderCircles(scene) {
         $circles.innerHTML = '';
@@ -2475,8 +2501,7 @@
       function enterScene(scene) {
         active = scene.id;
         $bg.style.backgroundImage = `url('${scene.img}')`;
-        $canvas.style.display = 'none';          // hide the town bear
-        if ($stars) $stars.style.display = 'none';
+        town.hide();
         renderCircles(scene);
         $circles.classList.add('show');
         renderPills();
@@ -2484,8 +2509,7 @@
       function exitScene() {
         active = null;
         $bg.style.backgroundImage = TOWN_BG;
-        $canvas.style.display = '';
-        if ($stars) $stars.style.display = '';
+        town.show();
         $circles.classList.remove('show');
         $circles.innerHTML = '';
         renderPills();
