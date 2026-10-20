@@ -786,6 +786,8 @@
   <canvas id="canvas"></canvas>
   <!-- Town overview: drawn, tappable map (town.js). Hidden while inside a scene. -->
   <div id="town"></div>
+  <!-- Scene close-up with its topic markers (scenes.js). -->
+  <div id="scene-view"></div>
   <!-- Per-scene topic circles (each circle = a topic); shown when a scene pill is active -->
   <div class="scene-circles" id="scene-circles"></div>
 
@@ -1088,6 +1090,7 @@
     import { CB, CLIPS } from './clips.js?v=20261019';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
     import { mountTown } from './town.js?v=20261019';
+    import { mountScenes } from './scenes.js?v=20261019';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -2453,6 +2456,15 @@
       });
       $canvas.style.display = 'none';
       if ($stars) $stars.style.display = 'none';
+      // Each place's close-up is drawn too, with its topic markers over the kids
+      // they're about; the zone image + circles below stay only as a fallback.
+      const sceneView = mountScenes(document.getElementById('scene-view'), {
+        onTopic: (sid, tid) => {
+          const t = sceneById(sid).topics.find((x) => x.id === tid);
+          openModal({ id: sid, label: t.label, topic: tid });
+        },
+        isDone: (sid, tid) => doneTopics.has(`${sid}_${tid}`),
+      });
 
       function renderPills() {
         [...$bar.children].forEach((p) => {
@@ -2486,6 +2498,7 @@
       }
       function renderCircles(scene) {
         $circles.innerHTML = '';
+        if (sceneView.showing(scene.id)) { sceneView.refresh(); return; }   // drawn close-up owns its markers
         scene.topics.forEach((t) => {
           const b = document.createElement('button');
           b.className = 'topic-spot';
@@ -2502,6 +2515,7 @@
         active = scene.id;
         $bg.style.backgroundImage = `url('${scene.img}')`;
         town.hide();
+        if (sceneView.show(scene)) { $circles.classList.remove('show'); renderPills(); return; }
         renderCircles(scene);
         $circles.classList.add('show');
         renderPills();
@@ -2510,6 +2524,7 @@
         active = null;
         $bg.style.backgroundImage = TOWN_BG;
         town.show();
+        sceneView.hide();
         $circles.classList.remove('show');
         $circles.innerHTML = '';
         renderPills();

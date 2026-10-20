@@ -79,14 +79,14 @@ const CSS = `
 `;
 
 /* ---------- drawing helpers (all return SVG markup) ---------- */
-const cloud = (x, y, s, dur, delay) => `
+export const cloud = (x, y, s, dur, delay) => `
   <g class="cloud" style="animation-duration:${dur}s; animation-delay:${delay}s">
     <g transform="translate(${x} ${y}) scale(${s})" fill="#fff" opacity=".95">
       <ellipse cx="0" cy="18" rx="78" ry="22"/><circle cx="-36" cy="6" r="30"/>
       <circle cx="4" cy="-8" r="40"/><circle cx="42" cy="6" r="28"/>
     </g></g>`;
 
-const tree = (x, y, s = 1, hue = 0, delay = 0) => {
+export const tree = (x, y, s = 1, hue = 0, delay = 0) => {
   const greens = [['#6dbb4f', '#86cf62', '#a5df7f'], ['#5daa47', '#77c25a', '#98d673'], ['#7cc35a', '#93d36c', '#b3e48c']][hue];
   return `<g transform="translate(${x} ${y}) scale(${s})">
     <ellipse cx="0" cy="4" rx="44" ry="11" fill="#000" opacity=".12"/>
@@ -99,15 +99,15 @@ const tree = (x, y, s = 1, hue = 0, delay = 0) => {
     </g></g>`;
 };
 
-const flower = (x, y, c) => `<g transform="translate(${x} ${y})">
+export const flower = (x, y, c) => `<g transform="translate(${x} ${y})">
   <line x1="0" y1="0" x2="0" y2="-12" stroke="#5c9e3e" stroke-width="2"/>
   <circle cx="0" cy="-15" r="5" fill="${c}"/><circle cx="0" cy="-15" r="2" fill="#ffe27a"/></g>`;
 
-const tuft = (x, y) => `<path d="M${x - 9} ${y} q4 -14 6 -2 q3 -16 6 0 q4 -12 6 2" fill="none"
+export const tuft = (x, y) => `<path d="M${x - 9} ${y} q4 -14 6 -2 q3 -16 6 0 q4 -12 6 2" fill="none"
   stroke="#7cbd52" stroke-width="3" stroke-linecap="round"/>`;
 
 // Deterministic scatter so the meadow looks the same every visit.
-function scatter(n, seed, fn) {
+export function scatter(n, seed, fn) {
   let s = seed, out = '';
   const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   for (let i = 0; i < n; i++) out += fn(rnd(), rnd(), rnd(), i);
