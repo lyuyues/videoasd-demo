@@ -35,6 +35,8 @@ const PLACES = {
                 road: 'M620 870 C 680 810, 790 760, 870 735' },
 };
 const HOME = [620, 860];
+// The grown-ups' notice board (家长报告): its foot, on the grass bottom-right.
+const REPORT = [1108, 838];
 
 const CSS = `
 .town { position: fixed; inset: 0; z-index: 3; overflow: hidden;
@@ -53,6 +55,9 @@ const CSS = `
 .town .sign .board { transition: transform .18s cubic-bezier(.3,1.6,.5,1); }
 .town .sign.press .board { transform: scale(1.08); }
 .town .sign.hop .board { animation: t-hop .5s cubic-bezier(.3,1.6,.5,1); }
+.town .report-board { cursor: pointer; }
+.town .report-board .rb { transition: transform .18s cubic-bezier(.3,1.6,.5,1); transform-origin: 0px 0px; }
+.town .report-board.press .rb { transform: scale(1.08); }
 .town .halo { opacity: 0; transition: opacity .25s; }
 .town .halo.on { opacity: 1; }
 .town .today-arrow { animation: t-arrow 1.1s ease-in-out infinite; }
@@ -85,6 +90,14 @@ const sign = (id, [x, y], label) => `
       <text class="stars" x="50" y="8" text-anchor="middle" font-size="20" fill="#ffb627" letter-spacing="2">☆☆☆</text>
     </g></g>`;
 
+const reportBoard = ([x, y]) => `
+  <g class="report-board" transform="translate(${x} ${y})"><g class="rb">
+    <ellipse cx="0" cy="-4" rx="48" ry="10" fill="#000" opacity=".18"/>
+    <image href="assets/scene_art/report_board.png" x="-55" y="-134" width="110" height="133"/>
+    <rect x="-56" y="-2" width="112" height="34" rx="17" fill="#fff" opacity=".95" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.25))"/>
+    <text x="0" y="22" text-anchor="middle" font-size="19" font-weight="800" fill="#6a3f17" font-family="${FONT}">家长报告</text>
+  </g></g>`;
+
 function svgMarkup() {
   return `
 <div class="backdrop"></div>
@@ -104,6 +117,7 @@ function svgMarkup() {
     ${Object.entries(PLACES).map(([id, p]) => `<path class="place" data-place="${id}" d="${p.hit}" fill="transparent"/>`).join('')}
     ${Object.entries(PLACES).map(([id, p]) => sign(id, p.sign, p.label)).join('')}
     <g class="today-mark"></g>
+    __REPORT__
     <g class="avatar" pointer-events="none">
       <ellipse cx="0" cy="0" rx="22" ry="7" fill="#000" opacity=".2"/>
       <g class="av-body"><g class="av-flip"><image href="assets/boy_avatar.png" x="-23" y="-102" width="46" height="102"/></g></g>
@@ -115,16 +129,17 @@ function svgMarkup() {
 }
 
 /**
- * mountTown(container, { onPick(id), starsFor(id) -> 0..3, maxStars })
+ * mountTown(container, { onPick(id), starsFor(id) -> 0..3, maxStars, onReport() })
+ * onReport, if given, puts the 家长报告 notice board on the map and is called on a tap.
  * Returns { refresh(today), show(), hide() }.
  */
-export function mountTown(container, { onPick, starsFor, maxStars = 3 }) {
+export function mountTown(container, { onPick, starsFor, maxStars = 3, onReport }) {
   if (!document.getElementById('town-css')) {
     const st = document.createElement('style'); st.id = 'town-css'; st.textContent = CSS;
     document.head.appendChild(st);
   }
   container.classList.add('town');
-  container.innerHTML = svgMarkup();
+  container.innerHTML = svgMarkup().replace('__REPORT__', onReport ? reportBoard(REPORT) : '');
   const svg = container.querySelector('svg');
   // Show as much of the wide picture as the screen's shape asks for: 4:3 sees the
   // original, up to ~21:9 the outpainted sides. Past that (or portrait) the full
@@ -211,11 +226,16 @@ export function mountTown(container, { onPick, starsFor, maxStars = 3 }) {
   svg.addEventListener('pointerdown', (e) => {
     const p = e.target.closest('.place');
     if (p) lit(p.dataset.place, true);
+    e.target.closest('.report-board')?.classList.add('press');
   });
-  const unpress = () => Object.keys(PLACES).forEach((id) => lit(id, false));
+  const unpress = () => {
+    Object.keys(PLACES).forEach((id) => lit(id, false));
+    svg.querySelector('.report-board')?.classList.remove('press');
+  };
   svg.addEventListener('pointerup', unpress);
   svg.addEventListener('pointerleave', unpress);
   svg.addEventListener('click', (e) => {
+    if (e.target.closest('.report-board')) { if (!busy) onReport(); return; }
     const p = e.target.closest('.place');
     if (p) { go(p.dataset.place); return; }
     if (busy) return;

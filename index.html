@@ -542,6 +542,9 @@
     .report-focus canvas { width: 100%; height: auto; display: block; }
     .report-stat { font-size: 13px; color: #8a8a96; margin-top: 6px; text-align: center; }
     .report-empty { color: #8a8a96; font-size: 14px; padding: 24px 0; }
+    .modal-card .report-x { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; padding: 0;
+                border-radius: 50%; border: none; background: #f3eee6; color: #6b5640; font-size: 18px;
+                box-shadow: none; cursor: pointer; }
     .report-section { font-size: 17px; color: #3a3a44; margin: 6px 0 -6px; text-align: left; }
     .report-tree svg { width: 100%; max-width: 480px; height: auto; display: block; margin: 0 auto; }
     .report-table { width: 100%; max-width: 480px; margin: 8px auto 0; border-collapse: collapse; font-size: 13px; color: #5a4a3a; }
@@ -1066,7 +1069,8 @@
 
   <!-- Caregiver report: static gaze focus map -->
   <div id="report-modal" class="modal hidden">
-    <div class="modal-card" style="max-width: 760px;">
+    <div class="modal-card" style="max-width: 760px; position: relative;">
+      <button class="report-x" id="report-close" aria-label="关闭">✕</button>
       <h2>本次报告</h2>
       <p class="modal-sub">孩子的预测，以及孩子看向哪里</p>
       <div class="report-body" id="report-body"></div>
@@ -1089,7 +1093,7 @@
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { CB, CLIPS } from './clips.js?v=20261020b';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
-    import { mountTown } from './town.js?v=20261020b';
+    import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
 
     /* ============================================================
@@ -2307,6 +2311,7 @@
     $reportModal.addEventListener('click', (e) => {
       if (e.target === $reportModal) $reportModal.classList.add('hidden');
     });
+    document.getElementById('report-close').addEventListener('click', () => $reportModal.classList.add('hidden'));
 
     // Reward: depth = the possibility tree inside one topic (how many actions the
     // child tried there); breadth = per-scene stars on the map. Stars at a scene =
@@ -2467,6 +2472,8 @@
         onPick: (id) => enterScene(sceneById(id)),
         starsFor: topicsDoneIn,
         maxStars: STAR_MAX,
+        // Grown-ups' board on the map: the same report as ⚙ → 报告.
+        onReport: () => { openReport(); autosave(); },
       });
       $canvas.style.display = 'none';
       if ($stars) $stars.style.display = 'none';
