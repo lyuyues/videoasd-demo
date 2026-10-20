@@ -829,7 +829,7 @@
         <div class="setup-num">2</div>
         <div class="setup-body">
           <h2>制作场景</h2>
-          <p>可选 — 自己设计场景，或跳过，使用准备好的场景。</p>
+          <p>可选 — 给老师演示用 AI 制作新场景（做的场景不会进入实验）。正式实验请点「跳过」。</p>
           <div class="setup-actions">
             <button class="setup-go" id="setup-author">✨ 制作</button>
             <button class="setup-skip" id="setup-author-skip">跳过</button>
@@ -1379,7 +1379,12 @@
        Authored cases override same-key curated ones, which is what "I just made
        this one" should mean. */
     const AUTHOR_ORIGIN = 'http://localhost:5055';
+    // Behind the tunnel (https study link) the studio is a demo for teachers,
+    // reached at /studio/ -- never merge its cases there, so nothing made in a
+    // demo can replace or add to what a child sees in the study.
+    const STUDIO_PROXIED = location.protocol === 'https:' && location.hostname !== 'lyuyues.github.io';
     async function loadAuthoredClips() {
+      if (STUDIO_PROXIED) return 0;
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), 1200);   // don't stall the gate on a dead port
       try {
@@ -2641,7 +2646,8 @@
       // this page is opened as localhost (studio on the same machine) or as a
       // LAN IP (e.g. an iPad reaching a Mac serving both the page and the
       // studio on the LAN, studio bound to 0.0.0.0 for that to work at all).
-      const AUTHOR_URL = `http://${location.hostname}:5055`;
+      // On the study link the study server forwards /studio/ to it (demo only).
+      const AUTHOR_URL = STUDIO_PROXIED ? '/studio/' : `http://${location.hostname}:5055`;
       // The studio is a local-only tool (see comment above) -- on the real
       // deployed page (GitHub Pages) it can never be reached, so don't even
       // try: window.open's return value can't be trusted to detect a dead
@@ -2660,7 +2666,8 @@
         setTimeout(() => {
           if (!w || w.closed) {
             note.hidden = false;
-            note.textContent = '制作工具没有运行。启动方式：cd VIDEOASD-backend && python3 expert_ui.py';
+            note.textContent = STUDIO_PROXIED ? '制作工具没有打开，请检查浏览器是否拦截了弹出窗口。'
+            : '制作工具没有运行。启动方式：cd VIDEOASD-backend && python3 expert_ui.py';
           } else {
             note.hidden = true;
             markStep('author', '制作工具已打开 ↗');

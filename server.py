@@ -6,7 +6,14 @@ POSTed by the pages to session_data/. Same deployment model as the SENSE server
 (SENSE-Unity /web-demo/server.py): home desktop, bound to 127.0.0.1 behind a
 Cloudflare tunnel, STUDY_TOKEN gate. No AI endpoints, so no API key needed.
 
-Env: STUDY_TOKEN (unset = open, for local testing), HOST, PORT, USE_HTTPS.
+/studio/ (2026-10-20) forwards to the expert generation studio (VIDEOASD-backend/
+expert_ui.py) running separately on 127.0.0.1, behind the same token, so a
+researcher can demo scene authoring from the iPad. The API key lives with the
+studio process, never here. Its clips are served straight from disk (with Range,
+for iOS) rather than through the proxy.
+
+Env: STUDY_TOKEN (unset = open, for local testing), HOST, PORT, USE_HTTPS,
+     STUDIO_URL (default http://127.0.0.1:5055), STUDIO_VIDEOS (studio's videos/ dir).
 """
 
 import http.server
@@ -16,6 +23,8 @@ import posixpath
 import re
 import ssl
 import time
+import urllib.error
+import urllib.request
 from http.cookies import SimpleCookie
 from urllib.parse import parse_qs, unquote, urlsplit
 
@@ -30,6 +39,10 @@ STUDY_TOKEN = os.environ.get('STUDY_TOKEN', '')
 # Never served as static files, token or not: participant data, secrets, code.
 BLOCKED_PREFIXES = ('/session_data', '/.git', '/.env', '/__pycache__', '/deploy', '/docs', '/tools')
 BLOCKED_SUFFIXES = ('.pem', '.py', '.env', '.pyc', '.sh', '.service', '.yml', '.yaml', '.md')
+STUDIO_URL = os.environ.get('STUDIO_URL', 'http://127.0.0.1:5055').rstrip('/')
+STUDIO_VIDEOS = os.environ.get('STUDIO_VIDEOS', '')
+# Loopback only: never route the studio call through an http_proxy from the env.
+_studio_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def _clean(value, default, extra=''):
@@ -76,6 +89,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---------- static files ----------
     def do_GET(self):
+        if self._is_studio():
+            return self._studio()
         if not self._guard_static():
             return
         if self.headers.get('Range') and self._serve_range():
@@ -86,11 +101,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._guard_static():
             super().do_HEAD()
 
-    def _serve_range(self):
+    def _serve_range(self, path=None):
         # iOS Safari won't play <video> from a server that ignores Range
         # (SimpleHTTPRequestHandler always answers 200 with the whole file).
         m = re.match(r'bytes=(\d*)-(\d*)$', self.headers['Range'].strip())
-        path = self.translate_path(self.path)
+        path = path or self.translate_path(self.path)
         if not m or not os.path.isfile(path):
             return False
         size = os.path.getsize(path)
@@ -124,8 +139,69 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             pass  # player aborted the request (seek) -- normal
         return True
 
+    # ---------- expert studio (/studio/) ----------
+    def _is_studio(self):
+        p = urlsplit(self.path).path
+        return p == '/studio' or p.startswith('/studio/')
+
+    def _studio(self):
+        if not self._authorized():
+            return self._deny(403, '需要访问口令：请使用研究团队提供的完整链接打开。')
+        u = urlsplit(self.path)
+        if u.path == '/studio':   # the page fetches relative URLs, so it needs the slash
+            self.send_response(301)
+            self.send_header('Location', '/studio/' + (f'?{u.query}' if u.query else ''))
+            self.send_header('Content-Length', '0')
+            return self.end_headers()
+        if u.path.startswith('/studio/clips/') and STUDIO_VIDEOS:
+            return self._studio_clip(unquote(u.path[len('/studio/clips/'):]))
+        body = None
+        if self.command == 'POST':
+            n = int(self.headers.get('Content-Length') or 0)
+            if not 0 <= n <= 1024 * 1024:
+                return self._deny(413, 'too large')
+            body = self.rfile.read(n)
+        req = urllib.request.Request(STUDIO_URL + u.path[len('/studio'):] + (f'?{u.query}' if u.query else ''),
+                                     data=body, method=self.command,
+                                     headers={'Content-Type': self.headers.get('Content-Type', 'application/json')})
+        try:
+            with _studio_opener.open(req, timeout=120) as r:   # /complete waits on the LLM
+                code, ctype, data = r.status, r.headers.get('Content-Type', 'application/octet-stream'), r.read()
+        except urllib.error.HTTPError as e:
+            code, ctype, data = e.code, e.headers.get('Content-Type', 'text/plain'), e.read()
+        except (urllib.error.URLError, OSError):
+            return self._deny(502, '制作工具没有运行（台式机上的 videoasd-studio 服务）。')
+        self.send_response(code)
+        self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _studio_clip(self, rel):
+        root = os.path.realpath(STUDIO_VIDEOS)
+        path = os.path.realpath(os.path.join(root, rel))
+        if not (path.startswith(root + os.sep) and path.endswith('.mp4') and os.path.isfile(path)):
+            return self._deny(404, 'Not found')
+        if self.headers.get('Range') and self._serve_range(path):
+            return
+        size = os.path.getsize(path)
+        self.send_response(200)
+        self.send_header('Content-Type', 'video/mp4')
+        self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Content-Length', str(size))
+        self.end_headers()
+        try:
+            with open(path, 'rb') as f:
+                while chunk := f.read(65536):
+                    self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     # ---------- data sink ----------
     def do_POST(self):
+        if self._is_studio():
+            return self._studio()
         if not self._authorized():
             self._deny(403, 'forbidden')
             return
