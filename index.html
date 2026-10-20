@@ -310,8 +310,8 @@
     }
     .poe-choice-emoji { font-size: 32px; }
     .action-icon {
-      width: 88px; height: 88px;
-      object-fit: contain;
+      width: 128px; height: 128px;
+      object-fit: contain; border-radius: 14px;
       pointer-events: none;
       margin-bottom: 4px;
     }
@@ -1761,11 +1761,20 @@
     function applyTopicActions() {
       const btns = document.querySelectorAll('#poe-step-action .action-btn');
       if (currentClips) {
+        // Per-topic Alex icons (Gemini, assets/actions/<topic>_<a|b|c>.jpg); the
+        // same three actions recur in every scene, so they key on topic only.
+        // An authored topic without icons just shows the label.
+        const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
         ['a', 'b', 'c'].forEach((ch, i) => {
           const b = btns[i], o = currentClips.options[ch];
           if (!b || !o) return;
           const span = b.querySelector('span'); if (span) span.textContent = o.label;
-          const img = b.querySelector('img'); if (img) img.style.display = 'none';
+          const img = b.querySelector('img');
+          if (img) {
+            img.onerror = () => { img.style.display = 'none'; };
+            img.style.display = '';
+            img.src = `assets/actions/${topic}_${ch}.jpg`;
+          }
         });
       } else {
         // Restore legacy labels/icons (a previous clip topic may have changed them)
