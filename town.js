@@ -8,11 +8,13 @@
  * path, then zooms into it and hands off to index.html's enterScene(). Tapping
  * open grass just walks the avatar there.
  *
- * Coordinates are the image's own pixels (1200x896, 4:3 = the iPad). If the
+ * Coordinates are the original 4:3 picture's pixels (1200x896 = the iPad). The
+ * served picture (town_wide.jpg, 1600x896) is that one with Gemini-outpainted
+ * sides, drawn at x = -200, so wider screens see more town instead of blur. If the
  * picture is regenerated, re-trace PLACES against it.
  */
 
-const W = 1200, H = 896;
+const W = 1200, H = 896, PAD = 200;   // PAD: extra picture on each side of 0..W
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FONT = `-apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif`;
 
@@ -42,7 +44,7 @@ const CSS = `
 .town svg { position: relative; width: 100%; height: 100%; display: block; }
 /* Behind the picture when the screen is wider than it (desktop): a soft blur of
    the same town instead of flat bars. */
-.town .backdrop { position: absolute; inset: -40px; background: url('assets/scene_art/town.jpg') center / cover;
+.town .backdrop { position: absolute; inset: -40px; background: url('assets/scene_art/town_wide.jpg') center / cover;
                   filter: blur(22px) saturate(1.1); opacity: .9; }
 .town .world { transition: transform .65s cubic-bezier(.55,0,.35,1); }
 .town .flash { position: absolute; inset: 0; background: #fffaf2; opacity: 0; pointer-events: none;
@@ -90,7 +92,7 @@ function svgMarkup() {
   <defs><radialGradient id="t-halo"><stop offset="0" stop-color="#fff6c8" stop-opacity=".75"/>
     <stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient></defs>
   <g class="world">
-    <image href="assets/scene_art/town.jpg" x="0" y="0" width="${W}" height="${H}"/>
+    <image href="assets/scene_art/town_wide.jpg" x="${-PAD}" y="0" width="${W + 2 * PAD}" height="${H}"/>
     <g class="bird" style="animation-duration:24s; animation-delay:-5s">
       ${[[0, 0], [30, 12], [-24, 16]].map(([dx, dy]) => `<g transform="translate(${dx} ${120 + dy})">
         <path class="wing" style="transform-origin:0px 0px" d="M-9 0 q4.5 -6 9 0 q4.5 -6 9 0" fill="none" stroke="#4e5866" stroke-width="2.5" stroke-linecap="round"/></g>`).join('')}
@@ -124,11 +126,15 @@ export function mountTown(container, { onPick, starsFor, maxStars = 3 }) {
   container.classList.add('town');
   container.innerHTML = svgMarkup();
   const svg = container.querySelector('svg');
-  // Up to ~3:2 the picture fills the screen (the iPad crops a sliver top and
-  // bottom); wider or portrait screens see the whole town instead.
+  // Show as much of the wide picture as the screen's shape asks for: 4:3 sees the
+  // original, 16:9 the whole outpainted width. Past that (or portrait) the full
+  // picture is letterboxed over the blurred backdrop.
+  let vx = 0, vw = W;
   const fit = () => {
     const a = innerWidth / innerHeight;
-    svg.setAttribute('preserveAspectRatio', a < 1.2 || a > 1.55 ? 'xMidYMid meet' : 'xMidYMid slice');
+    vw = Math.max(W, Math.min(W + 2 * PAD, H * a)); vx = (W - vw) / 2;
+    svg.setAttribute('viewBox', `${vx} 0 ${vw} ${H}`);
+    svg.setAttribute('preserveAspectRatio', a < 1.2 || a > 1.9 ? 'xMidYMid meet' : 'xMidYMid slice');
   };
   fit(); addEventListener('resize', fit);
   const world = svg.querySelector('.world');
@@ -218,7 +224,7 @@ export function mountTown(container, { onPick, starsFor, maxStars = 3 }) {
     const q = pt.matrixTransform(svg.getScreenCTM().inverse());
     if (q.y < 380) return;
     at = null;
-    walk([[Math.max(40, Math.min(W - 40, q.x)), Math.min(H - 20, q.y)]]);
+    walk([[Math.max(vx + 40, Math.min(vx + vw - 40, q.x)), Math.min(H - 20, q.y)]]);
   });
 
   function refresh(today) {
