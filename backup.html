@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VideoASD — 本机备份</title>
+  <style>
+    body {
+      margin: 0; padding: 24px 16px 48px;
+      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+      background: #f6f3ee; color: #3d3428;
+    }
+    main { max-width: 820px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .sub { color: #7a6e60; font-size: 14px; line-height: 1.6; margin: 0 0 18px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    button, a.btn {
+      font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 12px;
+      border: none; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    .main { background: #f59e42; color: #fff; }
+    .sec { background: #fff; color: #5a4a3a; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    #status { font-size: 14px; margin: 0 0 14px; min-height: 1.4em; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); font-size: 13px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eee6da; vertical-align: middle; }
+    th { background: #faf6ef; font-weight: 600; color: #7a6e60; }
+    td.key { word-break: break-all; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    .ok { color: #15803d; font-weight: 600; white-space: nowrap; }
+    .wait { color: #b45309; font-weight: 600; white-space: nowrap; }
+    td button { padding: 6px 10px; font-size: 12px; }
+    .empty { text-align: center; color: #9a8e80; padding: 24px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>💾 本机备份</h1>
+  <p class="sub">
+    主程序、对照组和测验卷的每一份记录，上传前都会先存在这台 iPad 上。
+    「待上传」的记录会在联网时每 30 秒自动重传。
+    <b>每天实验结束后，请点「全部下载」</b>，把文件存到 iPad 的「文件」App 里。
+    浏览器的存储可能被系统清掉，下载下来的文件不会。
+  </p>
+  <div class="row">
+    <button class="main" id="dl-all">⬇ 全部下载（一个文件）</button>
+    <button class="sec" id="retry">↻ 立即重新上传</button>
+    <a class="btn sec" href="index.html">← 主程序</a>
+    <a class="btn sec" href="baseline.html">← 对照组</a>
+  </div>
+  <p id="status"></p>
+  <table>
+    <thead><tr><th>保存时间</th><th>记录</th><th>状态</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script type="module">
+  import { listBackups, retryPending, downloadJson, onStudyServer } from './save.js?v=20261019';
+
+  const $ = (id) => document.getElementById(id);
+  const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const fmt = (iso) => { try { return new Date(iso).toLocaleString('zh-CN', { hour12: false }); } catch { return iso; } };
+
+  async function render() {
+    const rs = (await listBackups()).sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+    const pending = rs.filter((r) => !r.synced).length;
+    $('status').textContent = !onStudyServer
+      ? `共 ${rs.length} 份（当前不是实验服务器，只存在本机）`
+      : `共 ${rs.length} 份 · ${pending ? `${pending} 份待上传` : '全部已上传 ✓'}`;
+    const $rows = $('rows');
+    $rows.innerHTML = rs.length ? '' : '<tr><td colspan="4" class="empty">还没有记录</td></tr>';
+    rs.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${fmt(r.savedAt)}</td><td class="key"></td>` +
+        `<td class="${r.synced ? 'ok' : 'wait'}">${r.synced ? '✓ 已上传' : '⏳ 待上传'}</td>` +
+        `<td><button class="sec">下载</button></td>`;
+      tr.querySelector('.key').textContent = r.key;
+      tr.querySelector('button').addEventListener('click', () => downloadJson(`${r.key}.json`, r.body));
+      $rows.appendChild(tr);
+    });
+    return rs;
+  }
+
+  $('dl-all').addEventListener('click', async () => {
+    const rs = await listBackups();
+    downloadJson(`videoasd-backup-${stamp()}.json`,
+      { exportedAt: new Date().toISOString(), count: rs.length, snapshots: rs.map((r) => ({ file: r.key, synced: r.synced, ...r.body })) });
+  });
+  $('retry').addEventListener('click', async () => {
+    $('status').textContent = '正在上传…';
+    const n = await retryPending();
+    await render();
+    $('status').textContent += ` · 这次上传了 ${n} 份`;
+  });
+
+  render();
+  setInterval(render, 10000);
+</script>
+</body>
+</html>

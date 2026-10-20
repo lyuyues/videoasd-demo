@@ -430,6 +430,11 @@
     }
     /* `display: flex` above would otherwise beat the UA rule for [hidden] */
     .toolbar[hidden] { display: none; }
+    .sync-status {
+      align-self: center; font-size: 12px; font-weight: 600; color: #5a4a3a;
+      background: rgba(255, 255, 255, 0.92); padding: 8px 12px; border-radius: 14px;
+    }
+    .sync-status.pending { color: #b45309; }
     .toolbar button {
       background: rgba(255, 255, 255, 0.92);
       border: none; padding: 8px 14px; border-radius: 14px;
@@ -862,6 +867,8 @@
     <button id="baseline-open" title="被动视频示范对照条件（同一会话和数据存储）" onclick="location.href='baseline.html'">▶ 对照组</button>
     <button id="export-data" title="下载交互和视线记录（JSON）">⬇ 导出</button>
     <button id="reset-progress">重置</button>
+    <button id="backup-open" title="查看本机备份、重新上传、下载成文件" onclick="location.href='backup.html'">💾 备份</button>
+    <span class="sync-status" id="sync-status"></span>
     <button id="toolbar-hide">完成 ✓</button>
   </div>
   <button id="parent-tab" title="家长/老师设置">⚙</button>
@@ -1074,9 +1081,9 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261018b';
-    import { CB, CLIPS } from './clips.js?v=20261018b';
-    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261018b';
+    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
+    import { CB, CLIPS } from './clips.js?v=20261019';
+    import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -2624,7 +2631,20 @@
       const $toolbar = document.getElementById('toolbar');
       // Toggle, not just open -- tapping ⚙ again with the toolbar already showing
       // did nothing before (only the toolbar's own "Done" button could close it).
-      document.getElementById('parent-tab').addEventListener('click', () => { $toolbar.hidden = !$toolbar.hidden; });
+      // Upload status for the grown-up: every snapshot is backed up on this device
+      // first (save.js); "pending" ones are still waiting to reach the desktop.
+      const $sync = document.getElementById('sync-status');
+      async function refreshSync() {
+        const n = await pendingCount();
+        $sync.classList.toggle('pending', n > 0);
+        $sync.textContent = !onStudyServer ? '仅本机保存'
+          : n ? `⏳ ${n} 份待上传（已存本机）` : '✓ 已上传';
+      }
+      document.getElementById('parent-tab').addEventListener('click', () => {
+        $toolbar.hidden = !$toolbar.hidden;
+        if (!$toolbar.hidden) refreshSync();
+      });
+      setInterval(() => { if (!$toolbar.hidden) refreshSync(); }, 5000);
       document.getElementById('toolbar-hide').addEventListener('click', () => { $toolbar.hidden = true; });
 
       renderPills();
