@@ -44,7 +44,7 @@ const CSS = `
 .town svg { position: relative; width: 100%; height: 100%; display: block; }
 /* Behind the picture when the screen is wider than it (desktop): a soft blur of
    the same town instead of flat bars. */
-.town .backdrop { position: absolute; inset: -40px; background: url('assets/scene_art/town_wide.jpg') center / cover;
+.town .backdrop { position: absolute; inset: -40px; background: url('assets/scene_art/town_wide.jpg?v=2') center / cover;
                   filter: blur(22px) saturate(1.1); opacity: .9; }
 .town .world { transition: transform .65s cubic-bezier(.55,0,.35,1); }
 .town .flash { position: absolute; inset: 0; background: #fffaf2; opacity: 0; pointer-events: none;
@@ -92,7 +92,7 @@ function svgMarkup() {
   <defs><radialGradient id="t-halo"><stop offset="0" stop-color="#fff6c8" stop-opacity=".75"/>
     <stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient></defs>
   <g class="world">
-    <image href="assets/scene_art/town_wide.jpg" x="${-PAD}" y="0" width="${W + 2 * PAD}" height="${H}"/>
+    <image href="assets/scene_art/town_wide.jpg?v=2" x="${-PAD}" y="0" width="${W + 2 * PAD}" height="${H}"/>
     <g class="bird" style="animation-duration:24s; animation-delay:-5s">
       ${[[0, 0], [30, 12], [-24, 16]].map(([dx, dy]) => `<g transform="translate(${dx} ${120 + dy})">
         <path class="wing" style="transform-origin:0px 0px" d="M-9 0 q4.5 -6 9 0 q4.5 -6 9 0" fill="none" stroke="#4e5866" stroke-width="2.5" stroke-linecap="round"/></g>`).join('')}
