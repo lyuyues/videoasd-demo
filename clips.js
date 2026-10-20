@@ -104,7 +104,7 @@ export const CLIPS = {
 /* Clips get re-rendered in place (same file names), and the study server sends
    no Cache-Control, so a browser that saw the old silent files can keep them for
    days. Bump CLIP_V whenever clips are replaced. */
-export const CLIP_V = '20261019';
+export const CLIP_V = '20261020';
 for (const c of Object.values(CLIPS)) {
   if (c.context) c.context += `?v=${CLIP_V}`;
   for (const o of Object.values(c.options)) { o.action += `?v=${CLIP_V}`; o.reaction += `?v=${CLIP_V}`; }
