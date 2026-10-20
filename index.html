@@ -1087,7 +1087,7 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
-    import { CB, CLIPS } from './clips.js?v=20261019';
+    import { CB, CLIPS } from './clips.js?v=20261020';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
     import { mountTown } from './town.js?v=20261020b';
     import { mountScenes } from './scenes.js?v=20261019';
@@ -1920,7 +1920,7 @@
     const SVGNS = 'http://www.w3.org/2000/svg';
     const XLINK = 'http://www.w3.org/1999/xlink';
 
-    const thumb = (mp4) => mp4.replace(/\.mp4$/, '.jpg');   // stills extracted per clip (ffmpeg)
+    const thumb = (mp4) => mp4.replace(/\.mp4(?=\?|$)/, '.jpg');   // stills extracted per clip (ffmpeg)
     // Action label + picture for the current topic (clip topics) or the legacy icon set.
     function actionInfo(action, constructId) {
       const clips = constructId ? CLIPS[constructId] : currentClips;
