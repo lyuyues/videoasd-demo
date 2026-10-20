@@ -451,6 +451,11 @@ async function saveToServer(out) {
 }
 
 let lastRecords = null;
+// Opened from quiz/index.html with ?kid=Kid03 -> prefill the Kid ID (still editable).
+{
+  const kid = new URLSearchParams(location.search).get("kid");
+  if (kid && !document.getElementById("childId").value) document.getElementById("childId").value = kid;
+}
 document.getElementById("scoreBtn").addEventListener("click", () => {
   if (!document.getElementById("childId").value.trim()) {
     document.getElementById("saveStatus").textContent = (LANG === "zh" ? "请先填 Kid 编号" : "Enter the Kid ID first");

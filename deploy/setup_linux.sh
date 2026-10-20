@@ -134,7 +134,7 @@ cat <<EOF
 
   互动视频 (PRR):   https://$HOSTNAME_PUBLIC/index.html?k=$TOKEN
   Baseline:         https://$HOSTNAME_PUBLIC/baseline.html?k=$TOKEN
-  Quiz:             https://$HOSTNAME_PUBLIC/quiz/make_friends_pre.html?k=$TOKEN
+  Quiz:             https://$HOSTNAME_PUBLIC/quiz/index.html?k=$TOKEN
                     (另外三个: make_friends_post / join_activity_pre / join_activity_post)
 
   不带 ?k= 打开应显示"需要访问口令"（403）—— 这是对的。第一次带 ?k= 打开后，

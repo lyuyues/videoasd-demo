@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VideoASD — 选择测验卷</title>
+  <style>
+    body {
+      margin: 0; padding: 24px 16px 48px;
+      font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+      background: #f6f3ee; color: #3d3428;
+    }
+    main { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    h2 { font-size: 15px; margin: 26px 0 10px; color: #7a6e60; }
+    .sub { color: #7a6e60; font-size: 14px; line-height: 1.6; margin: 0 0 16px; }
+    .kid { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .kid input {
+      font: inherit; font-size: 17px; padding: 10px 14px; width: 9em;
+      border: 1.5px solid #c9c3b8; border-radius: 12px; background: #fff;
+    }
+    #plan-note { font-size: 14px; color: #7a6e60; margin: 10px 0 0; min-height: 1.4em; }
+    .steps { display: grid; gap: 10px; }
+    a.step {
+      display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit;
+      background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    a.step:active { background: #fff4e6; }
+    .n {
+      flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+      background: #f59e42; color: #fff; font-weight: 700;
+    }
+    .gap { font-size: 13px; color: #9a8e80; padding: 2px 0 2px 60px; }
+    .t { font-weight: 600; font-size: 16px; }
+    .m { font-size: 13px; color: #7a6e60; margin-top: 2px; }
+    .all { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .all a.step { padding: 12px 14px; }
+    .links { margin-top: 26px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .links a {
+      font-size: 14px; font-weight: 600; padding: 9px 14px; border-radius: 12px;
+      background: #fff; color: #5a4a3a; text-decoration: none; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>📝 选择测验卷</h1>
+  <p class="sub">输入 Kid 编号，下面会按分配表列出这个孩子要做的 4 份测验卷和顺序。点哪一份就打开哪一份，Kid 编号会自动填好。</p>
+
+  <div class="kid">
+    <input id="kid" type="text" autocomplete="off" placeholder="Kid03" />
+  </div>
+  <p id="plan-note"></p>
+  <div class="steps" id="plan"></div>
+
+  <h2>全部测验卷（不按分配表）</h2>
+  <div class="all" id="all"></div>
+
+  <div class="links">
+    <a href="../index.html">← 主程序</a>
+    <a href="../baseline.html">← 对照组</a>
+    <a href="../backup.html">💾 备份</a>
+  </div>
+</main>
+<script>
+  // Participant assignment, 2026-10-13 (Research/VideoASD/2026-10-13_participant_assignment.md).
+  // Topic A = make_friends (playground), B = join_activity (classroom). Group = (n - 1) % 4.
+  const TOPIC = { make_friends: "交朋友", join_activity: "加入活动" };
+  const COND = { prr: "互动视频", baseline: "对照组视频" };
+  const GROUPS = [
+    [["make_friends", "prr"], ["join_activity", "baseline"]],   // Kid 1, 5, 9
+    [["make_friends", "baseline"], ["join_activity", "prr"]],   // Kid 2, 6, 10
+    [["join_activity", "prr"], ["make_friends", "baseline"]],   // Kid 3, 7, 11
+    [["join_activity", "baseline"], ["make_friends", "prr"]],   // Kid 4, 8, 12
+  ];
+  const $ = (id) => document.getElementById(id);
+  const href = (topic, ver, kid) => `${topic}_${ver}.html` + (kid ? `?kid=${encodeURIComponent(kid)}` : "");
+  const VER = { pre: "前测", post: "后测" };
+
+  function step(i, topic, ver, kid, note) {
+    const a = document.createElement("a");
+    a.className = "step"; a.href = href(topic, ver, kid);
+    a.innerHTML = `<span class="n">${i}</span><span><div class="t">${TOPIC[topic]} · ${VER[ver]}</div>` +
+      (note ? `<div class="m">${note}</div>` : "") + `</span>`;
+    return a;
+  }
+  function gap(text) {
+    const d = document.createElement("div"); d.className = "gap"; d.textContent = text; return d;
+  }
+
+  function render() {
+    const kid = $("kid").value.trim();
+    try { localStorage.setItem("videoasd_participant", kid); } catch (e) { /* not critical */ }
+    const $plan = $("plan"); $plan.innerHTML = "";
+    const n = parseInt((kid.match(/\d+/) || [])[0], 10);
+    if (!kid) { $("plan-note").textContent = ""; }
+    else if (!n) { $("plan-note").textContent = "编号里没有数字，没法对分配表。可以用下面的全部测验卷。"; }
+    else {
+      const [[t1, c1], [t2, c2]] = GROUPS[(n - 1) % 4];
+      $("plan-note").textContent = `${kid}：先${COND[c1]}（${TOPIC[t1]}），再${COND[c2]}（${TOPIC[t2]}）`;
+      $plan.append(
+        step(1, t1, "pre", kid, ""),
+        gap(`↓ ${COND[c1]}`),
+        step(2, t1, "post", kid, ""),
+        gap("↓ 休息"),
+        step(3, t2, "pre", kid, ""),
+        gap(`↓ ${COND[c2]}`),
+        step(4, t2, "post", kid, ""),
+        gap("↓ 家长看故事树报告、访谈"),
+      );
+    }
+    const $all = $("all"); $all.innerHTML = "";
+    ["make_friends", "join_activity"].forEach((t) => ["pre", "post"].forEach((v) => {
+      const a = document.createElement("a");
+      a.className = "step"; a.href = href(t, v, kid);
+      a.innerHTML = `<span class="t">${TOPIC[t]} · ${VER[v]}</span>`;
+      $all.appendChild(a);
+    }));
+  }
+
+  try { $("kid").value = new URLSearchParams(location.search).get("kid") || localStorage.getItem("videoasd_participant") || ""; } catch (e) { /* ignore */ }
+  $("kid").addEventListener("input", render);
+  render();
+</script>
+</body>
+</html>
