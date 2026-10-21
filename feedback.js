@@ -18,7 +18,7 @@ export const ACCEPT = {
 };
 
 const CSS = `
-.pfb { position: fixed; inset: 0; z-index: 65; display: flex; align-items: center; justify-content: center;
+.pfb { position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
        background: rgba(255, 250, 242, .55); pointer-events: auto; animation: pfb-in .25s ease both; }
 .pfb .pfb-card { position: relative; text-align: center; padding: 34px 64px 28px; border-radius: 32px; background: #fff;
        box-shadow: 0 14px 40px rgba(90, 60, 30, .25);
