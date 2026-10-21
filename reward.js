@@ -1,15 +1,14 @@
 /* Reward clip (2026-10-20).
  *
- * After a round (PRR, index.html) or a viewing (baseline.html) the child gets the
- * same short Veo clip of Alex and Sam singing and dancing together, one per topic
- * (assets/videos/reward/<topic>.mp4, made by VIDEOASD-backend/gen_reward.py). Both
- * conditions show it, so the reward doesn't differ between them. The 继续 button
+ * After a round in the PRR app (index.html; not the baseline) the child gets a
+ * short Veo clip of Alex and Sam singing and dancing together, one per topic
+ * (assets/videos/reward/<topic>.mp4, made by VIDEOASD-backend/gen_reward.py). The 继续 button
  * appears once the clip ends; tapping the clip early skips to it.
  */
 
 const V = '20261020';
 const CSS = `
-.reward { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center;
+.reward { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 16px; padding: 20px; background: rgba(255, 246, 232, .97);
           animation: rw-in .35s ease both; }
 .reward h2 { margin: 0; font-size: 30px; font-weight: 800; color: #e8804f;

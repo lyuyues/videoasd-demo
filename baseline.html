@@ -95,7 +95,7 @@
     import { CLIPS } from './clips.js?v=20261020b';
     import { GazeTracker } from './gaze.js?v=20261019';
     import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261019';
-    import { playReward } from './reward.js?v=20261020';
+    import { playReward } from './reward.js?v=20261020b';
 
     const SCENES = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
     const TOPICS = { make_friends: '交朋友', join_activity: '加入活动', comfort_friend: '安慰朋友' };
@@ -306,9 +306,8 @@
       saveSnapshot(serverPayload());
       vids.forEach((el) => el.pause());
       $('player').classList.add('hidden');
+      $('done').classList.remove('hidden');
       gaze.stop(); gaze.stopCamera(); gazeOn = false;
-      // Same reward clip as the PRR app, so the two conditions end alike.
-      playReward($('topic').value, { log: logEvent, onDone: () => $('done').classList.remove('hidden') });
     });
 
     // Researcher escape hatch: back to setup (logs an abort if mid-run)
