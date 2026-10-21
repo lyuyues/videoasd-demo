@@ -1096,6 +1096,7 @@
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261020';
+    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261020';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1863,6 +1864,8 @@
 
     // Lock it in: commit the choices and play the matching outcome
     document.getElementById('confirm-lock').addEventListener('click', () => {
+      unlockSound();   // a tap, so the feedback chime may play later (iPad)
+      $outVideo.dataset.fb = '';
       const opt = currentClips && currentClips.options[pendingChoice];
       $outVideo.src = opt ? opt.reaction : (OUTCOME_MAP[pendingChoice] || OUTCOME_MAP.a);
       $outVideo.muted = !opt;   // reaction clips carry dialogue → unmute
@@ -1875,8 +1878,15 @@
     });
 
     // Outcome video finished -- reveal the mismatch check below it, not before
+    // Right/wrong feedback on the predicted feeling comes first (feedback.js).
     $outVideo.addEventListener('ended', () => {
-      document.getElementById('poe-outcome-check').classList.remove('hidden');
+      const reveal = () => document.getElementById('poe-outcome-check').classList.remove('hidden');
+      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
+      const right = judge(topic, pendingChoice, pendingPrediction);
+      if (right === null || $outVideo.dataset.fb) { reveal(); return; }   // once per lock-in, not on replays
+      $outVideo.dataset.fb = '1';
+      logEvent('prediction_feedback', { construct: cid(), action: pendingChoice, emotion: pendingPrediction, correct: right });
+      showFeedback(right, reveal);
     });
 
     // Mismatch check -- "Is it like you thought?"
