@@ -1,12 +1,13 @@
 /* Reward clip (2026-10-20).
  *
  * After a round in the PRR app (index.html; not the baseline) the child gets a
- * short Veo clip of Alex and Sam singing and dancing together, one per topic
- * (assets/videos/reward/<topic>.mp4, made by VIDEOASD-backend/gen_reward.py). The 继续 button
+ * short Veo clip of Alex and Sam singing and dancing together, one per SCENE so
+ * the backdrop matches where the child just played, whatever the topic
+ * (assets/videos/reward/<scene>.mp4, made by VIDEOASD-backend/gen_reward.py). The 继续 button
  * appears once the clip ends; tapping the clip early skips to it.
  */
 
-const V = '20261020';
+const V = '20261020c';
 const CSS = `
 .reward { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 16px; padding: 20px; background: rgba(255, 246, 232, .97);
@@ -23,11 +24,11 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .reward, .reward * { animation: none !important; } }
 `;
 
-export const REWARD_TOPICS = ['make_friends', 'join_activity', 'comfort_friend'];
+export const REWARD_SCENES = ['playground', 'classroom', 'cafeteria', 'park'];
 
-/** playReward(topic, { onDone, log }) -- onDone runs when the child taps 继续 (or right away for an unknown topic). */
-export function playReward(topic, { onDone = () => {}, log = () => {} } = {}) {
-  if (!REWARD_TOPICS.includes(topic)) { onDone(); return; }
+/** playReward(scene, { onDone, log }) -- onDone runs when the child taps 继续 (or right away for an unknown scene). */
+export function playReward(scene, { onDone = () => {}, log = () => {} } = {}) {
+  if (!REWARD_SCENES.includes(scene)) { onDone(); return; }
   if (!document.getElementById('reward-css')) {
     const st = document.createElement('style'); st.id = 'reward-css'; st.textContent = CSS;
     document.head.appendChild(st);
@@ -35,8 +36,8 @@ export function playReward(topic, { onDone = () => {}, log = () => {} } = {}) {
   const el = document.createElement('div');
   el.className = 'reward';
   el.innerHTML = `<h2>🎉 你真棒！🎉</h2>
-    <video playsinline preload="auto" poster="assets/videos/reward/${topic}.jpg?v=${V}"
-      src="assets/videos/reward/${topic}.mp4?v=${V}"></video>
+    <video playsinline preload="auto" poster="assets/videos/reward/${scene}.jpg?v=${V}"
+      src="assets/videos/reward/${scene}.mp4?v=${V}"></video>
     <button type="button">继续 →</button>`;
   document.body.appendChild(el);
   const video = el.querySelector('video'), btn = el.querySelector('button');
@@ -46,9 +47,9 @@ export function playReward(topic, { onDone = () => {}, log = () => {} } = {}) {
   video.addEventListener('error', reveal);
   video.addEventListener('click', () => { if (video.paused) video.play().catch(reveal); else reveal(); });
   video.play().catch(reveal);   // blocked autoplay: show the button so nobody gets stuck
-  log('reward_shown', { topic });
+  log('reward_shown', { scene });
   btn.addEventListener('click', () => {
-    log('reward_closed', { topic, watchedMs: Date.now() - t0, ended: video.ended });
+    log('reward_closed', { scene, watchedMs: Date.now() - t0, ended: video.ended });
     video.pause(); el.remove(); onDone();
   });
 }

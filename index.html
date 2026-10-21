@@ -1095,7 +1095,7 @@
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
-    import { playReward } from './reward.js?v=20261020b';
+    import { playReward } from './reward.js?v=20261020c';
     import { judge, showFeedback, unlockSound } from './feedback.js?v=20261020b';
 
     /* ============================================================
@@ -2095,7 +2095,7 @@
       $outVideo.pause();
       stopGazeCap();
       commitGuess('out-done');
-      playReward(cid().split('_').slice(1).join('_'), { onDone: commitAndClose, log: logEvent });
+      playReward(cid().split('_')[0], { onDone: commitAndClose, log: logEvent });   // reward matches the scene
     }
 
     /* ===== Reward on the reflect step — rewards exploration, never correctness ===== */
