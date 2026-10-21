@@ -1875,7 +1875,12 @@
     // Populate and show the lock-in summary of the two predictions
     function showConfirm() {
       const action = actionInfo(pendingChoice);
-      document.getElementById('confirm-action-icon').src = action.icon;
+      // Same Alex icon as the action button the child just tapped (see
+      // applyTopicActions); the clip still only if the topic has no icon.
+      const $icon = document.getElementById('confirm-action-icon');
+      const topic = cid().split('_').slice(1).join('_');
+      $icon.onerror = () => { $icon.onerror = null; $icon.src = action.icon; };
+      $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.jpg` : action.icon;
       document.getElementById('confirm-action-text').textContent = action.label;
       const emo = pendingPrediction || 'neutral';
       document.getElementById('confirm-emotion-icon').src = `assets/emotions/sam_${emo}.png`;
