@@ -1095,6 +1095,7 @@
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
+    import { playReward } from './reward.js?v=20261020';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -2084,7 +2085,12 @@
     }
 
     document.getElementById('out-done').addEventListener('click', goToTree);
-    document.getElementById('tree-done').addEventListener('click', commitAndClose);
+    // Reward clip first (Alex and Sam dance), then back to the map.
+    document.getElementById('tree-done').addEventListener('click', () => {
+      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
+      $outVideo.pause();
+      playReward(topic, { onDone: commitAndClose, log: logEvent });
+    });
     document.getElementById('tree-again').addEventListener('click', () => {
       logEvent('revision_initiated', { construct: cid(), trigger: 'tree-again' });
       pendingChoice = null;
