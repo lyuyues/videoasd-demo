@@ -107,7 +107,7 @@
       sessionStorage.setItem('videoasd_session', id);
       return id;
     }
-    const sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
+    let sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
     let ctx = {};   // { participant, construct, option }
     function logEvent(type, data) {
       try {
@@ -266,6 +266,12 @@
       try {
         localStorage.setItem('videoasd_participant', participant);
         localStorage.setItem('videoasd_baseline_last', JSON.stringify({ scene, topic }));
+      } catch { /* not critical */ }
+      // A different Kid ID than this session's events = a new child: new session id,
+      // so two children never share one session file.
+      try {
+        const own = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]').filter((e) => e.session === sessionId);
+        if (own.length && own[own.length - 1].participant !== participant) sessionId = newSessionId();
       } catch { /* not critical */ }
       ctx = { participant, construct: `${scene}_${topic}`, option };
       releaseBlobs();

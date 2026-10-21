@@ -1469,6 +1469,7 @@
     let pendingPrediction = null;
     let pendingCheck = null; // 'yes' | 'kindof' | 'no' -- answer to "Is it like you thought?"
     let pendingObserved = null; // child's re-label of Sam's feeling after a mismatch (OBSERVE step)
+    let attempt = 0;             // action picks since the current topic was opened
     const observedScenarios = new Set(); // location ids that already showed the OBSERVE re-label step once
 
     function resetOutcomeSubsteps() {
@@ -1615,7 +1616,19 @@
       return id;
     }
     let sessionId = sessionStorage.getItem('videoasd_session') || newSessionId();
-    const cid = () => $modal.dataset.constructId || $modal.dataset.locId || '_default';
+    // The Kid ID the last PRR event was logged under -- in this session (sessionOwner)
+    // or in any session on this device (lastPrrParticipant; trees and progress outlive
+    // the tab). null = no such events. Read from the log, not the setup field, which
+    // the grown-up may be retyping.
+    function lastParticipant(match) {
+      try {
+        const own = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]').filter(match);
+        return own.length ? own[own.length - 1].participant : null;
+      } catch { return null; }
+    }
+    const sessionOwner = () => lastParticipant((e) => e.session === sessionId);
+    const lastPrrParticipant = () => lastParticipant((e) => e.condition === 'prr');
+    const cid =() => $modal.dataset.constructId || $modal.dataset.locId || '_default';
     let eventsDirty = false;   // set by logEvent, cleared by autosave
     function logEvent(type, data) {
       try {
@@ -1703,6 +1716,7 @@
       $modal.dataset.locId = loc.id;
       // Action choice gets picked inside modal at the action step
       pendingChoice = null;
+      attempt = 0;
       const key = loc.topic ? `${loc.id}_${loc.topic}` : null;
       // The possibility tree and its stars belong to the (scene, topic) pair, not
       // the scene — sharing a scene's store across its 3 topics would let one
@@ -1803,8 +1817,14 @@
     document.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         pendingChoice = btn.dataset.choice;
-        logEvent('action_selected', { construct: cid(), action: pendingChoice,
-          isAlternative: !(pendingChoice in loadGuesses(cid())) });
+        // attempt: 1-based count of action picks since the topic was opened.
+        // isNewAction: this action isn't on the tree yet. isAlternative: some OTHER
+        // action already is (false on a child's very first path in this topic).
+        attempt += 1;
+        const onTree = Object.keys(loadGuesses(cid()));
+        logEvent('action_selected', { construct: cid(), action: pendingChoice, attempt,
+          isNewAction: !onTree.includes(pendingChoice),
+          isAlternative: onTree.some((a) => a !== pendingChoice) });
         const opt = currentClips && currentClips.options[pendingChoice];
         if (opt) {
           $actVideo.src = opt.action;
@@ -1929,7 +1949,10 @@
     });
 
     document.getElementById('out-revise').addEventListener('click', () => {
-      // Stay in the modal: go back to the action step to try a different path here
+      // Stay in the modal: go back to the action step to try a different path here.
+      // The path just watched is kept on the tree first -- leaving by this button
+      // used to drop it, so the tree and stars missed paths the child did explore.
+      if (pendingChoice && pendingPrediction) commitGuess('out-revise');
       logEvent('revision_initiated', { construct: cid(), trigger: 'out-revise' });
       $outVideo.pause();
       stopGazeCap();
@@ -2050,21 +2073,29 @@
       });
     }
 
-    function goToTree() {
-      $outVideo.pause();
-      stopGazeCap();
+    // Put the path just watched on the tree. trigger: 'out-done' (to the tree) or
+    // 'out-revise' (straight back to the action step).
+    function commitGuess(trigger) {
       const id = cid();
       const action = pendingChoice || 'a';
       const emotion = pendingPrediction || 'neutral';
-      const isRevision = action in loadGuesses(id); // same action re-tried
+      const before = Object.keys(loadGuesses(id));
+      const isRevision = before.includes(action); // same action re-tried
       saveGuess(id, action, { predicted: emotion, check: pendingCheck, observed: pendingObserved });
-      renderTree($treeSvg, id, action);
-      showStep('tree');
       const explored = Object.keys(loadGuesses(id)).length;
-      showTreeReward(!isRevision, explored);
       logEvent('guess_committed', { construct: id, action, emotion,
-        check: pendingCheck, observed: pendingObserved,
-        isAlternative: !isRevision, isRevision, alternativesExplored: explored });
+        check: pendingCheck, observed: pendingObserved, trigger, attempt,
+        isNewPath: !isRevision, isRevision,
+        isAlternative: before.some((a) => a !== action), alternativesExplored: explored });
+      return { action, isRevision, explored };
+    }
+    // 完成: the path still goes on the possibility tree, but the child gets the reward
+    // clip instead of the tree -- the tree is shown only in the caregiver report.
+    function goToTree() {
+      $outVideo.pause();
+      stopGazeCap();
+      commitGuess('out-done');
+      playReward(cid().split('_').slice(1).join('_'), { onDone: commitAndClose, log: logEvent });
     }
 
     /* ===== Reward on the reflect step — rewards exploration, never correctness ===== */
@@ -2095,12 +2126,7 @@
     }
 
     document.getElementById('out-done').addEventListener('click', goToTree);
-    // Reward clip first (Alex and Sam dance), then back to the map.
-    document.getElementById('tree-done').addEventListener('click', () => {
-      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
-      $outVideo.pause();
-      playReward(topic, { onDone: commitAndClose, log: logEvent });
-    });
+    document.getElementById('tree-done').addEventListener('click', commitAndClose);
     document.getElementById('tree-again').addEventListener('click', () => {
       logEvent('revision_initiated', { construct: cid(), trigger: 'tree-again' });
       pendingChoice = null;
@@ -2305,14 +2331,16 @@
     function serverPayload() {
       const p = buildPayload();
       return { kind: 'system', condition: 'prr', sessionId,
-        participantId: localStorage.getItem('videoasd_participant') || '',
+        participantId: sessionOwner() ?? (localStorage.getItem('videoasd_participant') || ''),
         ...p, events: p.events.filter((e) => e.session === sessionId) };
     }
     function autosave() { eventsDirty = false; saveSnapshot(serverPayload()); }
     setInterval(() => { if (eventsDirty) autosave(); }, 60000);
-    addEventListener('pagehide', () => beaconSnapshot(serverPayload()));
+    // Nothing logged in this session yet (e.g. a reload on the setup gate) = no file.
+    const beacon = () => { if (sessionOwner() !== null) beaconSnapshot(serverPayload()); };
+    addEventListener('pagehide', beacon);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') beaconSnapshot(serverPayload());
+      if (document.visibilityState === 'hidden') beacon();
     });
     document.getElementById('export-data').addEventListener('click', () => {
       const payload = buildPayload();
@@ -2386,7 +2414,7 @@
       localStorage.removeItem('videoasd_gaze_frames');
       // Reset = new participant: rotate the session id. The event log itself is
       // kept (every event carries its session id) -- export before resetting.
-      saveSnapshot(serverPayload());
+      if (sessionOwner() !== null) saveSnapshot(serverPayload());   // nothing logged yet = no file
       sessionId = newSessionId();
       logEvent('session_reset', {});
       updateProgress();
@@ -2700,6 +2728,11 @@
       document.getElementById('setup-author-skip').addEventListener('click', () => markStep('author', '已跳过'));
 
       document.getElementById('setup-done').addEventListener('click', () => {
+        // A different Kid ID than the last child's = a new child: same as Reset (final
+        // snapshot under the old ID, new session id, trees/progress cleared), so two
+        // children never share a session file or see each other's trees.
+        const owner = lastPrrParticipant();
+        if (owner !== null && owner !== $pid.value.trim()) document.getElementById('reset-progress').click();
         $setup.classList.add('hidden');
         // Land on the town map with all 4 places up, not straight into a scene --
         // now that the pills sit on the map itself, it's the actual picker, not
