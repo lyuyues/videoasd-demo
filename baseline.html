@@ -85,7 +85,8 @@
   </div>
 
   <div id="done" class="player hidden">
-    <div class="done-card"><div class="big">🌟</div><p class="cue">看完啦 — 看得真棒！</p></div>
+    <div class="done-card"><div class="big">🌟</div><p class="cue">看完啦 — 看得真棒！</p>
+      <button class="btn-main hidden" id="postquiz">📝 进入后测 →</button></div>
   </div>
 
   <button id="corner" class="corner hidden">⚙ 设置</button>
@@ -313,6 +314,14 @@
       $('player').classList.add('hidden');
       $('done').classList.remove('hidden');
       gaze.stop(); gaze.stopCamera(); gazeOn = false;
+      // Straight on to this child's post-quiz for the topic just watched (only the
+      // two study topics have quizzes).
+      const topic = ctx.construct.split('_').slice(1).join('_');
+      $('postquiz').classList.toggle('hidden', !['make_friends', 'join_activity'].includes(topic));
+      $('postquiz').onclick = () => {
+        logEvent('post_quiz_opened', { topic });
+        location.href = `quiz/${topic}_post.html` + (ctx.participant ? `?kid=${encodeURIComponent(ctx.participant)}` : '');
+      };
     });
 
     // Researcher escape hatch: back to setup (logs an abort if mid-run)

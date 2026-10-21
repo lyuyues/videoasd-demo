@@ -430,6 +430,14 @@
     }
     /* `display: flex` above would otherwise beat the UA rule for [hidden] */
     .toolbar[hidden] { display: none; }
+    /* Post-quiz shortcut, bottom-left: shown once the child has finished a round */
+    .postquiz-btn {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); left: 16px; z-index: 10;
+      font: inherit; font-size: 15px; font-weight: 700; color: #5a4a3a;
+      background: rgba(255, 255, 255, 0.95); border: 2px solid #ffb56a; border-radius: 16px;
+      padding: 9px 16px; box-shadow: 0 2px 8px rgba(255, 180, 100, 0.3);
+    }
+    .postquiz-btn[hidden] { display: none; }
     .sync-status {
       align-self: center; font-size: 12px; font-weight: 600; color: #5a4a3a;
       background: rgba(255, 255, 255, 0.92); padding: 8px 12px; border-radius: 14px;
@@ -855,6 +863,8 @@
       <button class="setup-hand" id="done-back">回到小镇</button>
     </div>
   </div>
+
+  <button id="postquiz-btn" class="postquiz-btn" hidden></button>
 
   <!-- Reward: per-location star meters (breadth) -->
   <div class="loc-stars" id="loc-stars"></div>
@@ -1647,6 +1657,26 @@
         eventsDirty = true;
       } catch (e) { /* storage full or blocked */ }
     }
+    // Post-quiz shortcut: after at least one finished round the researcher can go
+    // straight to this child's post-quiz, Kid ID filled in. The topic is the child's
+    // PRR topic in the participant assignment (quiz/index.html GROUPS, group =
+    // (n - 1) % 4); a Kid ID without a number falls back to the round just finished.
+    const PRR_TOPIC_BY_GROUP = ['make_friends', 'join_activity', 'join_activity', 'make_friends'];
+    const QUIZ_TOPICS = { make_friends: '交朋友', join_activity: '加入活动' };
+    function showPostQuiz(roundTopic) {
+      const kid = sessionOwner() ?? (localStorage.getItem('videoasd_participant') || '');
+      const n = parseInt((kid.match(/\d+/) || [])[0], 10);
+      const topic = n ? PRR_TOPIC_BY_GROUP[(n - 1) % 4] : roundTopic;
+      const btn = document.getElementById('postquiz-btn');
+      if (!QUIZ_TOPICS[topic]) return;
+      btn.textContent = `📝 后测（${QUIZ_TOPICS[topic]}）→`;
+      btn.onclick = () => {
+        logEvent('post_quiz_opened', { topic });
+        autosave();
+        location.href = `quiz/${topic}_post.html` + (kid ? `?kid=${encodeURIComponent(kid)}` : '');
+      };
+      btn.hidden = false;
+    }
     // Construct-level summary, logged once when the child leaves a topic.
     function logRound(id) {
       logEvent('construct_committed', { construct: id, level: difficultyLevel,
@@ -1755,6 +1785,7 @@
         logRound(cid || id);
         updateProgress();
         markVisited();
+        showPostQuiz((cid || '').split('_').slice(1).join('_'));
       }
       stopGazeCap();
       $modal.classList.add('hidden');

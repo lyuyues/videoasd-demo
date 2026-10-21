@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>表情识别小测</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #fff; color: #222;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .screen { display: none; height: 100%; flex-direction: column; align-items: center;
+    justify-content: center; padding: 16px; }
+  .screen.on { display: flex; }
+  .prompt { font-size: 22px; color: #888; margin-bottom: 12px; text-align: center; }
+  .grid { display: grid; gap: 18px; width: min(92vw, 92vh - 140px, 760px); }
+  .grid.n4 { grid-template-columns: 1fr 1fr; }
+  .grid.n2 { grid-template-columns: 1fr 1fr; }
+  .face { aspect-ratio: 1; border: 5px solid #e6e6e6; border-radius: 22px; background: #fff;
+    padding: 6px; cursor: pointer; }
+  .face img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  .face.picked { border-color: #4a7bd8; }
+  .bar { margin-top: 14px; display: flex; gap: 12px; align-items: center; }
+  .bar small { color: #aaa; }
+  button.nav { font-size: 16px; padding: 8px 18px; border-radius: 10px; border: 1px solid #ccc;
+    background: #f6f6f6; color: #555; }
+  button.nav:disabled { opacity: .35; }
+  h1 { font-size: 26px; margin: 0 0 12px; }
+  .start p { color: #666; max-width: 520px; line-height: 1.6; }
+  input { font-size: 18px; padding: 6px 10px; width: 160px; }
+  table { border-collapse: collapse; font-size: 15px; margin: 12px 0; }
+  td, th { border: 1px solid #ddd; padding: 5px 10px; text-align: center; }
+  .sum { font-size: 18px; margin: 6px 0; }
+  @media print {
+    .screen { display: flex !important; height: auto; min-height: 95vh; page-break-after: always; }
+    .bar, .start, .end { display: none !important; }
+    .prompt { color: #222; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen start on" id="s-start">
+  <h1>表情识别小测</h1>
+  <p>施测人操作：输入孩子编号后开始。施测人每题读出上方灰字，孩子点或指一张图。
+     不告诉孩子对错，每题都用"好的"带过。孩子指了但没点到时，由施测人帮忙点。</p>
+  <p>孩子编号：<input id="kid" placeholder="如 03"></p>
+  <button class="nav" id="go">开始</button>
+</div>
+
+<div id="items"></div>
+
+<div class="screen end" id="s-end">
+  <h1>完成（施测人查看）</h1>
+  <div id="summary"></div>
+  <button class="nav" onclick="location.reload()">下一个孩子</button>
+</div>
+
+<script>
+// Fixed order and fixed option positions so every child sees the same test.
+const LABEL = { happy: '开心', sad: '难过', angry: '生气', surprised: '惊讶',
+                confused: '困惑', neutral: '没什么特别的感觉' };
+const PROMPT = {
+  happy: '哪个 Sam 是开心的？', sad: '哪个 Sam 在难过？', angry: '哪个 Sam 在生气？',
+  surprised: '哪个 Sam 很惊讶？', confused: '哪个 Sam 不明白、很困惑？',
+  neutral: '哪个 Sam 没什么特别的感觉？',
+};
+const ITEMS = [
+  { id: 'P',  part: '练习', target: 'happy',    opts: ['happy', 'sad'] },
+  { id: 'A1', part: 'A', target: 'happy',    opts: ['sad', 'happy', 'angry', 'surprised'] },
+  { id: 'A2', part: 'A', target: 'angry',    opts: ['angry', 'neutral', 'happy', 'sad'] },
+  { id: 'A3', part: 'A', target: 'sad',      opts: ['surprised', 'happy', 'angry', 'sad'] },
+  { id: 'A4', part: 'A', target: 'surprised',   opts: ['happy', 'sad', 'surprised', 'neutral'] },
+  { id: 'A5', part: 'A', target: 'sad',      opts: ['angry', 'surprised', 'sad', 'happy'] },
+  { id: 'A6', part: 'A', target: 'surprised',   opts: ['neutral', 'surprised', 'sad', 'angry'] },
+  { id: 'A7', part: 'A', target: 'happy',    opts: ['happy', 'angry', 'surprised', 'sad'] },
+  { id: 'A8', part: 'A', target: 'angry',    opts: ['sad', 'happy', 'surprised', 'angry'] },
+  { id: 'B1', part: 'B', target: 'confused', opts: ['neutral', 'confused', 'surprised', 'sad'] },
+  { id: 'B2', part: 'B', target: 'neutral',  opts: ['sad', 'confused', 'neutral', 'happy'] },
+];
+const picks = {};
+const $items = document.getElementById('items');
+
+ITEMS.forEach((it, i) => {
+  const s = document.createElement('div');
+  s.className = 'screen';
+  s.id = 's-' + i;
+  const tag = it.id === 'P' ? '练习题' : `第 ${i} / ${ITEMS.length - 1} 题`;
+  s.innerHTML = `
+    <div class="prompt">${tag}　${PROMPT[it.target]}</div>
+    <div class="grid n${it.opts.length}">
+      ${it.opts.map((e) => `<div class="face" data-e="${e}"><img src="img/${e}.png" alt=""></div>`).join('')}
+    </div>
+    <div class="bar">
+      <button class="nav" data-skip>孩子没回应（跳过）</button>
+      <button class="nav" data-next disabled>下一题</button>
+    </div>`;
+  s.querySelectorAll('.face').forEach((f) => f.addEventListener('click', () => {
+    s.querySelectorAll('.face').forEach((x) => x.classList.remove('picked'));
+    f.classList.add('picked');
+    picks[it.id] = f.dataset.e;
+    s.querySelector('[data-next]').disabled = false;
+  }));
+  s.querySelector('[data-next]').addEventListener('click', () => show(i + 1));
+  s.querySelector('[data-skip]').addEventListener('click', () => { picks[it.id] = null; show(i + 1); });
+  $items.appendChild(s);
+});
+
+function show(i) {
+  document.querySelectorAll('.screen').forEach((x) => x.classList.remove('on'));
+  if (i < ITEMS.length) { document.getElementById('s-' + i).classList.add('on'); return; }
+  summarize();
+  document.getElementById('s-end').classList.add('on');
+}
+
+function summarize() {
+  const scored = ITEMS.filter((it) => it.part !== '练习');
+  const ok = (it) => picks[it.id] === it.target;
+  const a = scored.filter((it) => it.part === 'A' && ok(it)).length;
+  const b = scored.filter((it) => it.part === 'B' && ok(it)).length;
+  const verdict = a >= 5 ? '通过' : a >= 3 ? '边界（研究团队讨论）' : '未通过';
+  const rows = scored.map((it) => `<tr><td>${it.id}</td><td>${LABEL[it.target]}</td>
+    <td>${picks[it.id] ? LABEL[picks[it.id]] : '未回应'}</td><td>${ok(it) ? '✓' : '✗'}</td></tr>`).join('');
+  const kid = document.getElementById('kid').value || '（未填）';
+  document.getElementById('summary').innerHTML = `
+    <div class="sum">孩子编号：${kid}　｜　时间：${new Date().toLocaleString('zh-CN')}</div>
+    <div class="sum">A 部分（基本情绪）：<b>${a} / 8</b>　→　${verdict}</div>
+    <div class="sum">B 部分（困惑 / 没什么特别的感觉）：<b>${b} / 2</b>（只记录，不作门槛）</div>
+    <table><tr><th>题号</th><th>目标</th><th>孩子选择</th><th></th></tr>${rows}</table>
+    <div id="saveStatus" style="color:#888">保存中…</div>`;
+  const rec = { kid, items: ITEMS.filter((it) => it.part !== '练习').map((it) =>
+    ({ id: it.id, target: it.target, pick: picks[it.id] ?? null, correct: picks[it.id] === it.target })),
+    practicePick: picks.P ?? null, scoreA: a, scoreB: b, verdict };
+  saveRecord(rec);
+}
+
+// Study server (videoasd.yuelyu.ca): same sink as the quiz -- backed up on this
+// device first (IndexedDB), then POSTed; opened from a file it only keeps the backup.
+const saveMod = import('../save.js?v=20261019').catch(() => null);
+// Readable session id for the file name, device local time: 20261020_193742.
+function stamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+async function saveRecord(rec) {
+  const el = document.getElementById('saveStatus');
+  const store = await saveMod;
+  if (!store) { el.textContent = '本页面没有连上研究服务器，请把结果抄到记录表上，或者拍照保存。'; return; }
+  const ok = await store.saveSnapshot({ kind: 'recognition', participantId: rec.kid,
+    condition: 'emotion-check', sessionId: stamp(), ...rec });
+  el.textContent = ok ? '已保存 ✓（已上传）'
+    : store.onStudyServer ? '已存在本机，等网络恢复后会自动上传' : '已存在本机（离线模式），请同时抄到记录表上。';
+}
+
+// Opened with ?kid=Kid03 -> prefill the Kid ID (still editable), as the quiz does.
+{
+  const kid = new URLSearchParams(location.search).get('kid');
+  if (kid) document.getElementById('kid').value = kid;
+}
+document.getElementById('go').addEventListener('click', () => {
+  if (!document.getElementById('kid').value.trim()) { document.getElementById('kid').focus(); return; }
+  show(0);
+});
+</script>
+</body>
+</html>
