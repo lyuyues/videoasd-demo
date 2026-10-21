@@ -39,8 +39,10 @@ WantedBy=multi-user.target
 UNIT
 
 say "3/4 研究服务器转发 /studio/"
-SVC=$(systemctl list-units --type=service --all --no-legend | awk '{print $1}' | while read -r u; do
-  systemctl cat "$u" 2>/dev/null | grep -q "$APP_DIR/server.py" && echo "$u"; done | head -1)
+# grep without -q: -q exits on the first match, systemctl cat gets SIGPIPE, and
+# pipefail then counts the match as a failure.
+SVC=$(systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | while read -r u; do
+  systemctl cat "$u" 2>/dev/null | grep -F "$APP_DIR/server.py" >/dev/null && echo "$u"; done | sed -n 1p) || true
 [ -n "$SVC" ] || { echo "找不到运行 $APP_DIR/server.py 的服务"; exit 1; }
 mkdir -p "/etc/systemd/system/$SVC.d"
 cat > "/etc/systemd/system/$SVC.d/studio.conf" <<CONF
