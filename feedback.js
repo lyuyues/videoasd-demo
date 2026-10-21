@@ -9,11 +9,13 @@
  * emotion each reaction was generated with (VIDEOASD-backend/gen_topic.py SPECS):
  * a = happy, b = calm/neutral, c = surprised (make_friends, join_activity) or sad
  * (comfort_friend). The grid has no "surprised", so for c any upset feeling counts.
+ * d (过于热情, make_friends + join_activity only) = Sam taken aback: 困惑 (confused)
+ * or 惊讶 (the 'scared' key, shown as 惊讶 since 2026-10-20).
  */
 
 export const ACCEPT = {
-  make_friends:   { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'] },
-  join_activity:  { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'] },
+  make_friends:   { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'], d: ['confused', 'scared'] },
+  join_activity:  { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'], d: ['confused', 'scared'] },
   comfort_friend: { a: ['happy'], b: ['neutral', 'sad'],   c: ['sad'] },
 };
 

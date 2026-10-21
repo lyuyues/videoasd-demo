@@ -974,7 +974,7 @@
           <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
           <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
           <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>困惑</span></button>
-          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>惊讶</span></button>
           <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>中性</span></button>
         </div>
       </div>
@@ -1033,7 +1033,7 @@
           <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
           <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
           <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>困惑</span></button>
-          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>惊讶</span></button>
           <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>中性</span></button>
         </div>
       </div>
@@ -1091,12 +1091,12 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
-    import { CB, CLIPS } from './clips.js?v=20261020b';
+    import { CB, CLIPS } from './clips.js?v=20261020c';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261020c';
-    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261020b';
+    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261020c';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1348,11 +1348,11 @@
       a: { icon: 'assets/actions/comfort.png', label: '安慰她' },
       b: { icon: 'assets/actions/joke.png', label: '讲个笑话' },
       c: { icon: 'assets/actions/ignore.png', label: '不理她' },
-      d: { icon: 'assets/actions/ask.png', label: '找人帮忙' },  // PLACEHOLDER 4th action
+      d: { icon: 'assets/actions/ask.png', label: '冲过去，特别热情' },
     };
     const EMOTION_LABEL = {
       happy: '开心', sad: '难过', angry: '生气',
-      confused: '困惑', scared: '害怕', neutral: '中性',
+      confused: '困惑', scared: '惊讶', neutral: '中性',  // 'scared' key kept for data compat; sam_scared.png is a surprised face (O mouth) and reaction c is tagged surprised
     };
     const $ctxVideo = document.getElementById('ctx-video');
     const $outVideo = document.getElementById('out-video');
@@ -1545,21 +1545,26 @@
     // made -- action, predict, and observe were drifting out of sync (action
     // hard-locked to 3 by applyTopicActions, observe never wired to this at
     // all). All three now read lv.actions/lv.emotions the same way.
+    // Four choices go 2x2 rather than 2x4: across one row each card is half the
+    // width, and on the tablet that is a smaller tap target and a longer scan
+    // than a child needs. Two and three still read fine side by side.
+    const choiceColumns = (n) => (n === 4 ? 2 : n);
+
     function applyDifficulty() {
       const lv = currentLevel();
       // actions: show first N (.action-btn are in ACTION_POOL order). For a
-      // real clip-backed topic, applyTopicActions() has already relabeled a/b/c
-      // from currentClips -- this only touches display/columns, not labels, so
-      // it's safe to also apply there. The 4th ('d') slot has no real clip yet
-      // (see applyTopicActions) -- only ever appears at Stretch, and falls back
-      // to the legacy OUTCOME_MAP video, a pre-existing placeholder gap.
-      // A clip-backed topic caps the count at the actions it actually has videos
-      // for, so Stretch never offers the placeholder 4th action with a wrong clip.
+      // real clip-backed topic, applyTopicActions() has already relabeled the
+      // options from currentClips -- this only touches display/columns, not
+      // labels, so it's safe to also apply there.
+      // The count is capped at the options a topic actually has clips for, so a
+      // topic with only a/b/c never offers a 4th button backed by the wrong
+      // video. The four study topics now ship a real 'd' (过于热情), so Stretch
+      // shows it there; the rest still fall back to three.
       const nActions = currentClips ? Math.min(lv.actions, Object.keys(currentClips.options).length) : lv.actions;
       const actionBtns = document.querySelectorAll('#poe-step-action .action-btn');
       actionBtns.forEach((btn, i) => { btn.style.display = i < nActions ? '' : 'none'; });
       const actionGrid = document.querySelector('#poe-step-action .poe-choices');
-      if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${nActions}, 1fr)`;
+      if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${choiceColumns(nActions)}, 1fr)`;
       // emotions: show first N (.emotion-btn are in EMOTION_POOL order) --
       // identical treatment for predict (guess) and observe (re-label).
       [
@@ -1568,7 +1573,10 @@
       ].forEach(({ grid, btns }) => {
         document.querySelectorAll(btns).forEach((btn, i) => { btn.style.display = i < lv.emotions ? '' : 'none'; });
         const g = document.querySelector(grid);
-        if (g) g.style.gridTemplateColumns = `repeat(${Math.min(lv.emotions, 3)}, 1fr)`;
+        // Same shape as the action row above. The old 3-column cap put Stretch's
+        // 4th emotion (困惑) alone on a second row, which read as a different
+        // kind of choice than the three above it; 2x2 keeps the four even.
+        if (g) g.style.gridTemplateColumns = `repeat(${choiceColumns(lv.emotions)}, 1fr)`;
       });
       const diffBtn = document.getElementById('diff-start');
       if (diffBtn) diffBtn.textContent = `难度：${lv.label}`;
@@ -1786,11 +1794,12 @@
     function applyTopicActions() {
       const btns = document.querySelectorAll('#poe-step-action .action-btn');
       if (currentClips) {
-        // Per-topic Alex icons (Gemini, assets/actions/<topic>_<a|b|c>.jpg); the
-        // same three actions recur in every scene, so they key on topic only.
-        // An authored topic without icons just shows the label.
+        // Per-topic Alex icons (Gemini, assets/actions/<topic>_<a|b|c|d>.jpg); the
+        // same actions recur in every scene, so they key on topic only.
+        // An authored topic without icons just shows the label -- onerror below
+        // hides the img and leaves the label on its own.
         const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
-        ['a', 'b', 'c'].forEach((ch, i) => {
+        ['a', 'b', 'c', 'd'].forEach((ch, i) => {
           const b = btns[i], o = currentClips.options[ch];
           if (!b || !o) return;
           const span = b.querySelector('span'); if (span) span.textContent = o.label;
@@ -1964,7 +1973,7 @@
 
     /* ===== Possibility Tree (Reflect step + caregiver report) =====
        Trunk top = the shared story (context still).
-       Side branches = the child's explored actions in this construct (≤3, one per action).
+       Side branches = the child's explored actions in this construct (≤4, one per action).
        Each fruit pairs what the child did + what they thought she'd feel (top row)
        with a still of what actually happened (bottom). Nothing is marked right or
        wrong: the tree shows the child's predictions next to the outcomes, side by side. */
@@ -2021,6 +2030,7 @@
       { x0: 256, y0: 300, x1: 112, y1: 278 }, // left low
       { x0: 264, y0: 236, x1: 408, y1: 214 }, // right
       { x0: 256, y0: 180, x1: 112, y1: 138 }, // left high
+      { x0: 264, y0: 140, x1: 408, y1: 76 },  // right high -- option d (挑战 level)
     ];
 
     // Fruit: [action still][predicted face] on top, outcome still below.

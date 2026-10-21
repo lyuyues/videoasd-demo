@@ -25,6 +25,7 @@ export const CLIPS = {
       a: { label: '走过去打招呼', action: CB + 'playground_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'playground_make_friends/reaction_a-approach_sam-waves-back.mp4' },
       b: { label: '站着看',   action: CB + 'playground_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'playground_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
       c: { label: '直接把玩具拿走',   action: CB + 'playground_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'playground_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+      d: { label: '冲过去，特别热情', action: CB + 'playground_make_friends/action_d-eager_alex-too-eager.mp4',   reaction: CB + 'playground_make_friends/reaction_d-eager_sam-taken-aback.mp4' },
     },
   },
   playground_join_activity: {
@@ -33,6 +34,7 @@ export const CLIPS = {
       a: { label: '问可不可以加入',   action: CB + 'playground_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'playground_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
       b: { label: '站在旁边，太紧张不敢加入', action: CB + 'playground_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'playground_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
       c: { label: '直接挤进去自己玩',     action: CB + 'playground_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'playground_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+      d: { label: '冲过去，特别热情',     action: CB + 'playground_join_activity/action_d-eager_alex-too-eager.mp4',  reaction: CB + 'playground_join_activity/reaction_d-eager_sam-taken-aback.mp4' },
     },
   },
   classroom_make_friends: {
@@ -41,6 +43,7 @@ export const CLIPS = {
       a: { label: '走过去打招呼', action: CB + 'classroom_make_friends/action_a-approach_alex-waves-hello.mp4', reaction: CB + 'classroom_make_friends/reaction_a-approach_sam-waves-back.mp4' },
       b: { label: '站着看',   action: CB + 'classroom_make_friends/action_b-wait_alex-stays-back.mp4',    reaction: CB + 'classroom_make_friends/reaction_b-wait_sam-plays-alone.mp4' },
       c: { label: '直接把玩具拿走',   action: CB + 'classroom_make_friends/action_c-grab_alex-grabs-toy.mp4',     reaction: CB + 'classroom_make_friends/reaction_c-grab_sam-takes-toy-back.mp4' },
+      d: { label: '冲过去，特别热情', action: CB + 'classroom_make_friends/action_d-eager_alex-too-eager.mp4',   reaction: CB + 'classroom_make_friends/reaction_d-eager_sam-taken-aback.mp4' },
     },
   },
   classroom_join_activity: {
@@ -49,6 +52,7 @@ export const CLIPS = {
       a: { label: '问可不可以加入',   action: CB + 'classroom_join_activity/action_a-ask_alex-asks-join.mp4',    reaction: CB + 'classroom_join_activity/reaction_a-ask_sam-happy-welcomes.mp4' },
       b: { label: '站在旁边，太紧张不敢加入', action: CB + 'classroom_join_activity/action_b-watch_alex-hesitates.mp4',  reaction: CB + 'classroom_join_activity/reaction_b-watch_sam-plays-alone.mp4' },
       c: { label: '直接挤进去自己玩',     action: CB + 'classroom_join_activity/action_c-barge_alex-takes-over.mp4', reaction: CB + 'classroom_join_activity/reaction_c-barge_sam-surprised-moves-away.mp4' },
+      d: { label: '冲过去，特别热情',     action: CB + 'classroom_join_activity/action_d-eager_alex-too-eager.mp4',  reaction: CB + 'classroom_join_activity/reaction_d-eager_sam-taken-aback.mp4' },
     },
   },
   cafeteria_make_friends: {
