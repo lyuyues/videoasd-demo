@@ -29,3 +29,11 @@
 
 - [ ] d 选项（"求助"）：本组还缺 `action_d` + `reaction_d`，画面和音频都要从零生成，
       内容设计（Alex 怎么求助、Sam 怎么反应）待定。
+
+## 修订记录
+
+- 2026-10-20：`action_a-approach_alex-waves-hello.mp4` 重新生成（Veo 3.1，首帧=原 action_a 首帧，尾帧=reaction_a 首帧）。
+  原版是女孩 Sam 的嘴形+女声在说「你好！我可以和你一起玩吗？」，新版改为男孩 Alex 说；3 秒后音轨静音（去掉 Sam 的笑声）。
+  原版备份为 `action_a-approach_alex-waves-hello_girlvoice.mp4`（代码不引用）。AOI 已重算。
+
+- 2026-10-21：`action_d-eager_alex-too-eager.mp4` 重新生成——原版只是热情，看不出问题；新版 Alex 冲到 Sam 面前大声嚷「我也要…快点快点，我们现在就一起…！」，Sam 往后躲（不抢、不撞倒东西）。原版备份为 `action_d-eager_alex-too-eager_v1.mp4`。

@@ -29,3 +29,8 @@
 
 - [ ] d 选项（"求助"）：本组还缺 `action_d` + `reaction_d`，画面和音频都要从零生成，
       内容设计（Alex 怎么求助、Sam 怎么反应）待定。
+
+## 修订记录
+
+- 2026-10-21：`reaction_d-eager_sam-taken-aback.mp4` 剪掉开头 1.85 秒——原版开头 Sam 用女声说了 Alex 的台词「我们现在就一起玩吧」。
+  现在只剩 Sam 的「嗯，你站得有点近」（4.4s→2.6s）。原版备份为 `reaction_d-eager_sam-taken-aback_girlvoice.mp4`（代码不引用）。AOI 已重算。

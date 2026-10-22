@@ -1358,7 +1358,7 @@
       a: { icon: 'assets/actions/comfort.png', label: '安慰她' },
       b: { icon: 'assets/actions/joke.png', label: '讲个笑话' },
       c: { icon: 'assets/actions/ignore.png', label: '不理她' },
-      d: { icon: 'assets/actions/ask.png', label: '冲过去，特别热情' },
+      d: { icon: 'assets/actions/ask.png', label: '冲过去，凑得很近，大声说要一起玩' },
     };
     const EMOTION_LABEL = {
       happy: '开心', sad: '难过', angry: '生气',
@@ -1804,8 +1804,30 @@
     // POE flow handlers
     // After context, go to "what would YOU do?" action picker
     // Replay the context video from the start
+    // Replays are logged like baseline.html's baseline_replay, so engagement compares
+    // across conditions: a clip played again after it ended, via the ↻ button or the
+    // video's own controls. A new src (next path, next topic) is a first viewing.
+    function trackReplays(video, clip) {
+      let ended = false;
+      // 'emptied' (queued when src is set) arrives before the 'play' of the new clip;
+      // 'loadstart' alone comes too late and counted every next path as a replay.
+      video.addEventListener('emptied', () => { ended = false; });
+      video.addEventListener('ended', () => { ended = true; });
+      video.addEventListener('play', () => {
+        if (!ended) return;
+        ended = false;
+        logEvent('clip_replay', { construct: cid(), clip, action: clip === 'context' ? null : pendingChoice,
+          trigger: video.dataset.replayBtn ? 'button' : 'controls' });
+        delete video.dataset.replayBtn;
+      });
+    }
+    trackReplays($ctxVideo, 'context');
+    trackReplays($actVideo, 'action');
+    trackReplays($outVideo, 'outcome');
+
     document.getElementById('ctx-replay').addEventListener('click', () => {
       document.getElementById('ctx-btn-row').classList.add('hidden'); // hide again until replay also finishes
+      $ctxVideo.dataset.replayBtn = '1';
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
     });
@@ -2377,7 +2399,9 @@
       const p = buildPayload();
       return { kind: 'system', condition: 'prr', sessionId,
         participantId: sessionOwner() ?? (localStorage.getItem('videoasd_participant') || ''),
-        ...p, events: p.events.filter((e) => e.session === sessionId) };
+        // Same tab = same session id for both conditions (sessionStorage), so filter by
+        // condition too, or the baseline's events ride along in this file.
+        ...p, events: p.events.filter((e) => e.session === sessionId && e.condition === 'prr') };
     }
     function autosave() { eventsDirty = false; saveSnapshot(serverPayload()); }
     setInterval(() => { if (eventsDirty) autosave(); }, 60000);

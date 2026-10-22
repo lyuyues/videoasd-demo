@@ -22,6 +22,7 @@ import os
 import posixpath
 import re
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -30,6 +31,9 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DIR, 'session_data')
+# Threaded server: the page's autosave and its pagehide beacon can land together.
+# Both used to write the same .tmp (one 500'd) and the older could win the replace.
+_save_lock = threading.Lock()
 COOKIE = 'videoasd_k'
 MAX_BODY = 50 * 1024 * 1024   # a full session snapshot with gaze points stays far below this
 
@@ -233,10 +237,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             session = _clean(body.get('sessionId'), str(int(time.time() * 1000)), '_')
             fname = f'videoasd-{kind}-{pid}-{cond}-{session}.json'
             os.makedirs(DATA_DIR, exist_ok=True)
-            tmp = os.path.join(DATA_DIR, fname + '.tmp')
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(body, f, ensure_ascii=False, indent=1)
-            os.replace(tmp, os.path.join(DATA_DIR, fname))   # atomic: never a half-written file
+            path = os.path.join(DATA_DIR, fname)
+            with _save_lock:
+                # Snapshots of one session only grow; never let an older one replace a newer.
+                # savedAt is an ISO timestamp from the same device, so strings compare in order.
+                if os.path.exists(path):
+                    try:
+                        with open(path, encoding='utf-8') as f:
+                            prev = json.load(f).get('savedAt') or ''
+                    except (OSError, ValueError):
+                        prev = ''
+                    if prev and str(body.get('savedAt') or '') < prev:
+                        print(f'kept newer {fname}', flush=True)
+                        return self._json(200, {'status': 'ok', 'file': fname, 'kept': 'newer'})
+                tmp = path + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    json.dump(body, f, ensure_ascii=False, indent=1)
+                os.replace(tmp, path)   # atomic: never a half-written file
             print(f'saved {fname}', flush=True)
             self._json(200, {'status': 'ok', 'file': fname})
         except Exception as e:  # noqa: BLE001 -- report any failure to the page

@@ -342,7 +342,9 @@
 
     // Study server: this session's events + gaze -> /api/save-session (see save.js).
     function serverPayload() {
-      const events = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]').filter((e) => e.session === sessionId);
+      // Condition too: the PRR page in this tab shares the session id (sessionStorage).
+      const events = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]')
+        .filter((e) => e.session === sessionId && e.condition === 'baseline');
       return { kind: 'system', condition: 'baseline', sessionId, participantId: ctx.participant || '',
         construct: ctx.construct, option: ctx.option, events,
         gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}') };
