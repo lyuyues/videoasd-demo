@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Keep AOI aligned with the clips: any commit touching clips or AOI regenerates
+# stale AOI (sha mismatch) and stages it. Enable once per clone:
+#   git config core.hooksPath tools/hooks
+set -e
+git diff --cached --name-only | grep -qE '^(clips\.js|assets/videos/clips/.*\.mp4|assets/aoi/)' || exit 0
+PY="$HOME/.venvs/videoasd-aoi/bin/python"
+[ -x "$PY" ] || PY=python3   # fine when nothing is stale; generating says what to install
+exec "$PY" tools/make_aoi.py --precommit

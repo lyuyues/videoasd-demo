@@ -3,25 +3,36 @@
 every clip in clips.js, so the caregiver report can score gaze points instantly.
 
 Output per clip, in assets/aoi/:
-  <construct>__<segment>.json       {fps_sampled, repT, src, frames: [{t, boxes: [{kind, c, b}]}]}
+  <construct>__<segment>.json       {fps_sampled, repT, src, sha, frames: [{t, boxes: [{kind, c, b}]}]}
   <construct>__<segment>_frame.jpg  still at repT (the frame with the most detections)
 segment = context | action_<opt> | reaction_<opt>; b = [x0, y0, x1, y1] in [0, 1].
+sha = sha256 of the clip the boxes were computed from, so a re-cut clip is detected.
 
-Needs mediapipe + opencv-python-headless. Run after replacing any clip:
-  python tools/make_aoi.py [--only park_make_friends] [--models DIR]
-Then bump AOI_VER in index.html.
+  python tools/make_aoi.py --check       list clips whose AOI is missing or stale (no deps)
+  python tools/make_aoi.py --stale       regenerate only those
+  python tools/make_aoi.py [--only ID]   regenerate all (or one construct)
+  python tools/make_aoi.py --precommit   git pre-commit hook (tools/hooks/pre-commit):
+                                         regenerate + stage AOI for committed clips
+
+Generating needs mediapipe + opencv-python-headless (~/.venvs/videoasd-aoi).
 """
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-import cv2
-import mediapipe as mp
-from mediapipe.tasks import python as mp_python
-from mediapipe.tasks.python import vision as mp_vision
+try:   # only needed to generate; --check / --precommit with nothing stale run without them
+    import cv2
+    import mediapipe as mp
+    from mediapipe.tasks import python as mp_python
+    from mediapipe.tasks.python import vision as mp_vision
+except ImportError:
+    cv2 = None
 
 ROOT = Path(__file__).resolve().parent.parent
 CLIPS_JS = ROOT / 'clips.js'
@@ -167,28 +178,119 @@ def annotate(path, models):
     return {'fps_sampled': FPS, 'repT': best['t'], 'frames': frames}, cv2.resize(img, (FRAME_W, h))
 
 
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def aoi_files(slug):
+    return OUT_DIR / f'{slug}.json', OUT_DIR / f'{slug}_frame.jpg'
+
+
+def is_stale(slug, path):
+    js, jpg = aoi_files(slug)
+    if not (js.exists() and jpg.exists()):
+        return True
+    try:
+        return json.loads(js.read_text()).get('sha') != sha256(path)
+    except ValueError:
+        return True
+
+
+def generate(construct, seg, path, models):
+    if cv2 is None:
+        sys.exit('make_aoi: mediapipe/opencv missing - run with ~/.venvs/videoasd-aoi/bin/python')
+    aoi, still = annotate(path, models)
+    if aoi is None:
+        print(f'  UNREADABLE {path.relative_to(ROOT)}')
+        return False
+    aoi['src'] = str(path.relative_to(ROOT))
+    aoi['sha'] = sha256(path)
+    slug = f'{construct}__{seg}'
+    js, jpg = aoi_files(slug)
+    js.write_text(json.dumps(aoi, separators=(',', ':')))
+    cv2.imwrite(str(jpg), still, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    hit = sum(1 for f in aoi['frames'] if any(b['kind'] == 'face' for b in f['boxes']))
+    print(f'{slug:45s} {len(aoi["frames"]):3d} frames, face in {hit:3d}, repT {aoi["repT"]}')
+    return True
+
+
+def git(*args, text=True):
+    return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=text, check=True).stdout
+
+
+def staged_bytes(rel):
+    """Content of rel as it will be committed (None if not in the index)."""
+    try:
+        return git('show', f':{rel}', text=False)
+    except subprocess.CalledProcessError:
+        return None
+
+
+def precommit(models):
+    """Invariant: every AOI in the commit was computed from exactly the clip in the commit.
+    A clip may go without AOI (the report then says no analysis), never with stale AOI."""
+    clips = [(c, s, p) for c, s, p in clip_list() if p.exists()]
+    staged = set(git('diff', '--cached', '--name-only').split())
+    unstaged = set(git('diff', '--name-only').split())
+    rel = lambda f: str(f.relative_to(ROOT))
+    # clips this commit touches: the video or its AOI is staged
+    touched = [(c, s, p) for c, s, p in clips
+               if rel(p) in staged or any(rel(f) in staged for f in aoi_files(f'{c}__{s}'))]
+    for c, s, p in touched:
+        slug = f'{c}__{s}'
+        if rel(p) in unstaged:   # boxes would come from the working copy, not the commit
+            sys.exit(f'make_aoi: {rel(p)} has unstaged changes - stage or revert it first')
+        if is_stale(slug, p):
+            print(f'make_aoi: {slug} is stale, regenerating')
+            if not generate(c, s, p, models):
+                sys.exit(1)
+        git('add', '--', *map(rel, aoi_files(slug)))
+    if touched:
+        print(f'make_aoi: AOI staged for {len(touched)} clip(s)')
+    # verify the invariant over the whole commit, not just what was touched
+    bad = []
+    for c, s, p in clips:
+        js = staged_bytes(rel(aoi_files(f'{c}__{s}')[0]))
+        video = staged_bytes(rel(p))
+        if js is None or video is None:
+            continue
+        if json.loads(js).get('sha') != hashlib.sha256(video).hexdigest():
+            bad.append(f'{c}__{s}')
+    if bad:
+        sys.exit('make_aoi: AOI does not match the committed clip:\n  ' + '\n  '.join(bad))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', help='construct id, e.g. park_make_friends')
     ap.add_argument('--models', type=Path, default=DEFAULT_MODELS)
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument('--check', action='store_true', help='list stale AOI, exit 1 if any')
+    mode.add_argument('--stale', action='store_true', help='regenerate stale AOI only')
+    mode.add_argument('--precommit', action='store_true', help='git pre-commit hook mode')
     args = ap.parse_args()
     OUT_DIR.mkdir(exist_ok=True)
+    if args.precommit:
+        return precommit(args.models)
+    bad = 0
     for construct, seg, path in clip_list():
         if args.only and construct != args.only:
             continue
         if not path.exists():
             print(f'  MISSING {path.relative_to(ROOT)}')
             continue
-        aoi, still = annotate(path, args.models)
-        if aoi is None:
-            print(f'  UNREADABLE {path.relative_to(ROOT)}')
-            continue
-        aoi['src'] = str(path.relative_to(ROOT))
         slug = f'{construct}__{seg}'
-        (OUT_DIR / f'{slug}.json').write_text(json.dumps(aoi, separators=(',', ':')))
-        cv2.imwrite(str(OUT_DIR / f'{slug}_frame.jpg'), still, [cv2.IMWRITE_JPEG_QUALITY, 80])
-        hit = sum(1 for f in aoi['frames'] if any(b['kind'] == 'face' for b in f['boxes']))
-        print(f'{slug:45s} {len(aoi["frames"]):3d} frames, face in {hit:3d}, repT {aoi["repT"]}')
+        if args.check or args.stale:
+            if not is_stale(slug, path):
+                continue
+            if args.check:
+                print(f'stale: {slug}')
+                bad += 1
+                continue
+        generate(construct, seg, path, args.models)
+    if args.check:
+        print(f'{bad} stale' if bad else 'all AOI match their clips')
+        sys.exit(1 if bad else 0)
 
 
 if __name__ == '__main__':
