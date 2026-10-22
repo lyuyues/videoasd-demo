@@ -176,7 +176,9 @@
       }
     });
     function startCap(segment) {
-      cap = gazeOn ? { key: `${ctx.construct}|baseline-${segment}`, segment, pts: [], on: 0, off: 0 } : null;
+      // action/reaction keys carry the option so the report finds that clip's AOI
+      const clip = segment === 'context' ? segment : `${segment}_${ctx.option}`;
+      cap = gazeOn ? { key: `${ctx.construct}|baseline-${clip}`, segment, pts: [], on: 0, off: 0 } : null;
     }
     function stopCap() {
       const c = cap; cap = null;

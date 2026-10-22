@@ -1938,7 +1938,7 @@
       resetOutcomeSubsteps();
       showStep('outcome');
       $outVideo.play().catch(() => {});
-      startGazeCap(cid(), 'outcome', $outVideo);
+      startGazeCap(cid(), `outcome_${pendingChoice}`, $outVideo);   // per option: each has its own reaction clip + AOI
       logEvent('prediction_locked', { construct: cid(), action: pendingChoice, emotion: pendingPrediction });
     });
 
@@ -2185,31 +2185,29 @@
     const $reportModal = document.getElementById('report-modal');
     const $reportBody = document.getElementById('report-body');
 
-    // AOI tracks (per-frame face/eyes/mouth/body boxes), per clip type.
-    const AOI_VER = '7';  // cache-bust bundled AOI assets
-    // Keyed by the full gaze key "scene_topic|clip". Tracks come from running
-    // MediaPipe Face/Pose Landmarker over the clip itself (tools/make_aoi.py), so the
-    // boxes follow the characters frame by frame. The bundled assets/aoi/context.*
-    // annotate a retired legacy clip and stay unmapped.
-    const AOI_KEYS = [
-      'classroom_make_friends|context', 'classroom_make_friends|outcome',
-      'playground_make_friends|context', 'playground_make_friends|outcome',
-    ];
-    const AOI_FILES = {};
-    const AOI_FRAME = {}; // canonical still (best-detected frame) per key
-    AOI_KEYS.forEach((k) => {
-      const slug = k.replace('|', '__');
-      AOI_FILES[k] = `assets/aoi/${slug}.json?v=${AOI_VER}`;
-      AOI_FRAME[k] = `assets/aoi/${slug}_frame.jpg?v=${AOI_VER}`;
-    });
+    // AOI tracks (per-frame face/eyes/mouth/body boxes), one file per clip.
+    const AOI_VER = '11';  // cache-bust bundled AOI assets
+    // Tracks come from running MediaPipe Face/Pose Landmarker over each clip in
+    // clips.js (tools/make_aoi.py), so the boxes follow the characters frame by frame.
+    // Gaze key "construct|clip" → assets/aoi/<construct>__<segment>; the PRR outcome
+    // (outcome_<opt>) is the reaction clip, baseline-* keys come from baseline.html.
+    // Legacy keys ("|outcome" without the option) have no matching clip → null.
+    function aoiSlug(key) {
+      const [loc, clip = ''] = key.split('|');
+      const seg = clip.replace(/^baseline-/, '').replace(/^outcome_/, 'reaction_');
+      return /^(context|(action|reaction)_[a-z])$/.test(seg) ? `${loc}__${seg}` : null;
+    }
+    const aoiFrameUrl = (key) => `assets/aoi/${aoiSlug(key)}_frame.jpg?v=${AOI_VER}`;
     const aoiCache = {};
-    async function loadAOI(clip) {
-      if (clip in aoiCache) return aoiCache[clip];
-      const f = AOI_FILES[clip];
-      if (!f) return (aoiCache[clip] = null);
-      try { aoiCache[clip] = await (await fetch(f)).json(); }
-      catch (e) { aoiCache[clip] = null; }
-      return aoiCache[clip];
+    async function loadAOI(key) {
+      if (key in aoiCache) return aoiCache[key];
+      const slug = aoiSlug(key);
+      if (!slug) return (aoiCache[key] = null);
+      try {
+        const r = await fetch(`assets/aoi/${slug}.json?v=${AOI_VER}`);
+        aoiCache[key] = r.ok ? await r.json() : null;   // authored cases have no AOI file
+      } catch (e) { aoiCache[key] = null; }
+      return aoiCache[key];
     }
     const nearestFrame = (aoi, t) =>
       aoi.frames.reduce((best, f) => Math.abs(f.t - t) < Math.abs(best.t - t) ? f : best, aoi.frames[0]);
@@ -2342,8 +2340,8 @@
         const focus = wrap.querySelector('.report-focus');
         // prefer the bundled canonical still (best-detected frame) so AOI boxes
         // are guaranteed present + correctly placed; else the live-captured still.
-        const repFrame = (aoi && AOI_FRAME[key])
-          ? { url: AOI_FRAME[key], t: aoi.repT || 0 }
+        const repFrame = aoi
+          ? { url: aoiFrameUrl(key), t: aoi.repT || 0 }
           : frames[key];
         if (repFrame) {
           const cv = document.createElement('canvas');
