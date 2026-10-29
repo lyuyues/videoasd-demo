@@ -309,6 +309,7 @@
       transform: translateY(-3px);
       box-shadow: 0 6px 14px rgba(255, 180, 100, 0.35);
     }
+    .poe-choice.selected { background: #ffe6c2; border-color: #f59e42; }
     .poe-choice-emoji { font-size: 32px; }
     .action-icon {
       width: 128px; height: 128px;
@@ -2188,10 +2189,13 @@
       const src = [...document.querySelectorAll('#poe-step-action .action-btn')].filter((b) => b.style.display !== 'none');
       $grid.style.gridTemplateColumns = `repeat(${choiceColumns(src.length)}, 1fr)`;
       const t0 = Date.now();
+      let answered = false;   // one answer per recap -- a second tap must not start the reward twice
       src.forEach((b) => {
         const btn = b.cloneNode(true);
         btn.classList.remove('action-btn', 'selected');
         btn.addEventListener('click', () => {
+          if (answered) return;
+          answered = true;
           const action = btn.dataset.choice;
           const tried = Object.keys(loadGuesses(cid()));
           logEvent('recap_answer', { construct: cid(), question: 'next_time_action', action,
@@ -2199,7 +2203,7 @@
             explored: tried, rtMs: Date.now() - t0 });
           btn.classList.add('selected');
           setTimeout(() => playReward(cid().split('_')[0], { onDone: commitAndClose, log: logEvent }), 350);   // reward matches the scene
-        }, { once: true });
+        });
         $grid.appendChild(btn);
       });
       logEvent('recap_shown', { construct: cid(), question: 'next_time_action', options: src.map((b) => b.dataset.choice) });
