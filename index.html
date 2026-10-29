@@ -930,7 +930,7 @@
         <p class="poe-cue">看看发生了什么 ↑</p>
         <div class="poe-btn-row hidden" id="ctx-btn-row">
           <button class="poe-secondary" id="ctx-replay">↻ 再看一遍</button>
-          <button class="poe-next" id="ctx-done">看完了 →</button>
+          <button class="poe-next" id="ctx-done">继续 →</button>
         </div>
       </div>
 
@@ -953,7 +953,7 @@
 
       <!-- Step 2: choose YOUR action -->
       <div id="poe-step-action" class="poe-step hidden">
-        <p class="poe-cue"><img src="assets/boy_head.png" alt="你" class="inline-portrait"> 会怎么做？</p>
+        <p class="poe-cue">如果你是 <img src="assets/boy_head.png" alt="Alex" class="inline-portrait"> 你会怎么做？</p>
         <div class="poe-choices">
           <button class="poe-choice action-btn" data-choice="a">
             <img class="action-icon" src="assets/actions/comfort.png" alt="">
@@ -982,7 +982,7 @@
 
       <!-- Step 2b: predict emotion -->
       <div id="poe-step-predict" class="poe-step hidden">
-        <p class="poe-cue">你觉得 <img src="assets/emotions/sam_neutral.png" alt="她" class="inline-portrait"> 之后会有什么感觉？</p>
+        <p class="poe-cue">你觉得 <img src="assets/emotions/sam_neutral.png" alt="她" class="inline-portrait"> 会有什么样的感受？</p>
         <div class="emotion-grid">
           <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>开心</span></button>
           <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
@@ -998,19 +998,19 @@
         <p class="poe-cue">准备好看看会发生什么了吗？</p>
         <div class="confirm-summary">
           <div class="confirm-item">
-            <span class="confirm-label">你会</span>
             <img id="confirm-action-icon" class="confirm-icon" src="" alt="">
+            <span class="confirm-label">会</span>
             <span id="confirm-action-text" class="confirm-text"></span>
           </div>
           <div class="confirm-item">
-            <span class="confirm-label">你觉得她会感到</span>
             <img id="confirm-emotion-icon" class="confirm-icon" src="" alt="">
+            <span class="confirm-label">会感觉到</span>
             <span id="confirm-emotion-text" class="confirm-text"></span>
           </div>
         </div>
         <div class="poe-btn-row">
-          <button class="poe-secondary" id="confirm-change">改一改 ↺</button>
-          <button class="poe-next" id="confirm-lock">就这样 ✓</button>
+          <button class="poe-secondary" id="confirm-change">重新选 ↺</button>
+          <button class="poe-next" id="confirm-lock">确认 ✅</button>
         </div>
       </div>
 
@@ -1054,7 +1054,7 @@
 
       <!-- Recap: after 完成, before the reward clip -- "next time, what would you do?" -->
       <div id="poe-step-recap" class="poe-step hidden">
-        <p class="poe-cue">下次 <img src="assets/boy_head.png" alt="你" class="inline-portrait"> 会怎么做？</p>
+        <p class="poe-cue">下次遇到类似情况，你是 <img src="assets/boy_head.png" alt="Alex" class="inline-portrait"> 你会怎么做？</p>
         <div class="poe-choices" id="recap-choices"></div>
       </div>
 
@@ -1116,7 +1116,7 @@
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261020c';
-    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261020c';
+    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261029a';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1830,7 +1830,7 @@
         if (!ended) return;
         ended = false;
         logEvent('clip_replay', { construct: cid(), clip, action: clip === 'context' ? null : pendingChoice,
-          trigger: video.dataset.replayBtn ? 'button' : 'controls' });
+          trigger: video.dataset.replayBtn || 'controls' });   // 'button' | 'observe' (auto replay after re-label) | 'controls'
         delete video.dataset.replayBtn;
       });
     }
@@ -1840,7 +1840,7 @@
 
     document.getElementById('ctx-replay').addEventListener('click', () => {
       document.getElementById('ctx-btn-row').classList.add('hidden'); // hide again until replay also finishes
-      $ctxVideo.dataset.replayBtn = '1';
+      $ctxVideo.dataset.replayBtn = 'button';
       $ctxVideo.currentTime = 0;
       $ctxVideo.play().catch(() => {});
     });
@@ -1980,7 +1980,9 @@
     // Outcome video finished -- reveal the mismatch check below it, not before
     // Right/wrong feedback on the predicted feeling comes first (feedback.js).
     $outVideo.addEventListener('ended', () => {
-      const reveal = () => document.getElementById('poe-outcome-check').classList.remove('hidden');
+      // Once the check is answered (a replay after OBSERVE, or the child replaying it),
+      // the end of the clip brings back the try-another/complete row, not the check again.
+      const reveal = () => document.getElementById(pendingCheck ? 'poe-outcome-next' : 'poe-outcome-check').classList.remove('hidden');
       const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
       const right = judge(topic, pendingChoice, pendingPrediction);
       if (right === null || $outVideo.dataset.fb) { reveal(); return; }   // once per lock-in, not on replays
@@ -2020,10 +2022,15 @@
         pendingObserved = btn.dataset.emotion;
         logEvent('observed_relabel', { construct: cid(), action: pendingChoice, emotion: pendingObserved });
         setTimeout(() => {
-          // Back to the outcome step (video + the try-another/complete choice) --
-          // the check panel stays hidden (already answered), only "next" shows.
+          // Back to the outcome step and replay the clip from the start, so the child
+          // watches it again with the new label in mind. The check panel stays hidden
+          // (already answered); "next" shows when the replay ends (see 'ended' above),
+          // or right away if the browser blocks the replay.
           showStep('outcome');
-          document.getElementById('poe-outcome-next').classList.remove('hidden');
+          const showNext = () => document.getElementById('poe-outcome-next').classList.remove('hidden');
+          $outVideo.dataset.replayBtn = 'observe';   // logged as clip_replay, trigger 'observe'
+          $outVideo.currentTime = 0;
+          $outVideo.play().catch(showNext);
         }, 350);
       });
     });
