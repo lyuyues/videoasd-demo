@@ -43,13 +43,40 @@
     .done-card { text-align: center; }
     .done-card .big { font-size: 64px; }
     #gaze-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    /* Camera preview while calibrating, so the grown-up can see the face is in frame */
+    #gaze-video.show { bottom: 16px; right: 16px; width: 160px; height: 120px; opacity: 1; z-index: 950;
+      object-fit: cover; border-radius: 14px; transform: scaleX(-1); background: #000; }
+
+    /* 9-dot calibration (same as the PRR app's, index.html) */
+    #cal-overlay { position: fixed; inset: 0; background: rgba(20, 30, 50, 0.92); z-index: 900;
+      display: none; justify-content: center; align-items: center; color: #fff; }
+    #cal-overlay.show { display: flex; }
+    .cal-instructions { font-size: 16px; max-width: 540px; text-align: center; line-height: 1.6; }
+    .cal-instructions strong { color: #ffd49a; }
+    .cal-dots { position: absolute; inset: 0; pointer-events: none; }
+    .cal-dot { position: absolute; width: 36px; height: 36px; transform: translate(-50%, -50%);
+      border-radius: 50%; background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0.2) 70%);
+      border: 3px solid rgba(255,255,255,0.6); cursor: pointer; pointer-events: auto;
+      animation: cal-pulse 1.5s ease-in-out infinite; }
+    @keyframes cal-pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.18); }
+    }
+    .cal-dot.current { background: radial-gradient(circle, #ffd049 0%, rgba(255,200,60,0.3) 70%);
+      border-color: #ffd049; box-shadow: 0 0 32px rgba(255, 200, 60, 0.7); }
+    .cal-dot.done { background: radial-gradient(circle, #7fc164 0%, rgba(127,193,100,0.2) 70%);
+      border-color: #7fc164; animation: none; }
+    .cal-progress { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      font-size: 14px; color: rgba(255,255,255,0.7); }
+    #cal-cancel { position: absolute; top: 20px; right: 24px; background: rgba(255,255,255,0.1); color: #fff;
+      border: 1px solid rgba(255,255,255,0.3); padding: 6px 16px; border-radius: 16px; font-size: 13px; }
   </style>
 </head>
 <body>
   <!-- Researcher setup (not shown to the child) -->
   <div id="setup" class="setup">
     <h1>对照组：被动视频示范</h1>
-    <p class="sub">连续播放一个情境（情境 → 示范行动 → 结果），没有选择也没有预测。事件和视线记录与主程序的视线数据一起保存在本浏览器中，可在此页导出。</p>
+    <p class="sub">连续播放一个情境（情境 → 示范行动 → 结果），没有选择也没有预测。事件和视线记录与主程序的视线数据一起保存在本浏览器中，可在此页导出。眼动校准可直接在本页做，与主程序共用。</p>
 
     <label for="pid">Kid 编号</label>
     <input id="pid" type="text" placeholder="例如 Kid03" />
@@ -64,7 +91,8 @@
     <select id="option"></select>
     <p class="note">默认：主动接近的行动 (a)，作为示范供模仿。待导师确认。</p>
 
-    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">记录视线（使用主程序中保存的校准）</label></div>
+    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">记录视线</label>
+      <button class="btn-sec" id="calibrate" style="margin-left:auto;padding:8px 14px">👁 眼动校准</button></div>
     <p class="note" id="gaze-status"></p>
 
     <div class="row">
@@ -90,11 +118,19 @@
   </div>
 
   <button id="corner" class="corner hidden">⚙ 设置</button>
+
+  <!-- Calibration overlay -->
+  <div id="cal-overlay">
+    <button id="cal-cancel">取消</button>
+    <div class="cal-instructions" id="cal-instructions"></div>
+    <div class="cal-dots" id="cal-dots"></div>
+    <div class="cal-progress" id="cal-progress">0 / 9</div>
+  </div>
   <video id="gaze-video" autoplay muted playsinline></video>
 
   <script type="module">
     import { CLIPS } from './clips.js?v=20261020c';
-    import { GazeTracker } from './gaze.js?v=20261019';
+    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261028';
 
     const SCENES = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
@@ -137,13 +173,89 @@
     fillOptions();
 
     /* ===== Gaze (optional) ===== */
+    // The calibration is one per device (gaze.js), shared with the PRR app: a
+    // calibration made here is used there too, and vice versa.
     const gaze = new GazeTracker();
-    $('gaze-status').textContent = gaze.hasCalibration()
-      ? '已找到保存的校准。'
-      : '没有保存的校准 — 请先在主程序中校准（眼动校准），或不记录视线直接运行。';
+    function showGazeStatus() {
+      const m = gaze.model;
+      // The fit time is shown so a calibration left over from the previous child is noticed.
+      $('gaze-status').textContent = m
+        ? `已校准：${new Date(m.fittedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` +
+          `（误差 x ${(m.rmseScreen.x * 100).toFixed(1)}% · y ${(m.rmseScreen.y * 100).toFixed(1)}%）。换了孩子请重新校准。`
+        : '还没有校准 — 点「眼动校准」，或不记录视线直接运行。';
+      $('use-gaze').disabled = !m;
+      if (!m) $('use-gaze').checked = false;
+    }
+    showGazeStatus();
     $('use-gaze').checked = gaze.hasCalibration();
-    $('use-gaze').disabled = !gaze.hasCalibration();
     let gazeOn = false;
+
+    /* 9-dot calibration: look at the yellow dot, tap it; affine fit when all 9 are done. */
+    const CAL_POINTS = [
+      [0.10, 0.10], [0.50, 0.10], [0.90, 0.10],
+      [0.10, 0.50], [0.50, 0.50], [0.90, 0.50],
+      [0.10, 0.90], [0.50, 0.90], [0.90, 0.90],
+    ];
+    const CAL_HINT = '眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>点完全部 9 个圆点后，校准自动完成。';
+    let calSamples = [], calIdx = 0;
+    function renderCalDots() {
+      $('cal-dots').innerHTML = '';
+      CAL_POINTS.forEach(([x, y], i) => {
+        const d = document.createElement('div');
+        d.className = 'cal-dot' + (i < calIdx ? ' done' : '') + (i === calIdx ? ' current' : '');
+        d.style.left = `${x * 100}%`;
+        d.style.top = `${y * 100}%`;
+        d.addEventListener('click', () => onCalDotClick(i));
+        $('cal-dots').appendChild(d);
+      });
+      $('cal-progress').textContent = `${calIdx} / ${CAL_POINTS.length}`;
+    }
+    async function startCalibration() {
+      calSamples = []; calIdx = 0;
+      $('cal-overlay').classList.add('show');
+      $('gaze-video').classList.add('show');
+      renderCalDots();
+      try {
+        if (!gaze.landmarker) {
+          $('cal-instructions').innerHTML = '正在加载 MediaPipe 模型……';
+          await gaze.init($('gaze-video'));
+        }
+        await gaze.startCamera();
+        gaze.start();
+        $('cal-instructions').innerHTML = CAL_HINT;
+      } catch (e) {
+        console.error('[baseline] gaze init failed:', e);
+        $('cal-instructions').innerHTML =
+          `<span style="color:#ff8888">加载失败：${e.message || e}</span><br>请检查摄像头权限`;
+      }
+    }
+    function onCalDotClick(i) {
+      if (i !== calIdx) return;   // must tap the current one
+      const [x, y] = CAL_POINTS[i];
+      const bs = gaze.getRawSignal();
+      calSamples.push({ x_bs: bs.x_bs, y_bs: bs.y_bs, x_screen: x, y_screen: y });
+      calIdx++;
+      if (calIdx < CAL_POINTS.length) { renderCalDots(); return; }
+      const model = fitAffine2D(calSamples);
+      if (!model) {
+        $('cal-instructions').innerHTML = '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
+        setTimeout(() => { calIdx = 0; calSamples = []; renderCalDots(); $('cal-instructions').innerHTML = CAL_HINT; }, 1500);
+        return;
+      }
+      gaze.saveCalibration(model);
+      logEvent('gaze_calibrated', { participant: $('pid').value.trim(), n: model.n,
+        rmseX: +model.rmseScreen.x.toFixed(4), rmseY: +model.rmseScreen.y.toFixed(4) });
+      closeCalibration();
+      $('use-gaze').checked = true;
+      showGazeStatus();
+    }
+    function closeCalibration() {
+      $('cal-overlay').classList.remove('show');
+      $('gaze-video').classList.remove('show');
+      gaze.stop(); gaze.stopCamera();   // the run restarts both (startGaze)
+    }
+    $('calibrate').addEventListener('click', startCalibration);
+    $('cal-cancel').addEventListener('click', closeCalibration);
     let cap = null;   // { key, segment, pts: [], on, off }
 
     async function startGaze() {
@@ -347,7 +459,8 @@
         .filter((e) => e.session === sessionId && e.condition === 'baseline');
       return { kind: 'system', condition: 'baseline', sessionId, participantId: ctx.participant || '',
         construct: ctx.construct, option: ctx.option, events,
-        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}') };
+        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        calibration: gazeOn ? gaze.model : null };   // the fit this run's gaze points were mapped with
     }
     addEventListener('pagehide', () => { if (ctx.participant) beaconSnapshot(serverPayload()); });
 
