@@ -447,7 +447,7 @@ function saveName(ext) {
 }
 // Study server (home desktop): POST the record so it survives the tab. On GitHub Pages
 // there is no /api, the request fails, and the manual Export buttons are the fallback.
-const saveMod = import("../save.js?v=20261019");   // also starts the retry loop
+const saveMod = import("../save.js?v=20261028");   // also starts the retry loop
 async function saveToServer(out) {
   const el = document.getElementById("saveStatus");
   // save.js backs the record up on this iPad first (IndexedDB), then uploads;
@@ -512,3 +512,5 @@ document.getElementById("exportCsvBtn").addEventListener("click", () => {
   download(saveName("csv"), csv);
 });
 </script>
+<!-- Offline package for the iPad: status, download, updates (offline.js). -->
+<script type="module" src="../offline.js?v=20261028"></script>

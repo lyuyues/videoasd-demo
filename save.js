@@ -82,8 +82,11 @@ async function post(rec) {
   }
 }
 
+// Which offline package (offline.js) produced this snapshot; 'online' = served live.
+const appVersion = () => { try { return localStorage.getItem('videoasd_offline_version') || 'online'; } catch { return 'unknown'; } };
+
 export async function saveSnapshot(body) {
-  const rec = { savedAt: new Date().toISOString(), ...body };
+  const rec = { savedAt: new Date().toISOString(), appVersion: appVersion(), ...body };
   const key = await putBackup(rec, false);
   if (!onStudyServer) return false;
   const ok = await post(rec);
@@ -96,7 +99,7 @@ export async function saveSnapshot(body) {
 // Delivery can't be confirmed, so the backup stays unsynced and the retry loop
 // re-sends it next time the page is open -- the server just overwrites the same file.
 export function beaconSnapshot(body) {
-  const rec = { savedAt: new Date().toISOString(), ...body };
+  const rec = { savedAt: new Date().toISOString(), appVersion: appVersion(), ...body };
   putBackup(rec, false);
   if (!onStudyServer || !navigator.sendBeacon) return;
   try {

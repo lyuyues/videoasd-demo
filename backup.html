@@ -52,9 +52,56 @@
     <thead><tr><th>保存时间</th><th>记录</th><th>状态</th><th></th></tr></thead>
     <tbody id="rows"></tbody>
   </table>
+
+  <h1 style="margin-top:32px">📦 离线包</h1>
+  <p class="sub">
+    视频、页面和眼动模型都存在这台 iPad 上，没有网络也能做实验。
+    新版本不会自动替换，只有点「更新」才会换，所以不会在孩子做到一半时变。
+  </p>
+  <p><span data-offline-status></span></p>
+  <table id="offline-info" style="margin-bottom:14px"><tbody></tbody></table>
+  <div class="row">
+    <button class="sec" id="off-check">↻ 检查更新</button>
+    <button class="sec" id="off-redo">重新下载离线包</button>
+  </div>
+  <p class="sub">
+    <b>第一次在 iPad 上设置：</b>
+    ① 用 Safari 打开研究团队给的完整链接（带 <code>?k=</code>）→
+    ② 分享按钮 →「添加到主屏幕」→
+    ③ 以后<b>只从主屏幕图标打开</b>（Safari 和图标的存储是分开的，记录和离线包都在图标里）→
+    ④ 联网等「✓ 离线可用」→
+    ⑤ 做一次眼动校准，允许使用摄像头。<br>
+    <b>每天实验前：</b>看版本号对不对、是不是「✓ 离线可用」。
+    <b>每天实验后：</b>联网，等「全部已上传 ✓」，再点「全部下载」。
+  </p>
 </main>
 <script type="module">
-  import { listBackups, retryPending, downloadJson, onStudyServer } from './save.js?v=20261019';
+  import { listBackups, retryPending, downloadJson, onStudyServer } from './save.js?v=20261028';
+  import { onOfflineChange, checkOffline, redownload, isStandalone } from './offline.js?v=20261028';
+
+  onOfflineChange(async (s) => {
+    let est = '';
+    try { const e = await navigator.storage.estimate(); est = `${(e.usage / 1e6).toFixed(0)} MB / 可用 ${(e.quota / 1e9).toFixed(1)} GB`; } catch { /* n/a */ }
+    const rows = [
+      ['本机版本', s.version ? `${s.version}（${s.built}）· ${s.files} 个文件` : '—'],
+      ['服务器版本', s.server ? `${s.server.version}（${s.server.built}）` : '连不上服务器（离线）'],
+      ['从主屏幕图标打开', isStandalone ? '是 ✓' : '否'],
+      ['存储不被系统清理', s.persisted === true ? '已允许 ✓' : s.persisted === false ? '未允许（请从主屏幕图标打开）' : '—'],
+      ['已用存储', est || '—'],
+    ];
+    const tb = document.querySelector('#offline-info tbody');
+    tb.innerHTML = '';
+    rows.forEach(([k, v]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<th style="width:180px"></th><td></td>';
+      tr.children[0].textContent = k; tr.children[1].textContent = v;
+      tb.appendChild(tr);
+    });
+  });
+  document.getElementById('off-check').addEventListener('click', () => checkOffline());
+  document.getElementById('off-redo').addEventListener('click', () => {
+    if (confirm('删掉本机离线包并重新下载？（不会删除记录）需要联网，大约 60 MB。')) redownload().catch(() => {});
+  });
 
   const $ = (id) => document.getElementById(id);
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
@@ -95,5 +142,7 @@
   render();
   setInterval(render, 10000);
 </script>
+<!-- Offline package for the iPad: status, download, updates (offline.js). -->
+<script type="module" src="offline.js?v=20261028"></script>
 </body>
 </html>

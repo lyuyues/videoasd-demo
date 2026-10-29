@@ -95,7 +95,7 @@
   <script type="module">
     import { CLIPS } from './clips.js?v=20261020c';
     import { GazeTracker } from './gaze.js?v=20261019';
-    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261019';
+    import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261028';
 
     const SCENES = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
     const TOPICS = { make_friends: '交朋友', join_activity: '加入活动', comfort_friend: '安慰朋友' };
@@ -370,5 +370,7 @@
       URL.revokeObjectURL(url);
     });
   </script>
+<!-- Offline package for the iPad: status, download, updates (offline.js). -->
+<script type="module" src="offline.js?v=20261028"></script>
 </body>
 </html>

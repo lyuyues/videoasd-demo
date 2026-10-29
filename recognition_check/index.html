@@ -135,7 +135,7 @@ function summarize() {
 
 // Study server (videoasd.yuelyu.ca): same sink as the quiz -- backed up on this
 // device first (IndexedDB), then POSTed; opened from a file it only keeps the backup.
-const saveMod = import('../save.js?v=20261019').catch(() => null);
+const saveMod = import('../save.js?v=20261028').catch(() => null);
 // Readable session id for the file name, device local time: 20261020_193742.
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
@@ -161,5 +161,7 @@ document.getElementById('go').addEventListener('click', () => {
   show(0);
 });
 </script>
+<!-- Offline package for the iPad: status, download, updates (offline.js). -->
+<script type="module" src="../offline.js?v=20261028"></script>
 </body>
 </html>

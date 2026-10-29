@@ -16,6 +16,7 @@ Env: STUDY_TOKEN (unset = open, for local testing), HOST, PORT, USE_HTTPS,
      STUDIO_URL (default http://127.0.0.1:5055), STUDIO_VIDEOS (studio's videos/ dir).
 """
 
+import hashlib
 import http.server
 import json
 import os
@@ -52,6 +53,62 @@ _studio_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 def _clean(value, default, extra=''):
     s = ''.join(c for c in str(value or '') if c.isalnum() or c in extra)
     return s or default
+
+
+# ---------- offline package (2026-10-28) ----------
+# offline.js downloads every file listed here into the iPad's Cache Storage and sw.js
+# serves the study from it, so a slow or dropped connection never stalls a clip.
+# The list is built from disk on each request, so it always matches what is deployed;
+# `version` is a hash over every file's sha, so any changed byte shows up as an update.
+OFFLINE_DIRS = ('assets/videos/clips/', 'assets/videos/reward/', 'assets/aoi/', 'assets/zones/',
+                'assets/scene_art/', 'assets/actions/', 'assets/vendor/')
+OFFLINE_PAGES = ('index.html', 'baseline.html', 'backup.html', 'style.css')
+# FilesetResolver picks the SIMD build, or nosimd on old iPads; the *_module_* build is unused.
+OFFLINE_MEDIAPIPE = ('face_landmarker.task', 'vision_wasm_internal.js', 'vision_wasm_internal.wasm',
+                     'vision_wasm_nosimd_internal.js', 'vision_wasm_nosimd_internal.wasm')
+OFFLINE_SKIP = ('.DS_Store', '.nextcloud', '_noaudio.mp4', '_backup.html', '.md', '.py')
+_sha_cache = {}   # path -> ((size, mtime_ns), sha)
+
+
+def _file_sha(path):
+    st = os.stat(path)
+    sig = (st.st_size, st.st_mtime_ns)
+    hit = _sha_cache.get(path)
+    if hit and hit[0] == sig:
+        return hit[1], st.st_size
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        while chunk := f.read(1 << 20):
+            h.update(chunk)
+    _sha_cache[path] = (sig, h.hexdigest())
+    return _sha_cache[path][1], st.st_size
+
+
+def offline_manifest():
+    rels = set(OFFLINE_PAGES) | {f'assets/mediapipe/{n}' for n in OFFLINE_MEDIAPIPE}
+    rels |= {n for n in os.listdir(DIR) if n.endswith('.js') and n != 'sw.js'}
+    loose = []   # other assets/ files: only those some page or script names (skips old drafts)
+    for root, dirs, files in os.walk(os.path.join(DIR, 'assets')):
+        dirs[:] = [d for d in dirs if not d.startswith(('.', 'archive', 'kaykit')) and d != 'mediapipe']
+        for n in files:
+            rel = os.path.relpath(os.path.join(root, n), DIR).replace(os.sep, '/')
+            (rels.add if rel.startswith(OFFLINE_DIRS) else loose.append)(rel)
+    for d in ('quiz', 'recognition_check'):
+        for root, dirs, files in os.walk(os.path.join(DIR, d)):
+            rels |= {os.path.relpath(os.path.join(root, n), DIR).replace(os.sep, '/') for n in files}
+    rels = {r for r in rels if not r.endswith(OFFLINE_SKIP) and os.path.isfile(os.path.join(DIR, r))}
+    text = ''.join(open(os.path.join(DIR, r), encoding='utf-8', errors='ignore').read()
+                   for r in rels if r.endswith(('.html', '.js')))
+    # Whole name only: 'happy.png' must not ride along on 'sam_happy.png'.
+    rels |= {r for r in loose if not r.endswith(OFFLINE_SKIP)
+             and re.search(r'(?<![\w-])' + re.escape(posixpath.basename(r)), text)}
+    files = []
+    for rel in sorted(rels):
+        sha, size = _file_sha(os.path.join(DIR, rel))
+        files.append({'url': rel, 'sha': sha, 'size': size})
+    version = hashlib.sha256(''.join(f['url'] + f['sha'] for f in files).encode()).hexdigest()[:12]
+    built = max(os.stat(os.path.join(DIR, f['url'])).st_mtime for f in files)
+    return {'version': version, 'built': time.strftime('%Y-%m-%d %H:%M', time.localtime(built)), 'files': files}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -97,6 +154,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._studio()
         if not self._guard_static():
             return
+        p = urlsplit(self.path).path
+        if p == '/offline-manifest.json':
+            return self._json(200, offline_manifest(), no_store=True)
+        # The worker and the sync code must never come from a stale cache (browser or
+        # Cloudflare), or an iPad could keep checking against an old file list.
+        self._no_store = p in ('/sw.js', '/offline.js')
         if self.headers.get('Range') and self._serve_range():
             return
         super().do_GET()
@@ -214,11 +277,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         else:
             self._deny(404, 'Not found')
 
-    def _json(self, code, obj):
+    def _json(self, code, obj, no_store=False):
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body)))
+        if no_store:
+            self.send_header('Cache-Control', 'no-store')
         self.end_headers()
         self.wfile.write(body)
 
@@ -264,6 +329,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if getattr(self, '_set_token_cookie', False):
             self.send_header('Set-Cookie', f'{COOKIE}={STUDY_TOKEN}; Path=/; Max-Age=15552000; SameSite=Lax; HttpOnly')
             self._set_token_cookie = False
+        if getattr(self, '_no_store', False):
+            self.send_header('Cache-Control', 'no-store')
+            self._no_store = False
         super().end_headers()
 
 

@@ -10,6 +10,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="VideoASD">
+  <link rel="apple-touch-icon" href="assets/app_icon.png">
   <title>我的小镇 — VideoASD</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -809,6 +810,7 @@
     <div class="setup-card">
       <h1 class="setup-title">开始之前</h1>
       <p class="setup-sub">请家长/老师完成 · 大约一分钟</p>
+      <p style="text-align:center;margin:-4px 0 10px"><span data-offline-status></span></p>
 
       <div class="setup-step" id="setup-step-pid">
         <div class="setup-num">0</div>
@@ -887,6 +889,7 @@
     <button id="quiz-open" title="按 Kid 编号选择测验卷" onclick="location.href='quiz/index.html'">📝 测验</button>
     <button id="backup-open" title="查看本机备份、重新上传、下载成文件" onclick="location.href='backup.html'">💾 备份</button>
     <span class="sync-status" id="sync-status"></span>
+    <span data-offline-status></span>
     <button id="toolbar-hide">完成 ✓</button>
   </div>
   <button id="parent-tab" title="家长/老师设置">⚙</button>
@@ -1048,6 +1051,12 @@
         </div>
       </div>
 
+      <!-- Recap: after 完成, before the reward clip -- "next time, what would you do?" -->
+      <div id="poe-step-recap" class="poe-step hidden">
+        <p class="poe-cue">下次 <img src="assets/boy_head.png" alt="你" class="inline-portrait"> 会怎么做？</p>
+        <div class="poe-choices" id="recap-choices"></div>
+      </div>
+
       <!-- Step 4: reflect — possibility tree -->
       <div id="poe-step-tree" class="poe-step hidden">
         <div id="tree-reward" class="tree-reward"></div>
@@ -1102,7 +1111,7 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { CB, CLIPS } from './clips.js?v=20261020c';
-    import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261019';
+    import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261028';
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261020c';
@@ -1352,6 +1361,7 @@
     const $outStep = document.getElementById('poe-step-outcome');
     const $observeStep = document.getElementById('poe-step-observe');
     const $treeStep = document.getElementById('poe-step-tree');
+    const $recapStep = document.getElementById('poe-step-recap');
 
     // Display info for the lock-in summary
     const ACTION_INFO = {
@@ -1501,6 +1511,7 @@
       confirm: 'reaction',   // lock in both predictions
       outcome: 'reflect',    // watch actual outcome (Reveal)
       observe: 'reflect',    // re-label after a mismatch (Reflect)
+      recap:   'reflect',    // "next time, what would you do?" before the reward
       tree:    'reflect',    // possibility tree (Reflect)
     };
 
@@ -1514,6 +1525,7 @@
       $outStep.classList.toggle('hidden', which !== 'outcome');
       $observeStep.classList.toggle('hidden', which !== 'observe');
       $treeStep.classList.toggle('hidden', which !== 'tree');
+      $recapStep.classList.toggle('hidden', which !== 'recap');
       const active = STEP_PHASE[which];
       const activeIdx = [...$ierChips].findIndex((c) => c.dataset.phase === active);
       $ierChips.forEach((c, i) => {
@@ -2159,11 +2171,39 @@
     }
     // 完成: the path still goes on the possibility tree, but the child gets the reward
     // clip instead of the tree -- the tree is shown only in the caregiver report.
+    // A recap question comes first ("next time, what would you do?"); any answer
+    // leads to the reward, nothing is marked right or wrong.
     function goToTree() {
       $outVideo.pause();
       stopGazeCap();
-      commitGuess('out-done');
-      playReward(cid().split('_')[0], { onDone: commitAndClose, log: logEvent });   // reward matches the scene
+      const { action } = commitGuess('out-done');
+      showRecap(action);
+    }
+
+    // Same options the child had on the action step (labels/icons already set by
+    // applyTopicActions, count by applyDifficulty), cloned so the two stay in sync.
+    function showRecap(lastAction) {
+      const $grid = document.getElementById('recap-choices');
+      $grid.innerHTML = '';
+      const src = [...document.querySelectorAll('#poe-step-action .action-btn')].filter((b) => b.style.display !== 'none');
+      $grid.style.gridTemplateColumns = `repeat(${choiceColumns(src.length)}, 1fr)`;
+      const t0 = Date.now();
+      src.forEach((b) => {
+        const btn = b.cloneNode(true);
+        btn.classList.remove('action-btn', 'selected');
+        btn.addEventListener('click', () => {
+          const action = btn.dataset.choice;
+          const tried = Object.keys(loadGuesses(cid()));
+          logEvent('recap_answer', { construct: cid(), question: 'next_time_action', action,
+            lastAction, sameAsLast: action === lastAction, triedBefore: tried.includes(action),
+            explored: tried, rtMs: Date.now() - t0 });
+          btn.classList.add('selected');
+          setTimeout(() => playReward(cid().split('_')[0], { onDone: commitAndClose, log: logEvent }), 350);   // reward matches the scene
+        }, { once: true });
+        $grid.appendChild(btn);
+      });
+      logEvent('recap_shown', { construct: cid(), question: 'next_time_action', options: src.map((b) => b.dataset.choice) });
+      showStep('recap');
     }
 
     /* ===== Reward on the reflect step — rewards exploration, never correctness ===== */
@@ -2853,5 +2893,7 @@
       });
     })();
   </script>
+<!-- Offline package for the iPad: status, download, updates (offline.js). -->
+<script type="module" src="offline.js?v=20261028"></script>
 </body>
 </html>
