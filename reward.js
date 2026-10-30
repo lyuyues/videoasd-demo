@@ -7,7 +7,7 @@
  * appears once the clip ends; tapping the clip early skips to it.
  */
 
-const V = '20261030b';   // reward clips end on a cheer pose (Gemini Omni extension): playground, classroom
+const V = '20261030c';   // reward clips end on a cheer pose (Gemini Omni extension): playground, classroom, cafeteria
 const CSS = `
 .reward { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 16px; padding: 20px; background: rgba(255, 246, 232, .97);
