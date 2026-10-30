@@ -1873,7 +1873,7 @@
           if (img) {
             img.onerror = () => { img.style.display = 'none'; };
             img.style.display = '';
-            img.src = `assets/actions/${topic}_${ch}.jpg`;
+            img.src = `assets/actions/${topic}_${ch}.png`;
           }
         });
       } else {
@@ -1946,7 +1946,7 @@
       const $icon = document.getElementById('confirm-action-icon');
       const topic = cid().split('_').slice(1).join('_');
       $icon.onerror = () => { $icon.onerror = null; $icon.src = action.icon; };
-      $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.jpg` : action.icon;
+      $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.png` : action.icon;
       document.getElementById('confirm-action-text').textContent = action.label;
       const emo = pendingPrediction || 'neutral';
       document.getElementById('confirm-emotion-icon').src = `assets/emotions/sam_${emo}.png`;
