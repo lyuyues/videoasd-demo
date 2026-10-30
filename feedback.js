@@ -2,7 +2,7 @@
  *
  * When Sam's reaction clip ends, the child's predicted feeling is checked against
  * what the clip shows: a match gets "猜对了！" (marimba + "耶～"), anything else
- * "试得很好！" (was "Nice try!"; two rising notes) -- the same strip with Alex (2026-10-30).
+ * "加油！" (was "Nice try!", then "试得很好！"; two rising notes) -- the same strip with Alex (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
  * ACCEPT lists which buttons count as right per topic and option. It follows the
@@ -31,7 +31,7 @@ const CSS = `
 .pfb .pfb-icon img { height: 130px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
 .pfb .pfb-msg { font-size: 52px; font-weight: 800; color: #ff9d3f; }
 /* 猜对了 is the bigger, happier one: larger strip, springy pop, Alex hops twice.
-   试得很好 stays calm: rises in gently, one small nod. */
+   加油 stays calm: rises in gently, one small nod. */
 .pfb.right .pfb-card { padding: 22px 64px 22px 30px; animation: pfb-pop .55s cubic-bezier(.2,1.6,.4,1) both; }
 .pfb.right .pfb-icon img { height: 160px; transform-origin: 50% 100%; animation: pfb-hop .5s .35s ease-out 2; }
 .pfb.right .pfb-msg { font-size: 64px; }
@@ -52,7 +52,7 @@ const ALEX_HAPPY = new URL('./assets/boy_head_happy.png', import.meta.url).href;
 
 // Sounds (picked by Yue 2026-10-30; the old chimes didn't feel encouraging -- the try
 // one fell in pitch). 猜对了: rising marimba arpeggio, then a child's "耶～" (Gemini TTS,
-// assets/audio/yeah.m4a). 试得很好: two marimba notes going UP, like "加油".
+// assets/audio/yeah.m4a). 加油: two marimba notes going UP.
 // Web Audio, because iPad Safari only plays sound after a tap: the lock-in tap calls
 // unlockSound(), which also loads the cheer so it's ready when the feedback shows.
 let ac = null, yeah = null;
@@ -115,7 +115,7 @@ export function showFeedback(right, onDone = () => {}) {
   const el = document.createElement('div');
   el.className = 'pfb ' + (right ? 'right' : 'try');
   el.innerHTML = `<div class="pfb-card"><div class="pfb-icon"><img src="${right ? ALEX_HAPPY : ALEX}" alt=""></div>` +
-    `<div class="pfb-msg">${right ? '猜对了！' : '试得很好！'}</div></div>`;
+    `<div class="pfb-msg">${right ? '猜对了！' : '加油！'}</div></div>`;
   const img = el.querySelector('img');
   img.onerror = () => { img.onerror = null; img.src = ALEX; };
   document.body.appendChild(el);
