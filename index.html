@@ -412,6 +412,16 @@
     }
     .path-hotspot:hover .path-hotspot-label { opacity: 1; }
     .modal:not(.hidden) .modal-card { transform: scale(1); }
+    /* "Back to town?" -- a stray tap outside the activity asks first instead of
+       dropping the child's progress. Above the activity, below the feedback strip. */
+    .leave-confirm { position: fixed; inset: 0; z-index: 105; display: flex; align-items: center; justify-content: center;
+                     background: rgba(60, 40, 20, 0.35); }
+    .leave-confirm.hidden { display: none; }
+    .leave-card { background: #fff; border-radius: 28px; padding: 28px 36px 24px; text-align: center;
+                  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.22); }
+    .leave-card h2 { font-size: 24px; font-weight: 800; color: #5a4a3a; margin: 0 0 18px; }
+    .leave-card .poe-btn-row { position: static; background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+                               padding: 0; margin: 0; }
     .modal-card h2 { font-size: 26px; margin-bottom: 14px; }
     .modal-card p { color: #7a6a5a; margin-bottom: 10px; line-height: 1.55; }
     .modal-hint { font-size: 12px; color: #b0a090; margin-top: 14px; }
@@ -910,6 +920,16 @@
     </div>
     <div class="cal-dots" id="cal-dots"></div>
     <div class="cal-progress" id="cal-progress">0 / 9</div>
+  </div>
+
+  <div id="leave-confirm" class="leave-confirm hidden">
+    <div class="leave-card">
+      <h2>要回到小镇吗？</h2>
+      <div class="poe-btn-row">
+        <button class="poe-secondary" id="leave-yes">回到小镇</button>
+        <button class="poe-next" id="leave-no">继续 →</button>
+      </div>
+    </div>
   </div>
 
   <div id="modal" class="modal hidden">
@@ -2511,9 +2531,36 @@
       });
     }
     if ($modalClose) $modalClose.addEventListener('click', commitAndClose);
-    $modal.addEventListener('click', (e) => { if (e.target === $modal) $modal.classList.add('hidden'); });
+    // A tap outside the activity (or Escape) used to drop it on the spot, so a stray
+    // touch sent the child back to the topic cards to start over. Ask first; the
+    // videos pause while asking and resume on 继续.
+    const $leave = document.getElementById('leave-confirm');
+    const modalVideos = [$ctxVideo, $actVideo, $outVideo];
+    let pausedForLeave = [];
+    function askLeave() {
+      if ($modal.classList.contains('hidden') || !$leave.classList.contains('hidden')) return;
+      pausedForLeave = modalVideos.filter((v) => !v.paused && !v.ended);
+      pausedForLeave.forEach((v) => v.pause());
+      $leave.classList.remove('hidden');
+      logEvent('leave_asked', { construct: cid() });
+    }
+    document.getElementById('leave-no').addEventListener('click', () => {
+      $leave.classList.add('hidden');
+      pausedForLeave.forEach((v) => v.play().catch(() => {}));
+      pausedForLeave = [];
+      logEvent('leave_cancelled', { construct: cid() });
+    });
+    document.getElementById('leave-yes').addEventListener('click', () => {
+      $leave.classList.add('hidden');
+      pausedForLeave = [];
+      modalVideos.forEach((v) => v.pause());
+      stopGazeCap();
+      $modal.classList.add('hidden');
+      logEvent('construct_left', { construct: cid() });
+    });
+    $modal.addEventListener('click', (e) => { if (e.target === $modal) askLeave(); });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') $modal.classList.add('hidden');
+      if (e.key === 'Escape') askLeave();
     });
     // The expert generation studio (VIDEOASD-backend/expert_ui.py) is a pipeline
     // tool, not a session component — it needs a local server, runs Veo for minutes
