@@ -1,8 +1,8 @@
 /* Prediction feedback (2026-10-20).
  *
  * When Sam's reaction clip ends, the child's predicted feeling is checked against
- * what the clip shows: a match gets a rising chime + "猜对了！", anything else a soft
- * two-note "试得很好！" (was "Nice try!") -- both the same strip with Alex (2026-10-30).
+ * what the clip shows: a match gets "猜对了！", anything else "试得很好！" (was "Nice
+ * try!") -- both the same strip with Alex, no sound (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
  * ACCEPT lists which buttons count as right per topic and option. It follows the
@@ -50,28 +50,15 @@ const CSS = `
 const ALEX = new URL('./assets/boy_head.png', import.meta.url).href;
 const ALEX_HAPPY = new URL('./assets/boy_head_happy.png', import.meta.url).href;
 
-// Web Audio, so there's no sound file to load. The context is created on a tap
-// (unlockSound) because iPad Safari only lets audio start from a user gesture.
+// Silent for now (2026-10-30): the synthesized chimes didn't feel encouraging (the
+// try one fell in pitch). A recorded cheer may come back here; unlockSound stays so
+// the lock-in tap still unlocks iPad audio for it.
 let ac = null;
 export function unlockSound() {
   try {
     ac = ac || new (window.AudioContext || window.webkitAudioContext)();
     if (ac.state === 'suspended') ac.resume();
   } catch (e) { ac = null; }
-}
-function tone(freq, start, dur, type = 'sine', vol = 0.25) {
-  const t = ac.currentTime + start, o = ac.createOscillator(), g = ac.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq, t);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.05);
-}
-function playSound(right) {
-  if (!ac) return;
-  try {
-    if (right) [523, 659, 784, 1047].forEach((f, i) => { tone(f, i * 0.1, 0.4, 'triangle'); tone(f * 2, i * 0.1, 0.25, 'sine', 0.06); });
-    else { tone(440, 0, 0.3, 'sine', 0.2); tone(392, 0.22, 0.45, 'sine', 0.2); }
-  } catch (e) { /* no sound is fine */ }
 }
 
 /** Is `emotion` right for this topic/option? null when there's no answer key. */
@@ -93,7 +80,6 @@ export function showFeedback(right, onDone = () => {}) {
   const img = el.querySelector('img');
   img.onerror = () => { img.onerror = null; img.src = ALEX; };
   document.body.appendChild(el);
-  playSound(right);
   let closed = false;
   const close = () => {
     if (closed) return; closed = true;
