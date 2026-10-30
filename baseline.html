@@ -93,10 +93,11 @@
 
     <div class="row">
       <button class="btn-main" id="start">▶ 开始眼动校准</button>
+      <button class="btn-sec" id="start-direct">▶ 直接开始</button>
       <button class="btn-sec" id="export">⬇ 导出数据</button>
       <a class="btn-sec" href="index.html" style="text-decoration:none">← 主程序</a>
     </div>
-    <p class="note">每次都从 9 点眼动校准开始，校准完成后自动播放视频。</p>
+    <p class="note">「开始眼动校准」：先做 9 点眼动校准，完成后自动播放视频。「直接开始」：跳过校准直接播放，这一次不记录视线。</p>
   </div>
 
   <!-- Child-facing player -->
@@ -347,7 +348,8 @@
       playSegment(0);
     }
 
-    $('start').addEventListener('click', async () => {
+    // withGaze: 开始眼动校准 (calibrate, then play, gaze recorded) or 直接开始 (play now, no gaze).
+    async function begin(withGaze) {
       const scene = $('scene').value, topic = $('topic').value, option = $('option').value;
       const clips = CLIPS[`${scene}_${topic}`];
       const o = clips.options[option];
@@ -374,14 +376,14 @@
         { segment: 'reaction', src: o.reaction },
       ];
       viewing = 0;
-      $('start').disabled = true;
-      $('start').textContent = '加载中…';
+      const $btn = $(withGaze ? 'start' : 'start-direct'), label = $btn.textContent;
+      $('start').disabled = $('start-direct').disabled = true;
+      $btn.textContent = '加载中…';
       await prefetch(playlist);
-      $('start').disabled = false;
-      $('start').textContent = '▶ 开始眼动校准';
-      // Calibration first; the videos start only once it succeeds.
-      onCalibrated = () => {
-        logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
+      $('start').disabled = $('start-direct').disabled = false;
+      $btn.textContent = label;
+      const play = () => {
+        logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn, calibrationSkipped: !withGaze });
         $('cue').textContent = `一起来看：${TOPICS[topic]}`;
         $('setup').classList.add('hidden');
         $('done').classList.add('hidden');
@@ -389,8 +391,17 @@
         $('corner').classList.remove('hidden');
         startViewing();
       };
+      if (!withGaze) {   // no camera, no gaze points this run
+        gaze.stop(); gaze.stopCamera(); gazeOn = false;
+        play();
+        return;
+      }
+      // Calibration first; the videos start only once it succeeds.
+      onCalibrated = play;
       startCalibration();
-    });
+    }
+    $('start').addEventListener('click', () => begin(true));
+    $('start-direct').addEventListener('click', () => begin(false));
     // Save every 60 s while playing, not only at the end -- the backup on this
     // device and the upload both go through saveSnapshot (save.js).
     setInterval(() => {
