@@ -86,7 +86,7 @@ export function showFeedback(right, onDone = () => {}) {
   const el = document.createElement('div');
   el.className = 'pfb ' + (right ? 'right' : 'try');
   el.innerHTML = right
-    ? `<div class="pfb-card"><div class="pfb-icon">⭐</div><div class="pfb-msg">猜对了！</div><div class="pfb-sub">你真会看她的感觉</div></div>`
+    ? `<div class="pfb-card"><div class="pfb-icon">⭐</div><div class="pfb-msg">猜对了！</div></div>`
     : `<div class="pfb-card"><div class="pfb-icon">👍</div><div class="pfb-msg">Nice try！</div></div>`;
   document.body.appendChild(el);
   if (right) {
