@@ -24,17 +24,17 @@ export const ACCEPT = {
 const CSS = `
 .pfb { position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
        pointer-events: auto; }
-.pfb .pfb-card { display: flex; align-items: center; gap: 14px; padding: 12px 34px 12px 16px; border-radius: 999px;
+.pfb .pfb-card { display: flex; align-items: center; gap: 22px; padding: 18px 52px 18px 26px; border-radius: 999px;
        background: #fff; box-shadow: 0 8px 24px rgba(90, 60, 30, .2);
        font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
        animation: pfb-up .45s cubic-bezier(.2,1.2,.4,1) both; }
-.pfb .pfb-icon img { height: 76px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
-.pfb .pfb-msg { font-size: 32px; font-weight: 800; color: #ff9d3f; }
+.pfb .pfb-icon img { height: 130px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
+.pfb .pfb-msg { font-size: 52px; font-weight: 800; color: #ff9d3f; }
 /* 猜对了 is the bigger, happier one: larger strip, springy pop, Alex hops twice.
    试得很好 stays calm: rises in gently, one small nod. */
-.pfb.right .pfb-card { padding: 14px 40px 14px 18px; animation: pfb-pop .55s cubic-bezier(.2,1.6,.4,1) both; }
-.pfb.right .pfb-icon img { height: 92px; transform-origin: 50% 100%; animation: pfb-hop .5s .35s ease-out 2; }
-.pfb.right .pfb-msg { font-size: 40px; }
+.pfb.right .pfb-card { padding: 22px 64px 22px 30px; animation: pfb-pop .55s cubic-bezier(.2,1.6,.4,1) both; }
+.pfb.right .pfb-icon img { height: 160px; transform-origin: 50% 100%; animation: pfb-hop .5s .35s ease-out 2; }
+.pfb.right .pfb-msg { font-size: 64px; }
 .pfb.out .pfb-card { animation: pfb-down .3s ease forwards; }
 @keyframes pfb-pop { from { transform: scale(.6); opacity: 0 } }
 @keyframes pfb-hop { 0%,100% { transform: translateY(0) scale(1) } 35% { transform: translateY(-16px) scale(1.06) rotate(-3deg) }
