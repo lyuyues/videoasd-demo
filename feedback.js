@@ -59,6 +59,9 @@ let ac = null, yeah = null;
 const YEAH_URL = new URL('./assets/audio/yeah.m4a', import.meta.url).href;
 export function unlockSound() {
   try {
+    // iOS mutes Web Audio under the silent switch while <video> still plays; 'playback'
+    // puts these sounds in the same category as the clips (Safari 17+).
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
     ac = ac || new (window.AudioContext || window.webkitAudioContext)();
     if (ac.state === 'suspended') ac.resume();
     if (!yeah) {
