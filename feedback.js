@@ -1,8 +1,8 @@
 /* Prediction feedback (2026-10-20).
  *
  * When Sam's reaction clip ends, the child's predicted feeling is checked against
- * what the clip shows: a match gets "猜对了！", anything else "试得很好！" (was "Nice
- * try!") -- both the same strip with Alex, no sound (2026-10-30).
+ * what the clip shows: a match gets "猜对了！" (marimba + "耶～"), anything else
+ * "试得很好！" (was "Nice try!"; two rising notes) -- the same strip with Alex (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
  * ACCEPT lists which buttons count as right per topic and option. It follows the
@@ -50,15 +50,51 @@ const CSS = `
 const ALEX = new URL('./assets/boy_head.png', import.meta.url).href;
 const ALEX_HAPPY = new URL('./assets/boy_head_happy.png', import.meta.url).href;
 
-// Silent for now (2026-10-30): the synthesized chimes didn't feel encouraging (the
-// try one fell in pitch). A recorded cheer may come back here; unlockSound stays so
-// the lock-in tap still unlocks iPad audio for it.
-let ac = null;
+// Sounds (picked by Yue 2026-10-30; the old chimes didn't feel encouraging -- the try
+// one fell in pitch). 猜对了: rising marimba arpeggio, then a child's "耶～" (Gemini TTS,
+// assets/audio/yeah.m4a). 试得很好: two marimba notes going UP, like "加油".
+// Web Audio, because iPad Safari only plays sound after a tap: the lock-in tap calls
+// unlockSound(), which also loads the cheer so it's ready when the feedback shows.
+let ac = null, yeah = null;
+const YEAH_URL = new URL('./assets/audio/yeah.m4a', import.meta.url).href;
 export function unlockSound() {
   try {
     ac = ac || new (window.AudioContext || window.webkitAudioContext)();
     if (ac.state === 'suspended') ac.resume();
+    if (!yeah) {
+      yeah = fetch(YEAH_URL).then((r) => r.arrayBuffer())
+        .then((b) => new Promise((ok, no) => ac.decodeAudioData(b, ok, no)))
+        .catch(() => { yeah = null; return null; });
+    }
   } catch (e) { ac = null; }
+}
+const MARIMBA = [[1, 1], [3.99, 0.18], [10.2, 0.04]];   // [partial ratio, level]
+function marimba(freq, at, vol = 0.26, dur = 0.8) {
+  const t = ac.currentTime + at, out = ac.createGain();
+  out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(vol, t + 0.012);
+  out.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  out.connect(ac.destination);
+  MARIMBA.forEach(([mult, amp]) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(freq * mult, t); g.gain.value = amp;
+    o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+function playSound(right) {
+  if (!ac) return;
+  try {
+    if (right) {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => marimba(f, i * 0.11, 0.28, 0.9));   // C E G C
+      if (yeah) yeah.then((buf) => {
+        if (!buf) return;
+        const s = ac.createBufferSource(), g = ac.createGain();
+        g.gain.value = 0.8; s.buffer = buf; s.connect(g).connect(ac.destination);
+        s.start(ac.currentTime + 0.42);
+      });
+    } else {
+      marimba(523.25, 0, 0.26, 0.7); marimba(783.99, 0.18, 0.26, 0.9);   // C -> G, upward
+    }
+  } catch (e) { /* no sound is fine */ }
 }
 
 /** Is `emotion` right for this topic/option? null when there's no answer key. */
@@ -80,6 +116,7 @@ export function showFeedback(right, onDone = () => {}) {
   const img = el.querySelector('img');
   img.onerror = () => { img.onerror = null; img.src = ALEX; };
   document.body.appendChild(el);
+  playSound(right);
   let closed = false;
   const close = () => {
     if (closed) return; closed = true;
