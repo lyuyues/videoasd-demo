@@ -45,7 +45,7 @@ export const isStandalone = navigator.standalone === true ||
   (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
 
 const state = {
-  mode: 'starting',   // off | dev | unsupported | none | downloading | ready | incomplete | error
+  mode: 'starting',   // off | dev | pages | unsupported | none | downloading | ready | incomplete | error
   version: null, built: null, files: 0, missing: 0,
   server: null,       // { version, built } when the server answered
   updateAvailable: false,
@@ -197,6 +197,7 @@ function describe(s) {
   switch (s.mode) {
     case 'off': return { cls: 'warn', text: '离线包已关闭（开发模式，?nocache=0 恢复）' };
     case 'dev': return { cls: 'warn', text: '本机开发：未启用离线包（?offline=1 启用）' };
+    case 'pages': return { cls: 'warn', text: 'GitHub 演示版：不带离线包、记录只存本机（实验请用研究链接）' };
     case 'unsupported': return { cls: 'warn', text: '这个链接不支持离线包（需要 https 研究链接）' };
     case 'downloading': return { cls: 'busy',
       text: `⬇ 正在下载离线包 ${s.done}/${s.total} · ${MB(s.bytesDone)}/${MB(s.bytesTotal)}（请保持联网，别关页面）` };
@@ -208,7 +209,7 @@ function describe(s) {
     default: return { cls: 'busy', text: '检查离线包…' };
   }
 }
-const needsAttention = (s) => !['ready', 'starting', 'off', 'dev'].includes(s.mode) || s.updateAvailable;
+const needsAttention = (s) => !['ready', 'starting', 'off', 'dev', 'pages'].includes(s.mode) || s.updateAvailable;
 
 const STYLE = `
 .offline-status{font:600 13px/1.4 -apple-system,"PingFang SC",system-ui,sans-serif;display:inline-flex;flex-wrap:wrap;
@@ -281,7 +282,7 @@ async function start() {
       for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
       for (const k of await caches.keys()) if (k.startsWith('videoasd-')) await caches.delete(k);
     }
-    set({ mode: ls.get(LS_OFF) ? 'off' : 'dev' });
+    set({ mode: ls.get(LS_OFF) ? 'off' : devHost ? 'dev' : 'pages' });
     return;
   }
   if (!('serviceWorker' in navigator) || !window.isSecureContext || !window.caches) {
