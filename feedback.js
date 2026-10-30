@@ -2,7 +2,7 @@
  *
  * When Sam's reaction clip ends, the child's predicted feeling is checked against
  * what the clip shows: a match gets a rising chime + "猜对了！", anything else a soft
- * two-note "Nice try!" -- both the same bottom strip with Alex (2026-10-30).
+ * two-note "试得很好！" (was "Nice try!") -- both the same strip with Alex (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
  * ACCEPT lists which buttons count as right per topic and option. It follows the
@@ -31,7 +31,7 @@ const CSS = `
 .pfb .pfb-icon img { height: 76px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
 .pfb .pfb-msg { font-size: 32px; font-weight: 800; color: #ff9d3f; }
 /* 猜对了 is the bigger, happier one: larger strip, springy pop, Alex hops twice.
-   Nice try stays calm: rises in gently, one small nod. */
+   试得很好 stays calm: rises in gently, one small nod. */
 .pfb.right .pfb-card { padding: 14px 40px 14px 18px; animation: pfb-pop .55s cubic-bezier(.2,1.6,.4,1) both; }
 .pfb.right .pfb-icon img { height: 92px; transform-origin: 50% 100%; animation: pfb-hop .5s .35s ease-out 2; }
 .pfb.right .pfb-msg { font-size: 40px; }
@@ -89,7 +89,7 @@ export function showFeedback(right, onDone = () => {}) {
   const el = document.createElement('div');
   el.className = 'pfb ' + (right ? 'right' : 'try');
   el.innerHTML = `<div class="pfb-card"><div class="pfb-icon"><img src="${right ? ALEX_HAPPY : ALEX}" alt=""></div>` +
-    `<div class="pfb-msg">${right ? '猜对了！' : 'Nice try！'}</div></div>`;
+    `<div class="pfb-msg">${right ? '猜对了！' : '试得很好！'}</div></div>`;
   const img = el.querySelector('img');
   img.onerror = () => { img.onerror = null; img.src = ALEX; };
   document.body.appendChild(el);
