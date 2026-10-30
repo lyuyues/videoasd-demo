@@ -91,15 +91,12 @@
     <select id="option"></select>
     <p class="note">默认：主动接近的行动 (a)，作为示范供模仿。待导师确认。</p>
 
-    <div class="check"><input id="use-gaze" type="checkbox" /><label for="use-gaze" style="margin:0">记录视线</label>
-      <button class="btn-sec" id="calibrate" style="margin-left:auto;padding:8px 14px">👁 眼动校准</button></div>
-    <p class="note" id="gaze-status"></p>
-
     <div class="row">
-      <button class="btn-main" id="start">▶ 开始</button>
+      <button class="btn-main" id="start">▶ 开始眼动校准</button>
       <button class="btn-sec" id="export">⬇ 导出数据</button>
       <a class="btn-sec" href="index.html" style="text-decoration:none">← 主程序</a>
     </div>
+    <p class="note">每次都从 9 点眼动校准开始，校准完成后自动播放视频。</p>
   </div>
 
   <!-- Child-facing player -->
@@ -172,23 +169,12 @@
     } catch { /* first run */ }
     fillOptions();
 
-    /* ===== Gaze (optional) ===== */
-    // The calibration is one per device (gaze.js), shared with the PRR app: a
-    // calibration made here is used there too, and vice versa.
+    /* ===== Gaze: every run starts with a fresh calibration =====
+       Never a leftover fit from the previous child. The fit is saved per device
+       (gaze.js), so the PRR app picks it up too. */
     const gaze = new GazeTracker();
-    function showGazeStatus() {
-      const m = gaze.model;
-      // The fit time is shown so a calibration left over from the previous child is noticed.
-      $('gaze-status').textContent = m
-        ? `已校准：${new Date(m.fittedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` +
-          `（误差 x ${(m.rmseScreen.x * 100).toFixed(1)}% · y ${(m.rmseScreen.y * 100).toFixed(1)}%）。换了孩子请重新校准。`
-        : '还没有校准 — 点「眼动校准」，或不记录视线直接运行。';
-      $('use-gaze').disabled = !m;
-      if (!m) $('use-gaze').checked = false;
-    }
-    showGazeStatus();
-    $('use-gaze').checked = gaze.hasCalibration();
     let gazeOn = false;
+    let onCalibrated = null;   // set by Start: what to do once the fit is done
 
     /* 9-dot calibration: look at the yellow dot, tap it; affine fit when all 9 are done. */
     const CAL_POINTS = [
@@ -243,33 +229,25 @@
         return;
       }
       gaze.saveCalibration(model);
-      logEvent('gaze_calibrated', { participant: $('pid').value.trim(), n: model.n,
+      logEvent('gaze_calibrated', { n: model.n,
         rmseX: +model.rmseScreen.x.toFixed(4), rmseY: +model.rmseScreen.y.toFixed(4) });
-      closeCalibration();
-      $('use-gaze').checked = true;
-      showGazeStatus();
+      hideCalibration();
+      gazeOn = true;   // camera and tracking loop stay on for the run
+      const next = onCalibrated; onCalibrated = null;
+      if (next) next();
     }
-    function closeCalibration() {
+    function hideCalibration() {
       $('cal-overlay').classList.remove('show');
       $('gaze-video').classList.remove('show');
-      gaze.stop(); gaze.stopCamera();   // the run restarts both (startGaze)
     }
-    $('calibrate').addEventListener('click', startCalibration);
-    $('cal-cancel').addEventListener('click', closeCalibration);
+    $('cal-cancel').addEventListener('click', () => {
+      hideCalibration();
+      gaze.stop(); gaze.stopCamera();
+      onCalibrated = null;
+      logEvent('gaze_calibration_cancelled', {});
+    });
     let cap = null;   // { key, segment, pts: [], on, off }
 
-    async function startGaze() {
-      try {
-        if (!gaze.landmarker) await gaze.init($('gaze-video'));
-        await gaze.startCamera();
-        gaze.start();
-        gazeOn = true;
-      } catch (e) {
-        console.error('[baseline] gaze failed:', e);
-        gazeOn = false;
-        logEvent('gaze_unavailable', { error: String(e.message || e) });
-      }
-    }
     gaze.onFrame(() => {
       if (!gazeOn || !cap) return;
       const v = active();
@@ -400,15 +378,18 @@
       $('start').textContent = '加载中…';
       await prefetch(playlist);
       $('start').disabled = false;
-      $('start').textContent = '▶ 开始';
-      if ($('use-gaze').checked) await startGaze();
-      logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
-      $('cue').textContent = `一起来看：${TOPICS[topic]}`;
-      $('setup').classList.add('hidden');
-      $('done').classList.add('hidden');
-      $('player').classList.remove('hidden');
-      $('corner').classList.remove('hidden');
-      startViewing();
+      $('start').textContent = '▶ 开始眼动校准';
+      // Calibration first; the videos start only once it succeeds.
+      onCalibrated = () => {
+        logEvent('baseline_started', { optionLabel: o.label, gaze: gazeOn });
+        $('cue').textContent = `一起来看：${TOPICS[topic]}`;
+        $('setup').classList.add('hidden');
+        $('done').classList.add('hidden');
+        $('player').classList.remove('hidden');
+        $('corner').classList.remove('hidden');
+        startViewing();
+      };
+      startCalibration();
     });
     // Save every 60 s while playing, not only at the end -- the backup on this
     // device and the upload both go through saveSnapshot (save.js).
