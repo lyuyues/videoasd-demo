@@ -1135,8 +1135,8 @@
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261028';
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
-    import { playReward } from './reward.js?v=20261030f';
-    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261030b';
+    import { playReward } from './reward.js?v=20261030g';
+    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261030c';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -2229,7 +2229,8 @@
             lastAction, sameAsLast: action === lastAction, triedBefore: tried.includes(action),
             explored: tried, rtMs: Date.now() - t0 });
           btn.classList.add('selected');
-          setTimeout(() => playReward(cid().split('_')[0], { onDone: commitAndClose, log: logEvent }), 350);   // reward matches the scene
+          setTimeout(() => playReward(cid().split('_')[0], {   // reward clip matches the scene, praise the topic
+            topic: cid().split('_').slice(1).join('_'), onDone: commitAndClose, log: logEvent }), 350);
         });
         $grid.appendChild(btn);
       });

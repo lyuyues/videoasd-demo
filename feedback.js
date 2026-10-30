@@ -19,11 +19,11 @@ export const ACCEPT = {
   comfort_friend: { a: ['happy'], b: ['neutral', 'sad'],   c: ['sad'] },
 };
 
-/* Both outcomes are one calm strip at the bottom (the scene stays visible, no dimming,
-   no wobble or confetti); only the words and the chime differ. */
+/* Both outcomes are one calm strip in the middle of the screen (no dimming, no wobble or
+   confetti); only the words, the size and the chime differ. */
 const CSS = `
-.pfb { position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center;
-       padding-bottom: calc(48px + env(safe-area-inset-bottom)); pointer-events: auto; }
+.pfb { position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
+       pointer-events: auto; }
 .pfb .pfb-card { display: flex; align-items: center; gap: 14px; padding: 12px 34px 12px 16px; border-radius: 999px;
        background: #fff; box-shadow: 0 8px 24px rgba(90, 60, 30, .2);
        font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
@@ -31,16 +31,16 @@ const CSS = `
 .pfb .pfb-icon img { height: 76px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
 .pfb .pfb-msg { font-size: 32px; font-weight: 800; color: #ff9d3f; }
 /* 猜对了 is the bigger, happier one: larger strip, springy pop, Alex hops twice.
-   Nice try stays calm: slides up, one small nod. */
+   Nice try stays calm: rises in gently, one small nod. */
 .pfb.right .pfb-card { padding: 14px 40px 14px 18px; animation: pfb-pop .55s cubic-bezier(.2,1.6,.4,1) both; }
 .pfb.right .pfb-icon img { height: 92px; transform-origin: 50% 100%; animation: pfb-hop .5s .35s ease-out 2; }
 .pfb.right .pfb-msg { font-size: 40px; }
 .pfb.out .pfb-card { animation: pfb-down .3s ease forwards; }
-@keyframes pfb-pop { from { transform: translateY(80px) scale(.6); opacity: 0 } }
+@keyframes pfb-pop { from { transform: scale(.6); opacity: 0 } }
 @keyframes pfb-hop { 0%,100% { transform: translateY(0) scale(1) } 35% { transform: translateY(-16px) scale(1.06) rotate(-3deg) }
        70% { transform: translateY(0) scaleY(.94) } }
-@keyframes pfb-up { from { transform: translateY(80px); opacity: 0 } }
-@keyframes pfb-down { to { transform: translateY(80px); opacity: 0 } }
+@keyframes pfb-up { from { transform: translateY(24px) scale(.95); opacity: 0 } }
+@keyframes pfb-down { to { transform: scale(.95); opacity: 0 } }
 @keyframes pfb-nod { 0%,100% { transform: rotate(0) translateY(0) } 35% { transform: rotate(-4deg) translateY(4px) } 70% { transform: rotate(2deg) translateY(-2px) } }
 @media (prefers-reduced-motion: reduce) { .pfb, .pfb * { animation: none !important; } }
 `;
