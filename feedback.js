@@ -31,9 +31,13 @@ const CSS = `
 .pfb.right .pfb-msg { color: #e8804f; }
 .pfb.right .pfb-icon { animation: pfb-pop .7s cubic-bezier(.2,1.5,.4,1) both, pfb-spin 1.2s .2s ease both; }
 .pfb.right .pfb-card { animation: pfb-pop .55s cubic-bezier(.2,1.5,.4,1) both; }
-.pfb.try .pfb-msg { color: #5b8fd1; }
-.pfb.try .pfb-icon { animation: pfb-pop .6s cubic-bezier(.2,1.4,.4,1) both, pfb-wave 1s .5s ease-in-out 2; }
-.pfb.try .pfb-card { animation: pfb-pop .5s ease both; }
+/* Nice try: a calm strip at the bottom, the scene stays visible (no dimming, no wobble). */
+.pfb.try { background: transparent; align-items: flex-end; padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+.pfb.try .pfb-card { display: flex; align-items: center; gap: 14px; padding: 12px 34px 12px 16px; border-radius: 999px;
+       box-shadow: 0 8px 24px rgba(90, 60, 30, .2); animation: pfb-up .45s cubic-bezier(.2,1.2,.4,1) both; }
+.pfb.try .pfb-icon img { height: 76px; width: auto; display: block; transform-origin: 50% 90%; animation: pfb-nod .9s .45s ease-in-out; }
+.pfb.try .pfb-msg { font-size: 32px; margin-top: 0; color: #ff9d3f; }
+.pfb.try.out .pfb-card { animation: pfb-down .3s ease forwards; }
 .pfb .pfb-spark { position: absolute; left: 50%; top: 50%; font-size: 34px; pointer-events: none;
        animation: pfb-burst 1s ease-out forwards; }
 .pfb.out { animation: pfb-out .3s ease forwards; }
@@ -41,11 +45,16 @@ const CSS = `
 @keyframes pfb-out { to { opacity: 0 } }
 @keyframes pfb-pop { from { transform: scale(.4); opacity: 0 } to { transform: scale(1); opacity: 1 } }
 @keyframes pfb-spin { from { transform: rotate(0) } to { transform: rotate(360deg) } }
-@keyframes pfb-wave { 0%,100% { transform: rotate(0) } 30% { transform: rotate(-14deg) } 70% { transform: rotate(14deg) } }
+@keyframes pfb-up { from { transform: translateY(80px); opacity: 0 } }
+@keyframes pfb-down { to { transform: translateY(80px); opacity: 0 } }
+@keyframes pfb-nod { 0%,100% { transform: rotate(0) translateY(0) } 35% { transform: rotate(-4deg) translateY(4px) } 70% { transform: rotate(2deg) translateY(-2px) } }
 @keyframes pfb-burst { from { transform: translate(-50%, -50%) scale(.4); opacity: 1 }
        to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); opacity: 0 } }
 @media (prefers-reduced-motion: reduce) { .pfb, .pfb * { animation: none !important; } }
 `;
+
+// Alex, the child's own character in the game, says "Nice try" (same art as the cues).
+const ALEX = new URL('./assets/boy_head.png', import.meta.url).href;
 
 // Web Audio, so there's no sound file to load. The context is created on a tap
 // (unlockSound) because iPad Safari only lets audio start from a user gesture.
@@ -87,7 +96,7 @@ export function showFeedback(right, onDone = () => {}) {
   el.className = 'pfb ' + (right ? 'right' : 'try');
   el.innerHTML = right
     ? `<div class="pfb-card"><div class="pfb-icon">⭐</div><div class="pfb-msg">猜对了！</div></div>`
-    : `<div class="pfb-card"><div class="pfb-icon">👍</div><div class="pfb-msg">Nice try！</div></div>`;
+    : `<div class="pfb-card"><div class="pfb-icon"><img src="${ALEX}" alt=""></div><div class="pfb-msg">Nice try！</div></div>`;
   document.body.appendChild(el);
   if (right) {
     const card = el.querySelector('.pfb-card');
