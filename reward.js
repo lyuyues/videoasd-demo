@@ -12,8 +12,12 @@ const CSS = `
 .reward { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 16px; padding: 20px; background: rgba(255, 246, 232, .97);
           animation: rw-in .35s ease both; }
-.reward h2 { margin: 0; font-size: 30px; font-weight: 800; color: #e8804f;
+/* Title: the same white strip with beaming Alex as the 猜对了 feedback (feedback.js), not emoji. */
+.reward h2 { margin: 0; display: flex; align-items: center; gap: 12px; padding: 8px 30px 8px 12px; border-radius: 999px;
+             background: #fff; box-shadow: 0 8px 24px rgba(90, 60, 30, .15);
+             font-size: 32px; font-weight: 800; color: #ff9d3f;
              font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif; animation: rw-pop .6s .1s cubic-bezier(.2,1.4,.4,1) both; }
+.reward h2 img { height: 64px; width: auto; display: block; }
 .reward video { width: min(92vw, 124vh); aspect-ratio: 16 / 9; object-fit: cover; border-radius: 24px; background: #000;
                 box-shadow: 0 12px 40px rgba(120, 70, 20, .25); }
 .reward button { font: inherit; font-size: 20px; font-weight: 800; color: #fff; background: #f59e42; border: 0;
@@ -25,6 +29,7 @@ const CSS = `
 `;
 
 export const REWARD_SCENES = ['playground', 'classroom', 'cafeteria', 'park'];
+const ALEX_HAPPY = new URL('./assets/boy_head_happy.png', import.meta.url).href;
 
 /** playReward(scene, { onDone, log }) -- onDone runs when the child taps 继续 (or right away for an unknown scene). */
 export function playReward(scene, { onDone = () => {}, log = () => {} } = {}) {
@@ -35,7 +40,7 @@ export function playReward(scene, { onDone = () => {}, log = () => {} } = {}) {
   }
   const el = document.createElement('div');
   el.className = 'reward';
-  el.innerHTML = `<h2>🎉 你真棒！🎉</h2>
+  el.innerHTML = `<h2><img src="${ALEX_HAPPY}" alt="">你真棒！</h2>
     <video playsinline preload="auto" poster="assets/videos/reward/${scene}.jpg?v=${V}"
       src="assets/videos/reward/${scene}.mp4?v=${V}"></video>
     <button type="button">继续 →</button>`;
