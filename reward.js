@@ -12,9 +12,8 @@ const CSS = `
 .reward { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 16px; padding: 20px; background: rgba(255, 246, 232, .97);
           animation: rw-in .35s ease both; }
-/* Title: the same white strip with beaming Alex as the 猜对了 feedback (feedback.js), not emoji. */
-.reward h2 { margin: 0; display: flex; align-items: center; gap: 12px; padding: 8px 30px 8px 12px; border-radius: 999px;
-             background: #fff; box-shadow: 0 8px 24px rgba(90, 60, 30, .15);
+/* Title: beaming Alex + text, as in the 猜对了 feedback (feedback.js); no box, it isn't a button. */
+.reward h2 { margin: 0; display: flex; align-items: center; gap: 12px;
              font-size: 32px; font-weight: 800; color: #ff9d3f;
              font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif; animation: rw-pop .6s .1s cubic-bezier(.2,1.4,.4,1) both; }
 .reward h2 img { height: 64px; width: auto; display: block; }
