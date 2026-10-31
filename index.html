@@ -288,6 +288,18 @@
       -webkit-backdrop-filter: blur(4px);
       padding: 10px 0 2px; margin-top: -10px;
     }
+    /* The mismatch check sticks as a whole (question + buttons): with only the button
+       row sticky, it slid over its own question ("…跟你猜的一样吗？") under a tall video. */
+    #poe-outcome-check {
+      position: sticky; bottom: 0; z-index: 5;
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 8px 0 2px;
+    }
+    #poe-outcome-check .poe-row {
+      position: static; background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+      margin-top: 0; padding: 4px 0 0;
+    }
     .poe-choices {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
