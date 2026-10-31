@@ -63,7 +63,7 @@ export function emotionChoices(topic, option, n) {
 const CSS = `
 .pfb { position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
        pointer-events: auto; }
-.pfb .pfb-card { display: flex; align-items: center; gap: 22px; padding: 18px 52px 18px 26px; border-radius: 999px;
+.pfb .pfb-card { display: flex; align-items: center; gap: 22px; padding: 22px 52px 22px 30px; border-radius: 28px;   /* card, like the game modals; a pill read as a giant button */
        background: #fff; box-shadow: 0 8px 24px rgba(90, 60, 30, .2);
        font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
        animation: pfb-up .45s cubic-bezier(.2,1.2,.4,1) both; }
