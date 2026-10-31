@@ -8,7 +8,8 @@
  * CHOICES (2026-10-31): the emotion question always shows exactly TWO buttons, in the
  * order listed, and exactly ONE of them is right -- the emotion each reaction was
  * generated with (VIDEOASD-backend/gen_topic.py SPECS: a = happy, b = neutral,
- * c = surprised (make_friends, join_activity) or sad (comfort_friend), d (过于热情) =
+ * c = surprised (make_friends, join_activity) or sad (comfort_friend), comfort b = happy
+ * (the shipped joke clips show Sam laughing, not the spec's half smile), d (过于热情) =
  * taken aback -> confused). The distractor is fixed (not random) so every child sees
  * the same question, and is picked to be clearly wrong for that clip (e.g. b's Sam
  * "keeps playing happily, calm and content" -> distractor is 难过, not 开心). The right
@@ -31,7 +32,7 @@ export const CHOICES = {
   },
   comfort_friend: {
     a: { options: ['angry', 'happy'],  answer: 'happy' },
-    b: { options: ['neutral', 'angry'], answer: 'neutral' },
+    b: { options: ['happy', 'sad'],    answer: 'happy' },   // every reaction_b-joke clip shows Sam laughing (10-31 frame check)
     c: { options: ['happy', 'sad'],    answer: 'sad' },
   },
 };
