@@ -1140,7 +1140,7 @@
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261030g';
-    import { judge, showFeedback, unlockSound } from './feedback.js?v=20261030i';
+    import { judge, showFeedback, unlockSound, emotionChoices } from './feedback.js?v=20261031a';
     import { saveGazeRecord, gazeRecords, sessionGaze } from './gaze_store.js?v=20261031';
 
     /* ============================================================
@@ -1572,6 +1572,7 @@
       $confirmStep.classList.toggle('hidden', which !== 'confirm');
       $outStep.classList.toggle('hidden', which !== 'outcome');
       $observeStep.classList.toggle('hidden', which !== 'observe');
+      if (which === 'predict' || which === 'observe') applyEmotionChoices();
       $treeStep.classList.toggle('hidden', which !== 'tree');
       $recapStep.classList.toggle('hidden', which !== 'recap');
       const active = STEP_PHASE[which];
@@ -1599,9 +1600,11 @@
     // meaning. 'd' is a PLACEHOLDER (icon assets/actions/ask.png, outcome reuses
     // outcome_a.mp4). Replace with real content.
     const DIFFICULTY_LEVELS = [
+      // emotions: always 2 (2026-10-31) -- one right, one fixed distractor per
+      // topic/option (feedback.js CHOICES). Levels now differ only in actions.
       { id: 1, label: '简单',  actions: 2, emotions: 2 },
-      { id: 2, label: '标准',    actions: 3, emotions: 3 },
-      { id: 3, label: '挑战', actions: 4, emotions: 4 },
+      { id: 2, label: '标准',    actions: 3, emotions: 2 },
+      { id: 3, label: '挑战', actions: 4, emotions: 2 },
     ];
     // Future axes (cueAmbiguity / tomOrder / hintAmount / socialComplexity /
     // independent emotionGranularity): add as new per-level columns once experts
@@ -1635,21 +1638,29 @@
       actionBtns.forEach((btn, i) => { btn.style.display = i < nActions ? '' : 'none'; });
       const actionGrid = document.querySelector('#poe-step-action .poe-choices');
       if (actionGrid) actionGrid.style.gridTemplateColumns = `repeat(${choiceColumns(nActions)}, 1fr)`;
-      // emotions: show first N (.emotion-btn are in EMOTION_POOL order) --
-      // identical treatment for predict (guess) and observe (re-label).
-      [
-        { grid: '#poe-step-predict .emotion-grid', btns: '#poe-step-predict .emotion-btn' },
-        { grid: '#observe-emotion-grid', btns: '#observe-emotion-grid .emotion-btn' },
-      ].forEach(({ grid, btns }) => {
-        document.querySelectorAll(btns).forEach((btn, i) => { btn.style.display = i < lv.emotions ? '' : 'none'; });
-        const g = document.querySelector(grid);
-        // Same shape as the action row above. The old 3-column cap put Stretch's
-        // 4th emotion (困惑) alone on a second row, which read as a different
-        // kind of choice than the three above it; 2x2 keeps the four even.
-        if (g) g.style.gridTemplateColumns = `repeat(${choiceColumns(lv.emotions)}, 1fr)`;
-      });
+      // emotions: which two buttons depends on topic + chosen action (see below).
+      applyEmotionChoices();
       const diffBtn = document.getElementById('diff-start');
       if (diffBtn) diffBtn.textContent = `难度：${lv.label}`;
+    }
+
+    // The emotion question shows the two buttons feedback.js CHOICES lists for this
+    // topic + chosen action, in that order (exactly one is right). Runs on entering
+    // predict and observe, after the action is known. Topics without a key (studio
+    // cases) fall back to the first lv.emotions of EMOTION_POOL, as before.
+    function applyEmotionChoices() {
+      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
+      const pick = emotionChoices(topic, pendingChoice) || EMOTION_POOL.slice(0, currentLevel().emotions);
+      ['#poe-step-predict .emotion-grid', '#observe-emotion-grid'].forEach((sel) => {
+        const g = document.querySelector(sel);
+        if (!g) return;
+        g.querySelectorAll('.emotion-btn').forEach((btn) => {
+          const i = pick.indexOf(btn.dataset.emotion);
+          btn.style.display = i < 0 ? 'none' : '';
+          btn.style.order = i < 0 ? '' : String(i);
+        });
+        g.style.gridTemplateColumns = `repeat(${choiceColumns(pick.length)}, 1fr)`;
+      });
     }
 
     // Caregiver difficulty picker (3 cards rendered from the config)

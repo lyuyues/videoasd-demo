@@ -5,19 +5,42 @@
  * "加油！" (was "Nice try!", then "试得很好！"; two rising notes) -- the same strip with Alex (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
- * ACCEPT lists which buttons count as right per topic and option. It follows the
- * emotion each reaction was generated with (VIDEOASD-backend/gen_topic.py SPECS):
- * a = happy, b = calm/neutral, c = surprised (make_friends, join_activity) or sad
- * (comfort_friend). The grid has no "surprised", so for c any upset feeling counts.
- * d (过于热情, make_friends + join_activity only) = Sam taken aback: 困惑 (confused)
- * or 惊讶 (the 'scared' key, shown as 惊讶 since 2026-10-20).
+ * CHOICES (2026-10-31): the emotion question always shows exactly TWO buttons, in the
+ * order listed, and exactly ONE of them is right -- the emotion each reaction was
+ * generated with (VIDEOASD-backend/gen_topic.py SPECS: a = happy, b = neutral,
+ * c = surprised (make_friends, join_activity) or sad (comfort_friend), d (过于热情) =
+ * taken aback -> confused). The distractor is fixed (not random) so every child sees
+ * the same question, and is picked to be clearly wrong for that clip (e.g. b's Sam
+ * "keeps playing happily, calm and content" -> distractor is 难过, not 开心). The right
+ * answer sits first for some options and second for others, so "always tap the left
+ * one" doesn't score. Keys are the data-emotion values ('scared' is shown as 惊讶).
  */
 
-export const ACCEPT = {
-  make_friends:   { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'], d: ['confused', 'scared'] },
-  join_activity:  { a: ['happy'], b: ['neutral', 'happy'], c: ['sad', 'angry', 'confused', 'scared'], d: ['confused', 'scared'] },
-  comfort_friend: { a: ['happy'], b: ['neutral', 'sad'],   c: ['sad'] },
+export const CHOICES = {
+  make_friends: {
+    a: { options: ['happy', 'sad'],    answer: 'happy' },
+    b: { options: ['sad', 'neutral'],  answer: 'neutral' },
+    c: { options: ['scared', 'happy'], answer: 'scared' },
+    d: { options: ['happy', 'confused'], answer: 'confused' },
+  },
+  join_activity: {
+    a: { options: ['happy', 'sad'],    answer: 'happy' },
+    b: { options: ['sad', 'neutral'],  answer: 'neutral' },
+    c: { options: ['scared', 'happy'], answer: 'scared' },
+    d: { options: ['happy', 'confused'], answer: 'confused' },
+  },
+  comfort_friend: {
+    a: { options: ['angry', 'happy'],  answer: 'happy' },
+    b: { options: ['neutral', 'angry'], answer: 'neutral' },
+    c: { options: ['happy', 'sad'],    answer: 'sad' },
+  },
 };
+
+/** The two emotion buttons for this topic/option, in display order; null = no key. */
+export function emotionChoices(topic, option) {
+  const c = CHOICES[topic] && CHOICES[topic][option];
+  return c ? c.options : null;
+}
 
 /* Both outcomes are one calm strip in the middle of the screen (no dimming, no wobble or
    confetti); only the words, the size and the chime differ. */
@@ -102,8 +125,8 @@ function playSound(right) {
 
 /** Is `emotion` right for this topic/option? null when there's no answer key. */
 export function judge(topic, option, emotion) {
-  const ok = ACCEPT[topic] && ACCEPT[topic][option];
-  return ok ? ok.includes(emotion) : null;
+  const c = CHOICES[topic] && CHOICES[topic][option];
+  return c ? c.answer === emotion : null;
 }
 
 /** showFeedback(right, onDone) -- overlay for ~2 s (a tap closes it sooner), then onDone. */
