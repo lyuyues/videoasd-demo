@@ -43,10 +43,10 @@
       font-size: 13px; padding: 6px 10px; border-radius: 10px; }
     .done-card { text-align: center; }
     .done-card .big { font-size: 64px; }
+    /* The camera feed MediaPipe reads; never shown. (A preview during calibration sat on
+       the bottom-right dot and drew the child's eyes to their own face; the PRR app shows
+       none while calibrating either.) */
     #gaze-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    /* Camera preview while calibrating, so the grown-up can see the face is in frame */
-    #gaze-video.show { bottom: 16px; right: 16px; width: 160px; height: 120px; opacity: 1; z-index: 950;
-      object-fit: cover; border-radius: 14px; transform: scaleX(-1); background: #000; }
 
     /* 9-dot calibration (same as the PRR app's, index.html) */
     #cal-overlay { position: fixed; inset: 0; background: rgba(20, 30, 50, 0.92); z-index: 900;
