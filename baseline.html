@@ -116,8 +116,8 @@
   </div>
 
   <div id="done" class="player hidden">
-    <div class="done-card"><div class="big">🌟</div><p class="cue">看完啦 — 看得真棒！</p>
-      <button class="btn-main hidden" id="postquiz">📝 进入后测 →</button></div>
+    <!-- No praise or reward here: the baseline ends straight on the post-quiz button. -->
+    <div class="done-card"><button class="btn-main hidden" id="postquiz">📝 进入后测 →</button></div>
   </div>
 
   <button id="corner" class="corner hidden">⚙ 设置</button>
@@ -380,6 +380,11 @@
         { segment: 'reaction', src: o.reaction },
       ];
       viewing = 0;
+      // iPad Safari plays a <video> with sound only if that element was started inside a
+      // tap. The two players take turns (A, B, A) and B never was, and the first play
+      // comes after the prefetch await -- so a clip could come out silent. Start and stop
+      // both here, still inside the tap, before any await.
+      vids.forEach((v, i) => { v.muted = false; v.src = playlist[i].src; v.play().catch(() => {}); v.pause(); });
       const $btn = $(withGaze ? 'start' : 'start-direct'), label = $btn.textContent;
       $('start').disabled = $('start-direct').disabled = true;
       $btn.textContent = '加载中…';
