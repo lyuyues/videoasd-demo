@@ -1137,6 +1137,7 @@
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261030g';
     import { judge, showFeedback, unlockSound } from './feedback.js?v=20261030i';
+    import { saveGazeRecord, gazeRecords, sessionGaze } from './gaze_store.js?v=20261031';
 
     /* ============================================================
        GAZE TRACKING — calibration + cursor
@@ -1718,17 +1719,18 @@
       autosave();
     }
 
-    /* ===== Gaze capture → static focus report (caregiver) =====
-       Light: accumulate on-video gaze points per (loc, clip) + grab ONE
-       representative frame. No timeline, no replay. Only when calibrated. */
-    const GAZE_KEY = 'videoasd_gaze';               // { "loc|clip": {pts:[[vx,vy]], on, off} }
+    /* ===== Gaze capture → records (gaze_store.js) + static focus report (caregiver) =====
+       Each capture on a clip (context / action_<opt> / reaction_<opt>) becomes one
+       record tagged with Kid ID, session and condition 'prr', the same shape the
+       baseline writes, so the two conditions can be compared. Also grabs ONE
+       representative frame for the report. Only when calibrated. */
     const GAZE_FRAME_KEY = 'videoasd_gaze_frames';  // { "loc|clip": dataURL }
     let gazeCap = null;   // { key, video } currently capturing
     let gazeBuf = null;   // { pts:[], on, off } in-memory for current clip
 
     function startGazeCap(loc, clip, video) {
       if (!gazeTrackingActive) { gazeCap = null; gazeBuf = null; return; }
-      gazeCap = { key: `${loc}|${clip}`, video, grabbed: false };
+      gazeCap = { key: `${loc}|${clip}`, video, grabbed: false, startedAt: new Date().toISOString() };
       gazeBuf = { pts: [], on: 0, off: 0 };
     }
     function captureGazePoint(gx, gy) {
@@ -1768,16 +1770,11 @@
       gazeCap = null; gazeBuf = null;
       if (!c || !buf || (buf.on + buf.off) === 0) return; // save even if all off-video
       if (!c.grabbed && buf.pts.length) grabFrame(c.key, c.video, c.video.currentTime); // fallback if midpoint not reached
-      try {
-        const all = JSON.parse(localStorage.getItem(GAZE_KEY) || '{}');
-        const prev = all[c.key] || { pts: [], on: 0, off: 0 };
-        prev.pts.push(...buf.pts);
-        prev.on += buf.on; prev.off += buf.off;
-        all[c.key] = prev;
-        localStorage.setItem(GAZE_KEY, JSON.stringify(all));
-      } catch (e) { /* ignore */ }
       const [loc, clip] = c.key.split('|');
-      logEvent('gaze_summary', { construct: loc, clip, on: buf.on, off: buf.off,
+      const rec = saveGazeRecord({ condition: 'prr',
+        participantId: sessionOwner() ?? (localStorage.getItem('videoasd_participant') || ''),
+        sessionId, construct: loc, clip, startedAt: c.startedAt, pts: buf.pts, on: buf.on, off: buf.off });
+      logEvent('gaze_summary', { construct: loc, clip, viewing: rec.viewing, on: buf.on, off: buf.off,
         onRatio: +(buf.on / (buf.on + buf.off)).toFixed(3) });
     }
 
@@ -1932,8 +1929,14 @@
         }
       });
     });
+    // Gaze on the action clip too (看看你做了什么), as the baseline records it: one record
+    // per play, so a replay from the controls is its own viewing.
+    $actVideo.addEventListener('play', () => {
+      if (!gazeCap && pendingChoice) startGazeCap(cid(), `action_${pendingChoice}`, $actVideo);
+    });
     // Action clip finished → predict Sam's emotion
     $actVideo.addEventListener('ended', () => {
+      stopGazeCap();
       document.querySelectorAll('.emotion-btn').forEach((e) => e.classList.remove('selected'));
       showStep('predict');
     });
@@ -1993,7 +1996,7 @@
       resetOutcomeSubsteps();
       showStep('outcome');
       $outVideo.play().catch(() => {});
-      startGazeCap(cid(), `outcome_${pendingChoice}`, $outVideo);   // per option: each has its own reaction clip + AOI
+      startGazeCap(cid(), `reaction_${pendingChoice}`, $outVideo);   // per option: each has its own reaction clip + AOI
       logEvent('prediction_locked', { construct: cid(), action: pendingChoice, emotion: pendingPrediction });
     });
 
@@ -2282,8 +2285,9 @@
     // AOI tracks (per-frame face/eyes/mouth/body boxes), one file per clip.
     // Tracks come from running MediaPipe Face/Pose Landmarker over each clip in
     // clips.js (tools/make_aoi.py), so the boxes follow the characters frame by frame.
-    // Gaze key "construct|clip" → assets/aoi/<construct>__<segment>; the PRR outcome
-    // (outcome_<opt>) is the reaction clip, baseline-* keys come from baseline.html.
+    // Gaze key "construct|clip" → assets/aoi/<construct>__<clip>. Clips are named
+    // context / action_<opt> / reaction_<opt> in both conditions since 2026-10-31; the
+    // older outcome_<opt> and baseline-* names still map, for data saved before then.
     // Legacy keys ("|outcome" without the option) have no matching clip → null.
     // The JSON is revalidated on every load and the still is versioned by the clip's
     // sha, so a re-cut clip (AOI regenerated by the pre-commit hook) never shows old boxes.
@@ -2405,7 +2409,12 @@
     }
 
     async function openReport() {
-      const data = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
+      // This session's PRR gaze, all viewings of a clip pooled: { "construct|clip": {pts, on, off} }
+      const data = {};
+      sessionGaze('prr', sessionId).forEach((r) => {
+        const d = (data[`${r.construct}|${r.clip}`] ??= { pts: [], on: 0, off: 0 });
+        d.pts.push(...r.pts); d.on += r.on; d.off += r.off;
+      });
       const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
       const keys = Object.keys(data);
       $reportBody.innerHTML = '';
@@ -2460,7 +2469,7 @@
         exportedAt: new Date().toISOString(),
         currentSession: sessionId,
         events: JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'),
-        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        gaze: gazeRecords(),   // export: every record on this device (both conditions), see gaze_store.js
         trees: Object.fromEntries(Object.keys(localStorage)
           .filter((k) => k.startsWith('videoasd_tree_'))
           .map((k) => [k.replace('videoasd_tree_', ''), loadGuesses(k.replace('videoasd_tree_', ''))])),
@@ -2473,7 +2482,9 @@
         participantId: sessionOwner() ?? (localStorage.getItem('videoasd_participant') || ''),
         // Same tab = same session id for both conditions (sessionStorage), so filter by
         // condition too, or the baseline's events ride along in this file.
-        ...p, events: p.events.filter((e) => e.session === sessionId && e.condition === 'prr') };
+        ...p, events: p.events.filter((e) => e.session === sessionId && e.condition === 'prr'),
+        gaze: sessionGaze('prr', sessionId),   // this child's own gaze only
+        calibration: gaze.hasCalibration() ? gaze.model : null };   // the fit the gaze points were mapped with, as the baseline saves
     }
     function autosave() { eventsDirty = false; saveSnapshot(serverPayload()); }
     setInterval(() => { if (eventsDirty) autosave(); }, 60000);
@@ -2578,6 +2589,9 @@
       Object.keys(localStorage)
         .filter((k) => k.startsWith('videoasd_tree_'))
         .forEach((k) => localStorage.removeItem(k));
+      // Gaze records (gaze_store.js) are kept: they are research data, each tagged with
+      // its session, and the new session below starts empty. This only drops the
+      // pre-2026-10-31 device-wide map and the report stills.
       localStorage.removeItem('videoasd_gaze');
       localStorage.removeItem('videoasd_gaze_frames');
       // Reset = new participant: rotate the session id. The event log itself is

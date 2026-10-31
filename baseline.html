@@ -24,10 +24,11 @@
       border-radius: 12px; font: inherit; background: #f8fafc; color: #5a4a3a; }
     .setup .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 14px; }
     .setup .note { font-size: 12px; color: #8a8a96; margin-top: 4px; }
-    .row { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .row { display: flex; gap: 10px; margin-top: 22px; flex-wrap: nowrap; }
+    .row > * { white-space: nowrap; text-align: center; }
     .btn-main { background: linear-gradient(135deg, #ffb56a, #ff9d3f); color: #fff; font-weight: 700;
-      padding: 12px 24px; border-radius: 16px; font-size: 16px; }
-    .btn-sec { background: #f1f3f7; color: #5a4a3a; padding: 12px 18px; border-radius: 16px; font-size: 14px; }
+      padding: 12px 18px; border-radius: 16px; font-size: 16px; }
+    .btn-sec { background: #f1f3f7; color: #5a4a3a; padding: 12px 14px; border-radius: 16px; font-size: 14px; }
 
     /* Child-facing player */
     .player { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
@@ -130,6 +131,7 @@
     import { CLIPS } from './clips.js?v=20261020c';
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261028';
+    import { saveGazeRecord, gazeRecords, sessionGaze } from './gaze_store.js?v=20261031';
 
     const SCENES = { playground: '游乐场', classroom: '教室', cafeteria: '餐厅', park: '公园' };
     const TOPICS = { make_friends: '交朋友', join_activity: '加入活动', comfort_friend: '安慰朋友' };
@@ -267,21 +269,18 @@
       }
     });
     function startCap(segment) {
-      // action/reaction keys carry the option so the report finds that clip's AOI
+      // Same clip names as the PRR app (context / action_<opt> / reaction_<opt>), which
+      // are also the AOI file names, so both conditions score against the same boxes.
       const clip = segment === 'context' ? segment : `${segment}_${ctx.option}`;
-      cap = gazeOn ? { key: `${ctx.construct}|baseline-${clip}`, segment, pts: [], on: 0, off: 0 } : null;
+      cap = gazeOn ? { clip, segment, startedAt: new Date().toISOString(), pts: [], on: 0, off: 0 } : null;
     }
     function stopCap() {
       const c = cap; cap = null;
       if (!c || (c.on + c.off) === 0) return;
-      try {   // same store and shape as the PRR app's gaze capture
-        const all = JSON.parse(localStorage.getItem('videoasd_gaze') || '{}');
-        const prev = all[c.key] || { pts: [], on: 0, off: 0 };
-        prev.pts.push(...c.pts); prev.on += c.on; prev.off += c.off;
-        all[c.key] = prev;
-        localStorage.setItem('videoasd_gaze', JSON.stringify(all));
-      } catch { /* storage full — summary below still logged */ }
-      logEvent('gaze_summary', { segment: c.segment, on: c.on, off: c.off,
+      // One record per capture, tagged with Kid ID / session / condition (gaze_store.js).
+      const rec = saveGazeRecord({ condition: 'baseline', participantId: ctx.participant, sessionId,
+        construct: ctx.construct, clip: c.clip, startedAt: c.startedAt, pts: c.pts, on: c.on, off: c.off });
+      logEvent('gaze_summary', { segment: c.segment, clip: c.clip, viewing: rec.viewing, on: c.on, off: c.off,
         onRatio: +(c.on / (c.on + c.off)).toFixed(3) });
     }
 
@@ -451,7 +450,7 @@
         .filter((e) => e.session === sessionId && e.condition === 'baseline');
       return { kind: 'system', condition: 'baseline', sessionId, participantId: ctx.participant || '',
         construct: ctx.construct, option: ctx.option, events,
-        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        gaze: sessionGaze('baseline', sessionId),   // this child's own gaze only
         calibration: gazeOn ? gaze.model : null };   // the fit this run's gaze points were mapped with
     }
     addEventListener('pagehide', () => { if (ctx.participant) beaconSnapshot(serverPayload()); });
@@ -462,7 +461,7 @@
         exportedAt: new Date().toISOString(),
         currentSession: sessionId,
         events: JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'),
-        gaze: JSON.parse(localStorage.getItem('videoasd_gaze') || '{}'),
+        gaze: gazeRecords(),   // every record on this device (both conditions), see gaze_store.js
         trees: Object.fromEntries(Object.keys(localStorage)
           .filter((k) => k.startsWith('videoasd_tree_'))
           .map((k) => [k.replace('videoasd_tree_', ''), JSON.parse(localStorage.getItem(k))])),
