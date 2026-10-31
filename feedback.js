@@ -5,42 +5,57 @@
  * "加油！" (was "Nice try!", then "试得很好！"; two rising notes) -- the same strip with Alex (2026-10-30).
  * Clips without an entry here (studio-authored cases) get no feedback.
  *
- * CHOICES (2026-10-31): the emotion question always shows exactly TWO buttons, in the
- * order listed, and exactly ONE of them is right -- the emotion each reaction was
- * generated with (VIDEOASD-backend/gen_topic.py SPECS: a = happy, b = neutral,
- * c = surprised (make_friends, join_activity) or sad (comfort_friend), comfort b = happy
- * (the shipped joke clips show Sam laughing, not the spec's half smile), d (过于热情) =
- * taken aback -> confused). The distractor is fixed (not random) so every child sees
- * the same question, and is picked to be clearly wrong for that clip (e.g. b's Sam
- * "keeps playing happily, calm and content" -> distractor is 难过, not 开心). The right
- * answer sits first for some options and second for others, so "always tap the left
- * one" doesn't score. Keys are the data-emotion values ('scared' is shown as 惊讶).
+ * CHOICES (2026-10-31, table agreed with Yue): the emotion question shows as many
+ * buttons as the child has actions (2 / 3 / 4 by difficulty; comfort_friend has only
+ * 3 actions, so at most 3), and EXACTLY ONE is right. Every list is fixed (not
+ * random) so all children see the same question, in the order written here.
+ *
+ * Right answers follow what the STUDY clips show (frame check 10-31; the study uses
+ * playground for make_friends and classroom for join_activity):
+ *   a = 开心; b = 没什么感觉 (Sam keeps playing calmly);
+ *   make_friends c (grab toy) = 难过 -- Sam cries in the playground clip;
+ *   join_activity c (barge in) = 生气 -- Sam frowns and pouts in the classroom clip;
+ *   d (过于热情) = 惊讶 (taken aback; matches the quiz, which has no 困惑);
+ *   comfort a = 开心, b (joke) = 开心 (Sam laughs in every joke clip), c = 难过.
+ * Distractors are added least-plausible first: c never gets a second "upset" feeling
+ * (its 4th is 困惑, least like either clip), b never gets 开心 (Sam plays happily
+ * alone), d's 开心 sits farthest from the answer. The right answer's position varies.
+ * Keys are the data-emotion values ('scared' is shown as 惊讶).
  */
+
+const A_HAPPY = { answer: 'happy',
+  2: ['sad', 'happy'], 3: ['sad', 'happy', 'angry'], 4: ['sad', 'happy', 'angry', 'neutral'] };
+const B_NEUTRAL = { answer: 'neutral',
+  2: ['neutral', 'sad'], 3: ['neutral', 'sad', 'angry'], 4: ['neutral', 'sad', 'angry', 'scared'] };
+const D_SURPRISED = { answer: 'scared',
+  4: ['angry', 'scared', 'sad', 'happy'] };
 
 export const CHOICES = {
   make_friends: {
-    a: { options: ['happy', 'sad'],    answer: 'happy' },
-    b: { options: ['sad', 'neutral'],  answer: 'neutral' },
-    c: { options: ['scared', 'happy'], answer: 'scared' },
-    d: { options: ['happy', 'confused'], answer: 'confused' },
+    a: A_HAPPY, b: B_NEUTRAL, d: D_SURPRISED,
+    c: { answer: 'sad',
+      2: ['happy', 'sad'], 3: ['happy', 'neutral', 'sad'], 4: ['happy', 'neutral', 'sad', 'confused'] },
   },
   join_activity: {
-    a: { options: ['happy', 'sad'],    answer: 'happy' },
-    b: { options: ['sad', 'neutral'],  answer: 'neutral' },
-    c: { options: ['scared', 'happy'], answer: 'scared' },
-    d: { options: ['happy', 'confused'], answer: 'confused' },
+    a: A_HAPPY, b: B_NEUTRAL, d: D_SURPRISED,
+    c: { answer: 'angry',
+      2: ['happy', 'angry'], 3: ['happy', 'angry', 'neutral'], 4: ['happy', 'angry', 'neutral', 'confused'] },
   },
   comfort_friend: {
-    a: { options: ['angry', 'happy'],  answer: 'happy' },
-    b: { options: ['happy', 'sad'],    answer: 'happy' },   // every reaction_b-joke clip shows Sam laughing (10-31 frame check)
-    c: { options: ['happy', 'sad'],    answer: 'sad' },
+    a: { answer: 'happy', 2: ['angry', 'happy'], 3: ['angry', 'happy', 'scared'] },
+    b: { answer: 'happy', 2: ['happy', 'sad'],   3: ['happy', 'sad', 'angry'] },
+    c: { answer: 'sad',   2: ['happy', 'sad'],   3: ['happy', 'scared', 'sad'] },
   },
 };
 
-/** The two emotion buttons for this topic/option, in display order; null = no key. */
-export function emotionChoices(topic, option) {
+/** The emotion buttons for this topic/option when `n` choices are wanted, in display
+ *  order (the longest list available if n is larger); null = no key for this clip. */
+export function emotionChoices(topic, option, n) {
   const c = CHOICES[topic] && CHOICES[topic][option];
-  return c ? c.options : null;
+  if (!c) return null;
+  const sizes = Object.keys(c).filter((k) => k !== 'answer').map(Number).sort((x, y) => x - y);
+  const size = sizes.filter((k) => k <= n).pop() || sizes[0];
+  return c[size];
 }
 
 /* Both outcomes are one calm strip in the middle of the screen (no dimming, no wobble or
