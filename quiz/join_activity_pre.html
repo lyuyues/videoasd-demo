@@ -67,7 +67,7 @@ h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4
   justify-content: center; font-variant-numeric: tabular-nums; }
 .item-text { font-size: 18px; font-weight: 600; line-height: 1.55; padding-top: 4px; }
 .item-img { width: 100%; max-width: 480px; display: block; margin: 4px auto 16px; border-radius: 10px; border: 1px solid var(--line); }
-/* Who's who, shown once before Part 1 (the section pictures show only 明明). */
+/* Who's who, shown once before Part 1. Only 甜甜 since 2026-10-31: every item says 你, not 明明. */
 .cast { display: flex; justify-content: center; gap: 28px; margin: 4px 0 20px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .cast figure { margin: 0; text-align: center; }
 .cast img { width: 150px; height: 150px; object-fit: cover; object-position: top; border-radius: 50%; border: 3px solid var(--accent-soft-2); }
@@ -89,6 +89,11 @@ h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4
 .opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .opt .opt-text { font-size: 16.5px; color: var(--ink); line-height: 1.4; }
 .opt .emoji { font-size: 20px; line-height: 1; flex: none; }
+.opt .face { width: 88px; height: 88px; flex: none; object-fit: cover; object-position: 50% 50%; border-radius: 50%; border: 2px solid var(--line); }
+.part-setup { font-size: 20px; font-weight: 700; text-align: center; margin: 0 0 16px; color: var(--ink); }
+.opt.pic { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px; }
+.opt.pic img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; }
+.opt.pic .pic-row { display: flex; align-items: center; gap: 10px; padding: 0 4px 2px; }
 .options.tf { display: flex; flex-direction: row; gap: 14px; margin-left: 46px; }
 .options.tf .opt { flex: 1; justify-content: center; padding: 14px; }
 .options.tf .opt-text { font-size: 17px; font-weight: 700; }
@@ -138,19 +143,18 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   </div>
 
   <div class="cast">
-    <figure><img src="assets/character_mingming.jpg?v=20261021" alt=""><figcaption><span class="i18n" data-zh="这是明明" data-en="This is Mingming">这是明明</span></figcaption></figure>
-    <figure><img src="assets/character_tiantian.jpg?v=20261021" alt=""><figcaption><span class="i18n" data-zh="这是甜甜" data-en="This is Tiantian">这是甜甜</span></figcaption></figure>
+    <figure><img src="assets/character_tiantian.jpg?v=1792566409" alt=""><figcaption><span class="i18n" data-zh="这是甜甜" data-en="This is Tiantian">这是甜甜</span></figcaption></figure>
   </div>
 
-  <div class="section-band a"><span class="num"><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></span><span class="label"><span class="i18n" data-zh="你会怎么做？甜甜会有什么感觉？" data-en="What would you do? How would Tiantian feel?">你会怎么做？甜甜会有什么感觉？</span></span><span class="sub" id="sub-a">0 / 3</span></div>
-  <img class="item-img" src="assets/join_activity_pre_part1.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band a"><span class="num"><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-a">0 / 3</span></div>
+  <img class="item-img" src="assets/join_activity_pre_part1.jpg?v=1793444732" alt="" loading="lazy">
   
   <div class="item" data-item="1">
     <div class="item-head">
       <span class="item-num">1</span>
       <p class="item-text"><span class="i18n" data-zh="在公园里，甜甜一个人在拍皮球。你也想一起玩。你会怎么做？" data-en="At the park, Tiantian is bouncing a ball on her own. You want to play too. What would you do?">在公园里，甜甜一个人在拍皮球。你也想一起玩。你会怎么做？</span></p>
     </div>
-    <div class="options grid2"><label class="opt"><input type="radio" name="q1-action" value="a"><span class="i18n opt-text" data-zh="走过去问可不可以加入" data-en="Walk over and ask to join in">走过去问可不可以加入</span></label><label class="opt"><input type="radio" name="q1-action" value="b"><span class="i18n opt-text" data-zh="站在旁边，有点紧张，不敢加入" data-en="Stand back, feeling too nervous to join">站在旁边，有点紧张，不敢加入</span></label><label class="opt"><input type="radio" name="q1-action" value="c"><span class="i18n opt-text" data-zh="没问就直接加进去" data-en="Push in without asking">没问就直接加进去</span></label><label class="opt"><input type="radio" name="q1-action" value="d"><span class="i18n opt-text" data-zh="冲过去，特别热情" data-en="Rush over, super excited">冲过去，特别热情</span></label></div>
+    <div class="options grid2"><label class="opt pic"><img src="assets/join_activity_pre_act_a.jpg?v=1793444754" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="a"><span class="i18n opt-text" data-zh="走过去问可不可以加入" data-en="Walk over and ask to join in">走过去问可不可以加入</span></span></label><label class="opt pic"><img src="assets/join_activity_pre_act_b.jpg?v=1793444762" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="b"><span class="i18n opt-text" data-zh="站在旁边，有点紧张，不敢加入" data-en="Stand back, feeling too nervous to join">站在旁边，有点紧张，不敢加入</span></span></label><label class="opt pic"><img src="assets/join_activity_pre_act_c.jpg?v=1793444771" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="c"><span class="i18n opt-text" data-zh="没问就直接加进去" data-en="Push in without asking">没问就直接加进去</span></span></label><label class="opt pic"><img src="assets/join_activity_pre_act_d.jpg?v=1793446179" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="d"><span class="i18n opt-text" data-zh="冲过去，特别热情" data-en="Rush over, super excited">冲过去，特别热情</span></span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="2">
@@ -158,18 +162,20 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
       <span class="item-num">2</span>
       <p class="item-text"><span class="i18n" data-zh="根据你刚才选的行动，甜甜会有什么感觉？" data-en="Based on the action you just picked, how would Tiantian feel?">根据你刚才选的行动，甜甜会有什么感觉？</span></p>
     </div>
-    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><span class="emoji" aria-hidden="true">😊</span><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Sad"><span class="emoji" aria-hidden="true">😢</span><span class="i18n opt-text" data-zh="难过" data-en="Sad">难过</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><span class="emoji" aria-hidden="true">😠</span><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Scared"><span class="emoji" aria-hidden="true">😨</span><span class="i18n opt-text" data-zh="害怕" data-en="Scared">害怕</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><span class="emoji" aria-hidden="true">😲</span><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><span class="emoji" aria-hidden="true">😐</span><span class="i18n opt-text" data-zh="中性" data-en="Neutral">中性</span></label></div>
+    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><img class="face" src="assets/tiantian_happy.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><img class="face" src="assets/tiantian_angry.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><img class="face" src="assets/tiantian_surprised.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><img class="face" src="assets/tiantian_neutral.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="没什么感觉" data-en="No big feeling">没什么感觉</span></label></div>
     <div class="feedback"></div>
   </div>
 
-  <div class="section-band b"><span class="num"><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></span><span class="label"><span class="i18n" data-zh="这样做，可以不可以？" data-en="Is it okay to do this?">这样做，可以不可以？</span></span><span class="sub" id="sub-b">0 / 4</span></div>
-  <img class="item-img" src="assets/join_activity_pre_part2.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band b"><span class="num"><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-b">0 / 4</span></div>
+  <img class="item-img" src="assets/join_activity_pre_part2.jpg?v=1792569230" alt="" loading="lazy">
+  <p class="part-setup"><span class="i18n" data-zh="在公园里，甜甜一个人在用树枝搭堡垒。" data-en="At the park, Tiantian is building a fort with sticks alone.">在公园里，甜甜一个人在用树枝搭堡垒。</span></p>
   
   <div class="item" data-item="3">
     <div class="item-head">
       <span class="item-num">3</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园里，甜甜一个人在用树枝搭堡垒。明明走过去，问甜甜可不可以一起玩。明明这样做，可以不可以？" data-en="At the park, Tiantian is building a fort with sticks on her own. Mingming walks over and asks Tiantian if he can play too. Is it okay for Mingming to do this?">在公园里，甜甜一个人在用树枝搭堡垒。明明走过去，问甜甜可不可以一起玩。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你走过去，问甜甜可不可以一起玩。可以吗？" data-en="You walk over and ask Tiantian if you can play too. Is that okay?">你走过去，问甜甜可不可以一起玩。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/join_activity_pre_p2_a.jpg?v=1793444665" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q3" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q3" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -179,8 +185,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="4">
     <div class="item-head">
       <span class="item-num">4</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园里，甜甜一个人在用树枝搭堡垒。明明没有问，就直接加进去一起玩了。明明这样做，可以不可以？" data-en="At the park, Tiantian is building a fort with sticks on her own. Without asking, Mingming just joins in. Is it okay for Mingming to do this?">在公园里，甜甜一个人在用树枝搭堡垒。明明没有问，就直接加进去一起玩了。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你没有问，就直接加进去一起玩了。可以吗？" data-en="Without asking, you just join in. Is that okay?">你没有问，就直接加进去一起玩了。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/join_activity_pre_p2_c.jpg?v=1793441947" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q4" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q4" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -190,8 +197,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="5">
     <div class="item-head">
       <span class="item-num">5</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园里，甜甜一个人在用树枝搭堡垒。明明站在旁边，有点紧张，没有加入。明明这样做，可以不可以？" data-en="At the park, Tiantian is building a fort with sticks on her own. Mingming stands nearby, a bit nervous, and doesn't join. Is it okay for Mingming to do this?">在公园里，甜甜一个人在用树枝搭堡垒。明明站在旁边，有点紧张，没有加入。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你站在旁边，有点紧张，没有加入。可以吗？" data-en="You stand nearby, a bit nervous, and don't join. Is that okay?">你站在旁边，有点紧张，没有加入。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/join_activity_pre_p2_b.jpg?v=1793444674" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q5" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q5" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -201,8 +209,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="6">
     <div class="item-head">
       <span class="item-num">6</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园里，甜甜一个人在用树枝搭堡垒。明明冲过去，大声叫嚷着要加入。明明这样做，可以不可以？" data-en="At the park, Tiantian is building a fort with sticks on her own. Mingming rushes over, shouting that he wants to join. Is it okay for Mingming to do this?">在公园里，甜甜一个人在用树枝搭堡垒。明明冲过去，大声叫嚷着要加入。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你直接冲过去，大声说着要加入。可以吗？" data-en="You rush over, loudly saying you want to join. Is that okay?">你直接冲过去，大声说着要加入。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/join_activity_pre_p2_d.jpg?v=1793446188" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q6" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q6" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -210,39 +219,44 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
     <div class="feedback"></div>
   </div>
 
-  <div class="section-band c"><span class="num"><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></span><span class="label"><span class="i18n" data-zh="为什么会这样？" data-en="Why did this happen?">为什么会这样？</span></span><span class="sub" id="sub-c">0 / 4</span></div>
-  <img class="item-img" src="assets/join_activity_pre_part3.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band c"><span class="num"><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-c">0 / 4</span></div>
+  <img class="item-img" src="assets/join_activity_pre_part3.jpg?v=1792569231" alt="" loading="lazy">
+  <p class="part-setup"><span class="i18n" data-zh="在公园小路上，甜甜在跳绳。" data-en="On the park path, Tiantian is jumping rope.">在公园小路上，甜甜在跳绳。</span></p>
   
   <div class="item" data-item="7">
     <div class="item-head">
       <span class="item-num">7</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园小路上，甜甜一个人在跳绳。明明走过去，问甜甜可不可以一起玩。甜甜很开心。甜甜为什么开心？" data-en="On the park path, Tiantian is jumping rope on her own. Mingming walks over and asks Tiantian if he can play too. Tiantian is happy. Why does Tiantian feel happy?">在公园小路上，甜甜一个人在跳绳。明明走过去，问甜甜可不可以一起玩。甜甜很开心。甜甜为什么开心？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你走过去，问她能不能一起玩，甜甜很开心。为什么？" data-en="You walk over and ask to play, and Tiantian is happy. Why?">你走过去，问她能不能一起玩，甜甜很开心。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q7" value="R2"><span class="i18n opt-text" data-zh="因为甜甜刚刚吃了冰淇淋" data-en="Because Tiantian just had ice cream">因为甜甜刚刚吃了冰淇淋</span></label><label class="opt"><input type="radio" name="q7" value="R1"><span class="i18n opt-text" data-zh="因为明明先礼貌地问了能不能一起玩" data-en="Because Mingming politely asked first if he could play">因为明明先礼貌地问了能不能一起玩</span></label><label class="opt"><input type="radio" name="q7" value="R3"><span class="i18n opt-text" data-zh="因为今天不用上学" data-en="Because there's no school today">因为今天不用上学</span></label><label class="opt"><input type="radio" name="q7" value="R4"><span class="i18n opt-text" data-zh="因为甜甜的跳绳是新买的" data-en="Because Tiantian's jump rope is new">因为甜甜的跳绳是新买的</span></label></div>
+    <img class="item-img" src="assets/join_activity_pre_p3_a.jpg?v=1793446027" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q7" value="R2"><span class="i18n opt-text" data-zh="她刚吃了冰淇淋" data-en="She just had ice cream">她刚吃了冰淇淋</span></label><label class="opt"><input type="radio" name="q7" value="R1"><span class="i18n opt-text" data-zh="你先问了能不能玩" data-en="You asked first">你先问了能不能玩</span></label><label class="opt"><input type="radio" name="q7" value="R3"><span class="i18n opt-text" data-zh="今天不用上学" data-en="No school today">今天不用上学</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="8">
     <div class="item-head">
       <span class="item-num">8</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园小路上，甜甜一个人在跳绳。明明没有问，就直接加进去一起玩了。甜甜很惊讶。甜甜为什么惊讶？" data-en="On the park path, Tiantian is jumping rope on her own. Without asking, Mingming just joins in. Tiantian is surprised. Why does Tiantian feel surprised?">在公园小路上，甜甜一个人在跳绳。明明没有问，就直接加进去一起玩了。甜甜很惊讶。甜甜为什么惊讶？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你没问就直接加进去玩，甜甜很惊讶。为什么？" data-en="You join in without asking, and Tiantian is surprised. Why?">你没问就直接加进去玩，甜甜很惊讶。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q8" value="R2"><span class="i18n opt-text" data-zh="因为跳绳突然断了" data-en="Because the rope suddenly broke">因为跳绳突然断了</span></label><label class="opt"><input type="radio" name="q8" value="R3"><span class="i18n opt-text" data-zh="因为公园里来了一只小狗" data-en="Because a puppy came into the park">因为公园里来了一只小狗</span></label><label class="opt"><input type="radio" name="q8" value="R4"><span class="i18n opt-text" data-zh="因为甜甜看到天上有彩虹" data-en="Because Tiantian saw a rainbow in the sky">因为甜甜看到天上有彩虹</span></label><label class="opt"><input type="radio" name="q8" value="R1"><span class="i18n opt-text" data-zh="因为明明没问一声就直接加进来，甜甜没想到" data-en="Because Mingming joined in without asking, and Tiantian didn't expect it">因为明明没问一声就直接加进来，甜甜没想到</span></label></div>
+    <img class="item-img" src="assets/join_activity_pre_p3_c.jpg?v=1793446046" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q8" value="R2"><span class="i18n opt-text" data-zh="跳绳突然断了" data-en="The rope broke">跳绳突然断了</span></label><label class="opt"><input type="radio" name="q8" value="R3"><span class="i18n opt-text" data-zh="来了一只小狗" data-en="A puppy came by">来了一只小狗</span></label><label class="opt"><input type="radio" name="q8" value="R1"><span class="i18n opt-text" data-zh="你没问就加进来" data-en="You joined without asking">你没问就加进来</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="9">
     <div class="item-head">
       <span class="item-num">9</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园小路上，甜甜一个人在跳绳。明明站在旁边，有点紧张，没有加入。甜甜没什么特别的感觉。甜甜为什么没什么感觉？" data-en="On the park path, Tiantian is jumping rope on her own. Mingming stands nearby, a bit nervous, and doesn't join. Tiantian doesn't feel anything special. Why not?">在公园小路上，甜甜一个人在跳绳。明明站在旁边，有点紧张，没有加入。甜甜没什么特别的感觉。甜甜为什么没什么感觉？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你站在旁边，有点紧张，没加入，甜甜没什么感觉。为什么？" data-en="You stand nearby, nervous, not joining, and Tiantian doesn't feel much. Why?">你站在旁边，有点紧张，没加入，甜甜没什么感觉。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q9" value="R1"><span class="i18n opt-text" data-zh="因为明明只是站在旁边，没有打扰甜甜" data-en="Because Mingming only stood nearby and didn't bother Tiantian">因为明明只是站在旁边，没有打扰甜甜</span></label><label class="opt"><input type="radio" name="q9" value="R2"><span class="i18n opt-text" data-zh="因为甜甜很讨厌明明" data-en="Because Tiantian really dislikes Mingming">因为甜甜很讨厌明明</span></label><label class="opt"><input type="radio" name="q9" value="R3"><span class="i18n opt-text" data-zh="因为甜甜刚刚摔了一跤" data-en="Because Tiantian just fell down">因为甜甜刚刚摔了一跤</span></label><label class="opt"><input type="radio" name="q9" value="R4"><span class="i18n opt-text" data-zh="因为甜甜在等妈妈来接她" data-en="Because Tiantian is waiting for her mom to pick her up">因为甜甜在等妈妈来接她</span></label></div>
+    <img class="item-img" src="assets/join_activity_pre_p3_b.jpg?v=1793446037" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q9" value="R1"><span class="i18n opt-text" data-zh="你只站着，没打扰她" data-en="You only stood there, no bother">你只站着，没打扰她</span></label><label class="opt"><input type="radio" name="q9" value="R3"><span class="i18n opt-text" data-zh="她刚摔了一跤" data-en="She just fell down">她刚摔了一跤</span></label><label class="opt"><input type="radio" name="q9" value="R4"><span class="i18n opt-text" data-zh="她在等妈妈" data-en="She is waiting for Mom">她在等妈妈</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="10">
     <div class="item-head">
       <span class="item-num">10</span>
-      <p class="item-text"><span class="i18n" data-zh="在公园小路上，甜甜一个人在跳绳。明明冲过去，大声叫嚷着要加入。甜甜很惊讶。甜甜为什么惊讶？" data-en="On the park path, Tiantian is jumping rope on her own. Mingming rushes over, shouting that he wants to join. Tiantian is surprised. Why does Tiantian feel surprised?">在公园小路上，甜甜一个人在跳绳。明明冲过去，大声叫嚷着要加入。甜甜很惊讶。甜甜为什么惊讶？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你冲过去，大声喊着要加入，甜甜很惊讶。为什么？" data-en="You rush over shouting to join, and Tiantian is surprised. Why?">你冲过去，大声喊着要加入，甜甜很惊讶。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q10" value="R2"><span class="i18n opt-text" data-zh="因为跳绳突然打结了" data-en="Because the rope suddenly got tangled">因为跳绳突然打结了</span></label><label class="opt"><input type="radio" name="q10" value="R3"><span class="i18n opt-text" data-zh="因为天上突然下雨了" data-en="Because it suddenly started raining">因为天上突然下雨了</span></label><label class="opt"><input type="radio" name="q10" value="R1"><span class="i18n opt-text" data-zh="因为明明突然冲过来大声叫，甜甜没想到" data-en="Because Mingming suddenly rushed over shouting, and Tiantian didn't expect it">因为明明突然冲过来大声叫，甜甜没想到</span></label><label class="opt"><input type="radio" name="q10" value="R4"><span class="i18n opt-text" data-zh="因为甜甜看到一只蝴蝶飞过" data-en="Because Tiantian saw a butterfly fly by">因为甜甜看到一只蝴蝶飞过</span></label></div>
+    <img class="item-img" src="assets/join_activity_pre_p3_d.jpg?v=1793446196" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q10" value="R2"><span class="i18n opt-text" data-zh="跳绳打结了" data-en="The rope got tangled">跳绳打结了</span></label><label class="opt"><input type="radio" name="q10" value="R3"><span class="i18n opt-text" data-zh="突然下雨了" data-en="It suddenly rained">突然下雨了</span></label><label class="opt"><input type="radio" name="q10" value="R1"><span class="i18n opt-text" data-zh="你突然冲过来大声喊" data-en="You suddenly rushed over shouting">你突然冲过来大声喊</span></label></div>
     <div class="feedback"></div>
   </div>
 

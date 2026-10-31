@@ -67,7 +67,7 @@ h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4
   justify-content: center; font-variant-numeric: tabular-nums; }
 .item-text { font-size: 18px; font-weight: 600; line-height: 1.55; padding-top: 4px; }
 .item-img { width: 100%; max-width: 480px; display: block; margin: 4px auto 16px; border-radius: 10px; border: 1px solid var(--line); }
-/* Who's who, shown once before Part 1 (the section pictures show only 明明). */
+/* Who's who, shown once before Part 1. Only 甜甜 since 2026-10-31: every item says 你, not 明明. */
 .cast { display: flex; justify-content: center; gap: 28px; margin: 4px 0 20px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .cast figure { margin: 0; text-align: center; }
 .cast img { width: 150px; height: 150px; object-fit: cover; object-position: top; border-radius: 50%; border: 3px solid var(--accent-soft-2); }
@@ -89,6 +89,11 @@ h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4
 .opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .opt .opt-text { font-size: 16.5px; color: var(--ink); line-height: 1.4; }
 .opt .emoji { font-size: 20px; line-height: 1; flex: none; }
+.opt .face { width: 88px; height: 88px; flex: none; object-fit: cover; object-position: 50% 50%; border-radius: 50%; border: 2px solid var(--line); }
+.part-setup { font-size: 20px; font-weight: 700; text-align: center; margin: 0 0 16px; color: var(--ink); }
+.opt.pic { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px; }
+.opt.pic img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; }
+.opt.pic .pic-row { display: flex; align-items: center; gap: 10px; padding: 0 4px 2px; }
 .options.tf { display: flex; flex-direction: row; gap: 14px; margin-left: 46px; }
 .options.tf .opt { flex: 1; justify-content: center; padding: 14px; }
 .options.tf .opt-text { font-size: 17px; font-weight: 700; }
@@ -129,7 +134,7 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
     <button class="lang-toggle i18n" id="langToggle" data-zh="EN" data-en="中文">EN</button>
     <div class="eyebrow">VideoASD · Post-quiz</div>
     <h1><span class="i18n" data-zh="交朋友测验卷" data-en="Making Friends Quiz">交朋友测验卷</span></h1>
-    <p class="subhead"><span class="i18n" data-zh="场景：自助餐厅" data-en="Scene: Cafeteria">场景：自助餐厅</span></p>
+    <p class="subhead"><span class="i18n" data-zh="场景：餐厅" data-en="Scene: Restaurant">场景：餐厅</span></p>
     <div class="id-row">
       <div class="id-field"><span class="i18n" data-zh="Kid 编号（不写姓名）" data-en="Kid ID (no names)">Kid 编号（不写姓名）</span> <input type="text" id="childId"></div>
       <div class="id-field"><span class="i18n" data-zh="施测日期" data-en="Test date">施测日期</span> <input type="text" id="testDate"></div>
@@ -138,19 +143,18 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   </div>
 
   <div class="cast">
-    <figure><img src="assets/character_mingming.jpg?v=20261021" alt=""><figcaption><span class="i18n" data-zh="这是明明" data-en="This is Mingming">这是明明</span></figcaption></figure>
-    <figure><img src="assets/character_tiantian.jpg?v=20261021" alt=""><figcaption><span class="i18n" data-zh="这是甜甜" data-en="This is Tiantian">这是甜甜</span></figcaption></figure>
+    <figure><img src="assets/character_tiantian.jpg?v=1792566409" alt=""><figcaption><span class="i18n" data-zh="这是甜甜" data-en="This is Tiantian">这是甜甜</span></figcaption></figure>
   </div>
 
-  <div class="section-band a"><span class="num"><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></span><span class="label"><span class="i18n" data-zh="你会怎么做？甜甜会有什么感觉？" data-en="What would you do? How would Tiantian feel?">你会怎么做？甜甜会有什么感觉？</span></span><span class="sub" id="sub-a">0 / 3</span></div>
-  <img class="item-img" src="assets/make_friends_post_part1.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band a"><span class="num"><span class="i18n" data-zh="第一部分" data-en="Part 1">第一部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-a">0 / 3</span></div>
+  <img class="item-img" src="assets/make_friends_post_part1.jpg?v=1793443659" alt="" loading="lazy">
   
   <div class="item" data-item="1">
     <div class="item-head">
       <span class="item-num">1</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在叠杯子。你想跟甜甜做朋友。你会怎么做？" data-en="At the cafeteria table, Tiantian is stacking cups alone. You want to be friends with Tiantian. What would you do?">在餐厅桌子旁，甜甜一个人在叠杯子。你想跟甜甜做朋友。你会怎么做？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="吃完午饭，甜甜一个人坐在桌子旁玩贴纸本。你想跟甜甜做朋友。你会怎么做？" data-en="After lunch, Tiantian is sitting alone at the table playing with her sticker book. You want to be friends with Tiantian. What would you do?">吃完午饭，甜甜一个人坐在桌子旁玩贴纸本。你想跟甜甜做朋友。你会怎么做？</span></p>
     </div>
-    <div class="options grid2"><label class="opt"><input type="radio" name="q1-action" value="a"><span class="i18n opt-text" data-zh="走过去打招呼" data-en="Walk over and say hi">走过去打招呼</span></label><label class="opt"><input type="radio" name="q1-action" value="b"><span class="i18n opt-text" data-zh="站着看" data-en="Stand and watch">站着看</span></label><label class="opt"><input type="radio" name="q1-action" value="c"><span class="i18n opt-text" data-zh="直接把玩具拿走" data-en="Just take the toy">直接把玩具拿走</span></label><label class="opt"><input type="radio" name="q1-action" value="d"><span class="i18n opt-text" data-zh="冲过去，特别热情" data-en="Rush over, super excited">冲过去，特别热情</span></label></div>
+    <div class="options grid2"><label class="opt pic"><img src="assets/make_friends_post_act_a.jpg?v=1793444839" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="a"><span class="i18n opt-text" data-zh="走过去打招呼" data-en="Walk over and say hi">走过去打招呼</span></span></label><label class="opt pic"><img src="assets/make_friends_post_act_b.jpg?v=1793444585" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="b"><span class="i18n opt-text" data-zh="站着看" data-en="Stand and watch">站着看</span></span></label><label class="opt pic"><img src="assets/make_friends_post_act_c.jpg?v=1793443705" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="c"><span class="i18n opt-text" data-zh="直接把贴纸本拿走" data-en="Just take the sticker book">直接把贴纸本拿走</span></span></label><label class="opt pic"><img src="assets/make_friends_post_act_d.jpg?v=1793446154" alt="" loading="lazy"><span class="pic-row"><input type="radio" name="q1-action" value="d"><span class="i18n opt-text" data-zh="冲过去，特别热情" data-en="Rush over, super excited">冲过去，特别热情</span></span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="2">
@@ -158,18 +162,20 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
       <span class="item-num">2</span>
       <p class="item-text"><span class="i18n" data-zh="根据你刚才选的行动，甜甜会有什么感觉？" data-en="Based on the action you just picked, how would Tiantian feel?">根据你刚才选的行动，甜甜会有什么感觉？</span></p>
     </div>
-    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><span class="emoji" aria-hidden="true">😊</span><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Sad"><span class="emoji" aria-hidden="true">😢</span><span class="i18n opt-text" data-zh="难过" data-en="Sad">难过</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><span class="emoji" aria-hidden="true">😠</span><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Scared"><span class="emoji" aria-hidden="true">😨</span><span class="i18n opt-text" data-zh="害怕" data-en="Scared">害怕</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><span class="emoji" aria-hidden="true">😲</span><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><span class="emoji" aria-hidden="true">😐</span><span class="i18n opt-text" data-zh="中性" data-en="Neutral">中性</span></label></div>
+    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><img class="face" src="assets/tiantian_happy.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><img class="face" src="assets/tiantian_angry.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><img class="face" src="assets/tiantian_surprised.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><img class="face" src="assets/tiantian_neutral.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="没什么感觉" data-en="No big feeling">没什么感觉</span></label></div>
     <div class="feedback"></div>
   </div>
 
-  <div class="section-band b"><span class="num"><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></span><span class="label"><span class="i18n" data-zh="这样做，可以不可以？" data-en="Is it okay to do this?">这样做，可以不可以？</span></span><span class="sub" id="sub-b">0 / 4</span></div>
-  <img class="item-img" src="assets/make_friends_post_part2.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band b"><span class="num"><span class="i18n" data-zh="第二部分" data-en="Part 2">第二部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-b">0 / 4</span></div>
+  <img class="item-img" src="assets/make_friends_post_part2.jpg?v=1793443983" alt="" loading="lazy">
+  <p class="part-setup"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在涂色。" data-en="At the cafeteria table, Tiantian is coloring alone.">在餐厅桌子旁，甜甜一个人在涂色。</span></p>
   
   <div class="item" data-item="3">
     <div class="item-head">
       <span class="item-num">3</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在涂色。明明走过去，跟甜甜打招呼。明明这样做，可以不可以？" data-en="At the cafeteria table, Tiantian is coloring alone. Mingming walks over and says hi to Tiantian. Is it okay for Mingming to do this?">在餐厅桌子旁，甜甜一个人在涂色。明明走过去，跟甜甜打招呼。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你直接走过去跟甜甜打招呼。可以吗？" data-en="You walk right over and say hi to Tiantian. Is that okay?">你直接走过去跟甜甜打招呼。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/make_friends_post_p2_a.jpg?v=1793444922" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q3" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q3" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -179,8 +185,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="4">
     <div class="item-head">
       <span class="item-num">4</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在涂色。明明没有问，直接拿走了甜甜的彩笔。明明这样做，可以不可以？" data-en="At the cafeteria table, Tiantian is coloring alone. Without asking, Mingming takes Tiantian's crayons. Is it okay for Mingming to do this?">在餐厅桌子旁，甜甜一个人在涂色。明明没有问，直接拿走了甜甜的彩笔。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你没有问，直接拿走了甜甜的彩笔。可以吗？" data-en="Without asking, you take Tiantian's crayons. Is that okay?">你没有问，直接拿走了甜甜的彩笔。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/make_friends_post_p2_c.jpg?v=1793444022" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q4" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q4" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -190,8 +197,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="5">
     <div class="item-head">
       <span class="item-num">5</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在涂色。明明站在旁边看。明明这样做，可以不可以？" data-en="At the cafeteria table, Tiantian is coloring alone. Mingming stands nearby and watches. Is it okay for Mingming to do this?">在餐厅桌子旁，甜甜一个人在涂色。明明站在旁边看。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你站在旁边看。可以吗？" data-en="You stand nearby and watch. Is that okay?">你站在旁边看。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/make_friends_post_p2_b.jpg?v=1793444611" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q5" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q5" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -201,8 +209,9 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
   <div class="item" data-item="6">
     <div class="item-head">
       <span class="item-num">6</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅桌子旁，甜甜一个人在涂色。明明冲过去，大声叫嚷着要跟甜甜一起玩。明明这样做，可以不可以？" data-en="At the cafeteria table, Tiantian is coloring alone. Mingming rushes over, shouting that he wants to play with Tiantian. Is it okay for Mingming to do this?">在餐厅桌子旁，甜甜一个人在涂色。明明冲过去，大声叫嚷着要跟甜甜一起玩。明明这样做，可以不可以？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你直接冲过去，大声说着要跟甜甜一起玩。可以吗？" data-en="You rush over, loudly saying you want to play with Tiantian. Is that okay?">你直接冲过去，大声说着要跟甜甜一起玩。可以吗？</span></p>
     </div>
+    <img class="item-img" src="assets/make_friends_post_p2_d.jpg?v=1793446248" alt="" loading="lazy">
     <div class="options tf">
       <label class="opt"><input type="radio" name="q6" value="true"><span class="i18n opt-text" data-zh="可以" data-en="Okay">可以</span></label>
       <label class="opt"><input type="radio" name="q6" value="false"><span class="i18n opt-text" data-zh="不可以" data-en="Not okay">不可以</span></label>
@@ -210,39 +219,44 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
     <div class="feedback"></div>
   </div>
 
-  <div class="section-band c"><span class="num"><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></span><span class="label"><span class="i18n" data-zh="为什么会这样？" data-en="Why did this happen?">为什么会这样？</span></span><span class="sub" id="sub-c">0 / 4</span></div>
-  <img class="item-img" src="assets/make_friends_post_part3.jpg?v=20261021d" alt="" loading="lazy">
+  <div class="section-band c"><span class="num"><span class="i18n" data-zh="第三部分" data-en="Part 3">第三部分</span></span><span class="label"><span class="i18n" data-zh="" data-en=""></span></span><span class="sub" id="sub-c">0 / 4</span></div>
+  <img class="item-img" src="assets/make_friends_post_part3.jpg?v=1792569222" alt="" loading="lazy">
+  <p class="part-setup"><span class="i18n" data-zh="在餐厅窗边，甜甜在排玩具车。" data-en="By the cafeteria window, Tiantian is lining up toy cars.">在餐厅窗边，甜甜在排玩具车。</span></p>
   
   <div class="item" data-item="7">
     <div class="item-head">
       <span class="item-num">7</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，甜甜一个人在排玩具车。明明走过去，跟甜甜打招呼。甜甜很开心。甜甜为什么开心？" data-en="By the cafeteria window, Tiantian is lining up toy cars alone. Mingming walks over and says hi to Tiantian. Tiantian is happy. Why does Tiantian feel happy?">在餐厅窗边，甜甜一个人在排玩具车。明明走过去，跟甜甜打招呼。甜甜很开心。甜甜为什么开心？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你走过去打招呼，甜甜很开心。为什么？" data-en="You walk over and say hi, and Tiantian is happy. Why?">你走过去打招呼，甜甜很开心。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q7" value="R2"><span class="i18n opt-text" data-zh="因为午饭有甜甜最喜欢的菜" data-en="Because lunch has Tiantian's favorite food">因为午饭有甜甜最喜欢的菜</span></label><label class="opt"><input type="radio" name="q7" value="R1"><span class="i18n opt-text" data-zh="因为明明很友好地来打招呼" data-en="Because Mingming came over and said hi in a friendly way">因为明明很友好地来打招呼</span></label><label class="opt"><input type="radio" name="q7" value="R3"><span class="i18n opt-text" data-zh="因为老师刚刚表扬了甜甜" data-en="Because the teacher just praised Tiantian">因为老师刚刚表扬了甜甜</span></label><label class="opt"><input type="radio" name="q7" value="R4"><span class="i18n opt-text" data-zh="因为放学后要去公园玩" data-en="Because they're going to the park after school">因为放学后要去公园玩</span></label></div>
+    <img class="item-img" src="assets/make_friends_post_p3_a.jpg?v=1793445991" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q7" value="R2"><span class="i18n opt-text" data-zh="午饭有她爱吃的菜" data-en="Lunch has her favorite dish">午饭有她爱吃的菜</span></label><label class="opt"><input type="radio" name="q7" value="R1"><span class="i18n opt-text" data-zh="你友好地打招呼" data-en="You said hi nicely">你友好地打招呼</span></label><label class="opt"><input type="radio" name="q7" value="R3"><span class="i18n opt-text" data-zh="老师表扬了她" data-en="The teacher praised her">老师表扬了她</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="8">
     <div class="item-head">
       <span class="item-num">8</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，甜甜一个人在排玩具车。明明站在旁边看。甜甜没什么特别的感觉。甜甜为什么没什么感觉？" data-en="By the cafeteria window, Tiantian is lining up toy cars alone. Mingming stands nearby and watches. Tiantian doesn't feel anything special. Why not?">在餐厅窗边，甜甜一个人在排玩具车。明明站在旁边看。甜甜没什么特别的感觉。甜甜为什么没什么感觉？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你站在旁边看，甜甜没什么感觉。为什么？" data-en="You stand nearby and watch, and Tiantian doesn't feel much. Why?">你站在旁边看，甜甜没什么感觉。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q8" value="R2"><span class="i18n opt-text" data-zh="因为甜甜很讨厌明明" data-en="Because Tiantian really dislikes Mingming">因为甜甜很讨厌明明</span></label><label class="opt"><input type="radio" name="q8" value="R3"><span class="i18n opt-text" data-zh="因为甜甜的午饭还没吃完" data-en="Because Tiantian hasn't finished her lunch">因为甜甜的午饭还没吃完</span></label><label class="opt"><input type="radio" name="q8" value="R4"><span class="i18n opt-text" data-zh="因为甜甜找不到自己的水杯" data-en="Because Tiantian can't find her cup">因为甜甜找不到自己的水杯</span></label><label class="opt"><input type="radio" name="q8" value="R1"><span class="i18n opt-text" data-zh="因为明明只是看看，没有打扰甜甜" data-en="Because Mingming was only watching and didn't bother Tiantian">因为明明只是看看，没有打扰甜甜</span></label></div>
+    <img class="item-img" src="assets/make_friends_post_p3_b.jpg?v=1793446000" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q8" value="R3"><span class="i18n opt-text" data-zh="她午饭还没吃完" data-en="She hasn't finished lunch">她午饭还没吃完</span></label><label class="opt"><input type="radio" name="q8" value="R4"><span class="i18n opt-text" data-zh="她找不到水杯" data-en="She can't find her cup">她找不到水杯</span></label><label class="opt"><input type="radio" name="q8" value="R1"><span class="i18n opt-text" data-zh="你只看看，没打扰她" data-en="You only watched, no bother">你只看看，没打扰她</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="9">
     <div class="item-head">
       <span class="item-num">9</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，甜甜一个人在排玩具车。明明没有问，直接拿走了甜甜的玩具车。甜甜很生气。甜甜为什么生气？" data-en="By the cafeteria window, Tiantian is lining up toy cars alone. Without asking, Mingming takes Tiantian's toy cars. Tiantian is angry. Why does Tiantian feel angry?">在餐厅窗边，甜甜一个人在排玩具车。明明没有问，直接拿走了甜甜的玩具车。甜甜很生气。甜甜为什么生气？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你没问就拿走了她的玩具车，甜甜很生气。为什么？" data-en="You take her toy car without asking, and Tiantian is angry. Why?">你没问就拿走了她的玩具车，甜甜很生气。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q9" value="R1"><span class="i18n opt-text" data-zh="因为甜甜正在玩的玩具车，明明没问就拿走了" data-en="Because Mingming took the toy cars Tiantian was playing with without asking">因为甜甜正在玩的玩具车，明明没问就拿走了</span></label><label class="opt"><input type="radio" name="q9" value="R2"><span class="i18n opt-text" data-zh="因为午饭的菜甜甜不喜欢吃" data-en="Because Tiantian doesn't like the lunch food">因为午饭的菜甜甜不喜欢吃</span></label><label class="opt"><input type="radio" name="q9" value="R3"><span class="i18n opt-text" data-zh="因为甜甜的鞋带松了" data-en="Because Tiantian's shoelace came undone">因为甜甜的鞋带松了</span></label><label class="opt"><input type="radio" name="q9" value="R4"><span class="i18n opt-text" data-zh="因为甜甜不想上学" data-en="Because Tiantian doesn't want to go to school">因为甜甜不想上学</span></label></div>
+    <img class="item-img" src="assets/make_friends_post_p3_c.jpg?v=1793446008" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q9" value="R1"><span class="i18n opt-text" data-zh="你没问就拿走玩具车" data-en="You took the car without asking">你没问就拿走玩具车</span></label><label class="opt"><input type="radio" name="q9" value="R2"><span class="i18n opt-text" data-zh="午饭的菜不好吃" data-en="Lunch isn't tasty">午饭的菜不好吃</span></label><label class="opt"><input type="radio" name="q9" value="R3"><span class="i18n opt-text" data-zh="她的鞋带松了" data-en="Her shoelace came loose">她的鞋带松了</span></label></div>
     <div class="feedback"></div>
   </div>
   <div class="item" data-item="10">
     <div class="item-head">
       <span class="item-num">10</span>
-      <p class="item-text"><span class="i18n" data-zh="在餐厅窗边，甜甜一个人在排玩具车。明明冲过去，大声叫嚷着要跟甜甜一起玩。甜甜很惊讶。甜甜为什么惊讶？" data-en="By the cafeteria window, Tiantian is lining up toy cars alone. Mingming rushes over, shouting that he wants to play with Tiantian. Tiantian is surprised. Why does Tiantian feel surprised?">在餐厅窗边，甜甜一个人在排玩具车。明明冲过去，大声叫嚷着要跟甜甜一起玩。甜甜很惊讶。甜甜为什么惊讶？</span></p>
+      <p class="item-text"><span class="i18n" data-zh="你冲过去，大声喊着要一起玩，甜甜很惊讶。为什么？" data-en="You rush over shouting to play, and Tiantian is surprised. Why?">你冲过去，大声喊着要一起玩，甜甜很惊讶。为什么？</span></p>
     </div>
-    <div class="options"><label class="opt"><input type="radio" name="q10" value="R2"><span class="i18n opt-text" data-zh="因为甜甜发现盘子里多了一块蛋糕" data-en="Because Tiantian found an extra piece of cake on her plate">因为甜甜发现盘子里多了一块蛋糕</span></label><label class="opt"><input type="radio" name="q10" value="R3"><span class="i18n opt-text" data-zh="因为窗外飞过一只大鸟" data-en="Because a big bird flew past the window">因为窗外飞过一只大鸟</span></label><label class="opt"><input type="radio" name="q10" value="R1"><span class="i18n opt-text" data-zh="因为明明突然冲过来大声叫，甜甜没想到" data-en="Because Mingming suddenly rushed over shouting, and Tiantian didn't expect it">因为明明突然冲过来大声叫，甜甜没想到</span></label><label class="opt"><input type="radio" name="q10" value="R4"><span class="i18n opt-text" data-zh="因为甜甜的玩具车自己跑起来了" data-en="Because Tiantian's toy car started moving by itself">因为甜甜的玩具车自己跑起来了</span></label></div>
+    <img class="item-img" src="assets/make_friends_post_p3_d.jpg?v=1793446171" alt="" loading="lazy">
+    <div class="options"><label class="opt"><input type="radio" name="q10" value="R2"><span class="i18n opt-text" data-zh="盘子里多了蛋糕" data-en="There's extra cake">盘子里多了蛋糕</span></label><label class="opt"><input type="radio" name="q10" value="R3"><span class="i18n opt-text" data-zh="窗外飞过大鸟" data-en="A big bird flew by">窗外飞过大鸟</span></label><label class="opt"><input type="radio" name="q10" value="R1"><span class="i18n opt-text" data-zh="你突然冲过来大声喊" data-en="You suddenly rushed over shouting">你突然冲过来大声喊</span></label></div>
     <div class="feedback"></div>
   </div>
 
@@ -264,7 +278,7 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
     </table>
   </div>
 
-  <footer>VideoASD · Post-quiz · <span class="i18n" data-zh="交朋友测验卷" data-en="Making Friends Quiz">交朋友测验卷</span> · <span class="i18n" data-zh="自助餐厅" data-en="Cafeteria">自助餐厅</span></footer>
+  <footer>VideoASD · Post-quiz · <span class="i18n" data-zh="交朋友测验卷" data-en="Making Friends Quiz">交朋友测验卷</span> · <span class="i18n" data-zh="餐厅" data-en="Restaurant">餐厅</span></footer>
 </main>
 <script>
 const ANSWERS = {"1": {"type": 1, "mode": "action", "points": {"a": 2, "b": 0, "c": -1, "d": 1}}, "2": {"type": 1, "mode": "emotion", "depends_on": 1, "emotion_map": {"a": "Happy", "b": "Neutral", "c": "Angry", "d": "Surprised"}}, "3": {"type": 2, "correct": true}, "4": {"type": 2, "correct": false}, "5": {"type": 2, "correct": true}, "6": {"type": 2, "correct": false}, "7": {"type": 3, "reason": "R1"}, "8": {"type": 3, "reason": "R1"}, "9": {"type": 3, "reason": "R1"}, "10": {"type": 3, "reason": "R1"}};
