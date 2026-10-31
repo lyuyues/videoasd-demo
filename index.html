@@ -1165,7 +1165,11 @@
 
     let calSamples = [];
     let calIdx = 0;
-    let gazeTrackingActive = false;
+    // Two separate switches: recording runs for the whole session once the
+    // child is calibrated on this page load; the red cursor is only a visual
+    // check for the grown-up. Hiding the cursor must NOT stop recording.
+    let gazeTrackingActive = false;   // cursor visible
+    let gazeRecording = false;        // gaze points being captured
 
     function renderCalDots() {
       $calDots.innerHTML = '';
@@ -1227,6 +1231,7 @@
         return;
       }
       gaze.saveCalibration(model);
+      gazeRecording = true;
       console.log('[gaze] calibrated:', model);
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
@@ -1252,7 +1257,7 @@
     const gazeDiag = { frames: 0, valid: 0, capTotal: 0, capOn: 0 }; // DIAG
     gaze.onFrame(() => {
       gazeDiag.frames++;                 // DIAG: loop alive?
-      if (!gazeTrackingActive) return;
+      if (!gazeRecording) return;
       const g = gaze.getScreenGaze();
       if (!g) {
         // No face (or stale >700ms, see gaze.js) -- hide rather than leave the
@@ -1260,7 +1265,7 @@
         $gazeCursor.classList.remove('show');
         return;
       }
-      $gazeCursor.classList.add('show');
+      if (gazeTrackingActive) $gazeCursor.classList.add('show');
       gazeDiag.valid++;                  // DIAG: tracking produced gaze?
       const x = Math.max(0, Math.min(1, g.x)) * window.innerWidth;
       const y = Math.max(0, Math.min(1, g.y)) * window.innerHeight;
@@ -1734,7 +1739,7 @@
     let gazeBuf = null;   // { pts:[], on, off } in-memory for current clip
 
     function startGazeCap(loc, clip, video) {
-      if (!gazeTrackingActive) { gazeCap = null; gazeBuf = null; return; }
+      if (!gazeRecording) { gazeCap = null; gazeBuf = null; return; }
       gazeCap = { key: `${loc}|${clip}`, video, grabbed: false, startedAt: new Date().toISOString() };
       gazeBuf = { pts: [], on: 0, off: 0 };
     }
@@ -2427,7 +2432,7 @@
       renderReportTrees();
       $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 孩子看向哪里</h3>' +
         `<p class="report-stat" style="text-align:left;background:#f5f3ff;padding:8px 10px;border-radius:8px">` +
-        `ⓘ active:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
+        `ⓘ rec:${gazeRecording} · cursor:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
         `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`);
       if (!keys.length) {
         $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有保存视线数据。</p>');
