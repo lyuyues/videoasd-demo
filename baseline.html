@@ -54,6 +54,10 @@
     #cal-overlay.show { display: flex; }
     .cal-instructions { font-size: 16px; max-width: 540px; text-align: center; line-height: 1.6; }
     .cal-instructions strong { color: #ffd49a; }
+    /* Gone once the first dot is tapped: the child knows what to do by then, and the
+       text sat on the centre dot. An error message brings it back. */
+    .cal-instructions { transition: opacity .4s ease; }
+    .cal-instructions.faded { opacity: 0; }
     .cal-dots { position: absolute; inset: 0; pointer-events: none; }
     .cal-dot { position: absolute; width: 36px; height: 36px; transform: translate(-50%, -50%);
       border-radius: 50%; background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0.2) 70%);
@@ -189,6 +193,7 @@
     let calSamples = [], calIdx = 0;
     function renderCalDots() {
       $('cal-dots').innerHTML = '';
+      document.getElementById('cal-instructions').classList.toggle('faded', calIdx > 0 && calIdx < CAL_POINTS.length);
       CAL_POINTS.forEach(([x, y], i) => {
         const d = document.createElement('div');
         d.className = 'cal-dot' + (i < calIdx ? ' done' : '') + (i === calIdx ? ' current' : '');
@@ -227,7 +232,7 @@
       if (calIdx < CAL_POINTS.length) { renderCalDots(); return; }
       const model = fitAffine2D(calSamples);
       if (!model) {
-        $('cal-instructions').innerHTML = '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
+        $('cal-instructions').classList.remove('faded'); $('cal-instructions').innerHTML = '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
         setTimeout(() => { calIdx = 0; calSamples = []; renderCalDots(); $('cal-instructions').innerHTML = CAL_HINT; }, 1500);
         return;
       }

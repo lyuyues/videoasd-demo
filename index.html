@@ -655,6 +655,10 @@
       line-height: 1.6;
     }
     .cal-instructions strong { color: #ffd49a; }
+    /* Gone once the first dot is tapped: the child knows what to do by then, and the
+       text sat on the centre dot. An error message brings it back. */
+    .cal-instructions { transition: opacity .4s ease; }
+    .cal-instructions.faded { opacity: 0; }
     .cal-dots {
       position: absolute; inset: 0;
       pointer-events: none;
@@ -1165,6 +1169,7 @@
 
     function renderCalDots() {
       $calDots.innerHTML = '';
+      document.getElementById('cal-instructions').classList.toggle('faded', calIdx > 0 && calIdx < CAL_POINTS.length);
       CAL_POINTS.forEach(([x, y], i) => {
         const d = document.createElement('div');
         d.className = 'cal-dot';
@@ -1216,7 +1221,7 @@
     function finishCalibration() {
       const model = fitAffine2D(calSamples);
       if (!model) {
-        document.getElementById('cal-instructions').innerHTML =
+        document.getElementById('cal-instructions').classList.remove('faded'); document.getElementById('cal-instructions').innerHTML =
           '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
         setTimeout(() => { calIdx = 0; renderCalDots(); }, 1500);
         return;
