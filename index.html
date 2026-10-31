@@ -2052,19 +2052,24 @@
       logEvent('prediction_locked', { construct: cid(), action: pendingChoice, emotion: pendingPrediction });
     });
 
-    // Outcome video finished -- reveal the mismatch check below it, not before
-    // Right/wrong feedback on the predicted feeling comes first (feedback.js).
+    // Outcome video finished -- reveal the mismatch check below it, not before.
+    // Once the check is answered (a replay after OBSERVE, or the child replaying it),
+    // the end of the clip brings back the try-another/complete row, not the check again.
     $outVideo.addEventListener('ended', () => {
-      // Once the check is answered (a replay after OBSERVE, or the child replaying it),
-      // the end of the clip brings back the try-another/complete row, not the check again.
-      const reveal = () => document.getElementById(pendingCheck ? 'poe-outcome-next' : 'poe-outcome-check').classList.remove('hidden');
+      document.getElementById(pendingCheck ? 'poe-outcome-next' : 'poe-outcome-check').classList.remove('hidden');
+    });
+    // Right/wrong feedback on the predicted feeling (feedback.js) comes AFTER the child's
+    // own "is it like you thought?" answer (2026-10-31), so that answer is the child's
+    // judgement, not an echo of the feedback. Once per lock-in, not on replays.
+    function predictionFeedback(then) {
       const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
       const right = judge(topic, pendingChoice, pendingPrediction);
-      if (right === null || $outVideo.dataset.fb) { reveal(); return; }   // once per lock-in, not on replays
+      if (right === null || $outVideo.dataset.fb) { then(); return; }
       $outVideo.dataset.fb = '1';
-      logEvent('prediction_feedback', { construct: cid(), action: pendingChoice, emotion: pendingPrediction, correct: right });
-      showFeedback(right, reveal);
-    });
+      logEvent('prediction_feedback', { construct: cid(), action: pendingChoice, emotion: pendingPrediction,
+        correct: right, check: pendingCheck });
+      showFeedback(right, then);
+    }
 
     // Mismatch check -- "Is it like you thought?"
     document.querySelectorAll('.check-btn').forEach((btn) => {
@@ -2075,17 +2080,19 @@
         // see the "key possibility tree + progress by (scene, topic)" fix.
         const constructId = $modal.dataset.constructId || '_default';
         document.getElementById('poe-outcome-check').classList.add('hidden');
-        if (pendingCheck !== 'yes' && !observedScenarios.has(constructId)) {
-          // First mismatch (no/kindof) for this (scene, topic) -- ask the child to re-label
-          // what Sam actually felt. Own step, not a substep here -- it doesn't need the
-          // outcome video visible, and sharing a scroll area with it was crowding both.
-          observedScenarios.add(constructId);
-          document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
-          showStep('observe');
-        } else {
-          // Either it matched, or this (scene, topic) already had its one OBSERVE prompt -- move on.
-          document.getElementById('poe-outcome-next').classList.remove('hidden');
-        }
+        predictionFeedback(() => {
+          if (pendingCheck !== 'yes' && !observedScenarios.has(constructId)) {
+            // First mismatch (no/kindof) for this (scene, topic) -- ask the child to re-label
+            // what Sam actually felt. Own step, not a substep here -- it doesn't need the
+            // outcome video visible, and sharing a scroll area with it was crowding both.
+            observedScenarios.add(constructId);
+            document.querySelectorAll('#observe-emotion-grid .emotion-btn').forEach((e) => e.classList.remove('selected'));
+            showStep('observe');
+          } else {
+            // Either it matched, or this (scene, topic) already had its one OBSERVE prompt -- move on.
+            document.getElementById('poe-outcome-next').classList.remove('hidden');
+          }
+        });
       });
     });
 
