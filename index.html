@@ -1171,6 +1171,18 @@
     let gazeTrackingActive = false;   // cursor visible
     let gazeRecording = false;        // gaze points being captured
 
+    // Calibration outcomes go into the event log, so every session file says whether
+    // gaze was on (like the baseline's baseline_started.gaze). During the setup gate
+    // they are only held here: logging them then would tag the PREVIOUS session id
+    // with the new Kid ID and defeat the new-child reset at handover. The gate's
+    // "把平板交给孩子" button writes them into the child's own session.
+    let pendingCalibration = [];
+    function noteCalibration(result, extra) {
+      const rec = { result, ...extra };
+      if (window.__afterCalibration) pendingCalibration.push({ ...rec, at: Date.now(), during: 'setup' });
+      else logEvent('gaze_calibration', { ...rec, during: 'session' });
+    }
+
     function renderCalDots() {
       $calDots.innerHTML = '';
       document.getElementById('cal-instructions').classList.toggle('faded', calIdx > 0 && calIdx < CAL_POINTS.length);
@@ -1204,6 +1216,7 @@
           '眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>点完全部 9 个圆点后，校准自动完成。';
       } catch (e) {
         console.error('[gaze] init failed:', e);
+        noteCalibration('error', { error: String(e && e.message || e) });
         document.getElementById('cal-instructions').innerHTML =
           `<span style="color:#ff8888">加载失败：${e.message || e}</span><br>请检查摄像头权限`;
       }
@@ -1225,6 +1238,7 @@
     function finishCalibration() {
       const model = fitAffine2D(calSamples);
       if (!model) {
+        noteCalibration('failed', {});
         document.getElementById('cal-instructions').classList.remove('faded'); document.getElementById('cal-instructions').innerHTML =
           '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
         setTimeout(() => { calIdx = 0; renderCalDots(); }, 1500);
@@ -1232,6 +1246,7 @@
       }
       gaze.saveCalibration(model);
       gazeRecording = true;
+      noteCalibration('ok', { points: calSamples.length, screen: [window.innerWidth, window.innerHeight] });
       console.log('[gaze] calibrated:', model);
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
@@ -1278,6 +1293,7 @@
     $calCancel.addEventListener('click', () => {
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
+      noteCalibration('cancelled', {});
       // Cancelling from the setup gate must land back on the gate, not on the map.
       if (window.__afterCalibration) { window.__afterCalibration('cancelled'); window.__afterCalibration = null; }
     });
@@ -2878,7 +2894,10 @@
         };
         document.getElementById('cal-start').click();
       });
-      document.getElementById('setup-cal-skip').addEventListener('click', () => markStep('cal', '已跳过'));
+      document.getElementById('setup-cal-skip').addEventListener('click', () => {
+        pendingCalibration.push({ result: 'skipped', at: Date.now(), during: 'setup' });
+        markStep('cal', '已跳过');
+      });
 
       /* Step 2 — the expert generation studio (VIDEOASD-backend/expert_ui.py).
          Opens in its own tab: it authors a scene with Veo and its output is
@@ -2925,6 +2944,12 @@
         // children never share a session file or see each other's trees.
         const owner = lastPrrParticipant();
         if (owner !== null && owner !== $pid.value.trim()) document.getElementById('reset-progress').click();
+        // Now in the child's session: record what happened at the gate, then whether
+        // gaze is being recorded for this sitting.
+        pendingCalibration.forEach((rec) => logEvent('gaze_calibration', rec));
+        const lastCal = pendingCalibration.length ? pendingCalibration[pendingCalibration.length - 1].result : null;
+        pendingCalibration = [];
+        logEvent('session_handover', { gaze: gazeRecording, calibration: lastCal });
         $setup.classList.add('hidden');
         // Land on the town map with all 4 places up, not straight into a scene --
         // now that the pills sit on the map itself, it's the actual picker, not
