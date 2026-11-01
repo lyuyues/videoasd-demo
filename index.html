@@ -2147,6 +2147,14 @@
 
     const thumb = (mp4) => mp4.replace(/\.mp4(?=\?|$)/, '.jpg');   // stills extracted per clip (ffmpeg)
     // Action label + picture for the current topic (clip topics) or the legacy icon set.
+    // Report headings: clip ids (context / action_a / reaction_a) in Chinese for parents (2026-10-31).
+    function clipTitle(constructId, clip) {
+      if (clip === 'context') return '情境';
+      const m = /^(action|reaction)_([a-z])$/.exec(clip);
+      if (!m) return clip;
+      return `${m[1] === 'action' ? '做法' : '结果'}：${actionInfo(m[2], constructId).label}`;
+    }
+
     function actionInfo(action, constructId) {
       const clips = constructId ? CLIPS[constructId] : currentClips;
       const o = clips && clips.options[action];
@@ -2553,7 +2561,7 @@
         const wrap = document.createElement('div');
         wrap.className = 'report-clip';
         wrap.innerHTML =
-          `<h3>${constructTitle(loc)} · ${clip}${demo ? ' <span class="demo-tag">示范</span>' : ''}</h3>` +
+          `<h3>${constructTitle(loc)} · ${clipTitle(loc, clip)}${demo ? ' <span class="demo-tag">示范</span>' : ''}</h3>` +
           `<div class="report-focus"></div>` +
           `<div class="report-stat">${onPct}% 的时间在看视频</div>` +
           `<div class="aoi-bars"></div>`;
