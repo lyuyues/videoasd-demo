@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>研究员入口</title>
-<!-- Researcher hub for both studies (2026-10-31). Open once as start.html?k=<token>; the token is
-     kept in this page's URL and added to every link, so researchers don't need to remember URLs.
+<!-- Researcher hub for both studies (2026-10-31). Open as start.html?k=<videoasd token>&sk=<sense token>
+     (the two servers have different STUDY_TOKENs); each link gets its own server's token as ?k=.
      No token is stored in this file. Parent videos live in parent_videos/ on the study server only
      (git-ignored, copied there by hand), not in git / GitHub Pages. -->
 <style>
@@ -33,7 +33,7 @@
 <main>
   <h1>研究员入口</h1>
   <p class="sub">SENSE 和 VideoASD 实验用到的所有页面。点开即可，访问码会自动带上。</p>
-  <div class="warn" id="warn">这个页面没有带访问码打开，下面的链接可能会显示"需要访问口令"。请用研究团队发的完整链接（带 <code>?k=</code>）打开本页，再加到主屏幕或书签。</div>
+  <div class="warn" id="warn">这个页面没有带访问码打开，下面的链接可能会显示"需要访问口令"。请用研究团队发的完整链接（带 <code>?k=…&amp;sk=…</code>）打开本页，再加到主屏幕或书签。</div>
 
   <section>
     <h2>🎬 给家长看的讲解视频</h2>
@@ -65,11 +65,12 @@
   <footer>如果 iPad 上的 VideoASD 版本不是最新，不要自己点"更新"，联系 Yue。</footer>
 </main>
 <script>
-  const k = new URLSearchParams(location.search).get('k');
-  if (!k) document.getElementById('warn').style.display = 'block';
+  const q = new URLSearchParams(location.search);
+  const tok = { 'videoasd.yuelyu.ca': q.get('k'), 'sense.yuelyu.ca': q.get('sk') };
+  if (!tok['videoasd.yuelyu.ca'] || !tok['sense.yuelyu.ca']) document.getElementById('warn').style.display = 'block';
   document.querySelectorAll('a[data-href]').forEach(a => {
     const u = new URL(a.dataset.href);
-    if (k) u.searchParams.set('k', k);
+    if (tok[u.host]) u.searchParams.set('k', tok[u.host]);
     a.href = u.toString();
   });
 </script>
