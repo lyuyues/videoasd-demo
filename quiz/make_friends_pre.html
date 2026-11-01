@@ -91,6 +91,8 @@ h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin: 0 0 4
 .opt .emoji { font-size: 20px; line-height: 1; flex: none; }
 .opt .face { width: 88px; height: 88px; flex: none; object-fit: cover; object-position: 50% 50%; border-radius: 50%; border: 2px solid var(--line); }
 .part-setup { font-size: 20px; font-weight: 700; text-align: center; margin: 0 0 16px; color: var(--ink); }
+.opt.face-opt { flex-direction: column; justify-content: center; gap: 8px; padding: 10px 6px; min-width: 0; }
+.opt.face-opt .pic-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .opt.pic { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px; }
 .opt.pic img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; }
 .opt.pic .pic-row { display: flex; align-items: center; gap: 10px; padding: 0 4px 2px; }
@@ -120,6 +122,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-top: 48px; }
 @media (max-width: 480px) {
   .options.grid2 { grid-template-columns: 1fr; } .prompt, .options { margin-left: 0; } .feedback { margin-left: 0; }
+  .opt.face-opt .face { width: 64px; height: 64px; }
   .lang-toggle { position: static; margin-bottom: 12px; }
 }
 @media print {
@@ -162,7 +165,7 @@ footer { text-align: center; color: var(--ink-faint); font-size: 13px; margin-to
       <span class="item-num">2</span>
       <p class="item-text"><span class="i18n" data-zh="根据你刚才选的行动，甜甜会有什么感觉？" data-en="Based on the action you just picked, how would Tiantian feel?">根据你刚才选的行动，甜甜会有什么感觉？</span></p>
     </div>
-    <div class="options grid2"><label class="opt"><input type="radio" name="q2-emotion" value="Happy"><img class="face" src="assets/tiantian_happy.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Sad"><img class="face" src="assets/tiantian_sad.jpg?v=1793550351" alt=""><span class="i18n opt-text" data-zh="难过" data-en="Sad">难过</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Angry"><img class="face" src="assets/tiantian_angry.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Surprised"><img class="face" src="assets/tiantian_surprised.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></label><label class="opt"><input type="radio" name="q2-emotion" value="Neutral"><img class="face" src="assets/tiantian_neutral.jpg?v=1793446529" alt=""><span class="i18n opt-text" data-zh="没什么感觉" data-en="No big feeling">没什么感觉</span></label></div>
+    <div class="options grid2"><label class="opt face-opt"><img class="face" src="assets/tiantian_happy.jpg?v=1793446529" alt=""><span class="pic-row"><input type="radio" name="q2-emotion" value="Happy"><span class="i18n opt-text" data-zh="开心" data-en="Happy">开心</span></span></label><label class="opt face-opt"><img class="face" src="assets/tiantian_sad.jpg?v=1793550351" alt=""><span class="pic-row"><input type="radio" name="q2-emotion" value="Sad"><span class="i18n opt-text" data-zh="难过" data-en="Sad">难过</span></span></label><label class="opt face-opt"><img class="face" src="assets/tiantian_angry.jpg?v=1793446529" alt=""><span class="pic-row"><input type="radio" name="q2-emotion" value="Angry"><span class="i18n opt-text" data-zh="生气" data-en="Angry">生气</span></span></label><label class="opt face-opt"><img class="face" src="assets/tiantian_surprised.jpg?v=1793446529" alt=""><span class="pic-row"><input type="radio" name="q2-emotion" value="Surprised"><span class="i18n opt-text" data-zh="惊讶" data-en="Surprised">惊讶</span></span></label><label class="opt face-opt"><img class="face" src="assets/tiantian_neutral.jpg?v=1793446529" alt=""><span class="pic-row"><input type="radio" name="q2-emotion" value="Neutral"><span class="i18n opt-text" data-zh="没什么感觉" data-en="No big feeling">没什么感觉</span></span></label></div>
     <div class="feedback"></div>
   </div>
 
@@ -286,7 +289,7 @@ function syncEmotionOptions() {
       if (i < 0) inp.checked = false;
     });
     const grid = item.querySelector(".options");
-    if (grid) grid.style.gridTemplateColumns = allowed.length === 3 ? "repeat(3, 1fr)" : "";
+    if (grid) grid.style.gridTemplateColumns = allowed.length === 3 ? "repeat(3, minmax(0, 1fr))" : "";
     let hint = item.querySelector(".q2-hint");
     if (!hint) {
       hint = document.createElement("p"); hint.className = "q2-hint";
