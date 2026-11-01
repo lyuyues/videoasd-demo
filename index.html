@@ -2479,10 +2479,11 @@
       $reportBody.innerHTML = '';
       $reportModal.classList.remove('hidden');
       renderReportTrees();
-      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 孩子看向哪里</h3>' +
-        `<p class="report-stat" style="text-align:left;background:#f5f3ff;padding:8px 10px;border-radius:8px">` +
-        `ⓘ rec:${gazeRecording} · cursor:${gazeTrackingActive} · calib:${gaze.hasCalibration()} · loop:${gazeDiag.frames} · ` +
-        `valid:${gazeDiag.valid} · captured:${gazeDiag.capTotal} (on ${gazeDiag.capOn}) · clips:${keys.length}</p>`);
+      // Debug line (rec/cursor/calib/frames…) removed from the caregiver view 2026-10-31: parents found it
+      // confusing. Kept in the console for researchers.
+      console.info('[gaze report]', { rec: gazeRecording, cursor: gazeTrackingActive, calib: gaze.hasCalibration(),
+        loop: gazeDiag.frames, valid: gazeDiag.valid, captured: gazeDiag.capTotal, on: gazeDiag.capOn, clips: keys.length });
+      $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 孩子看向哪里</h3>');
       if (!keys.length) {
         $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有保存视线数据。</p>');
         return;
