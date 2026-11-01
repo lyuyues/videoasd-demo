@@ -227,12 +227,16 @@ function render() {
   }
   const d = describe(state);
   const extra = [];
+  // Script errors on this page (index.html collects them from the start): shown so a
+  // grown-up can photograph them when the app won't respond on some browser.
+  const errs = (window.__pageErrors || []).filter(Boolean);
+  if (errs.length) extra.unshift(`⚠ 页面出错，请截图发给研究团队：${errs.slice(0, 2).join(' | ')}`);
   if (isIOS && !isStandalone && state.mode !== 'off') extra.push('请从主屏幕图标打开（Safari 和图标的存储是分开的）');
   if (state.pending) extra.push(`⏳ ${state.pending} 份记录待上传`);
   let hosts = [...document.querySelectorAll('[data-offline-status]')];
   let float = document.getElementById('offline-float');
   if (!hosts.length) {
-    if (!needsAttention(state)) { if (float) float.hidden = true; return; }
+    if (!needsAttention(state) && !errs.length) { if (float) float.hidden = true; return; }
     if (!float) {
       float = document.createElement('div'); float.id = 'offline-float';
       document.body.appendChild(float);
@@ -300,5 +304,6 @@ async function start() {
   setInterval(refreshPending, 10000);
 }
 
+addEventListener('error', () => setTimeout(render));   // later errors show up too
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { render(); start(); });
 else { render(); start(); }

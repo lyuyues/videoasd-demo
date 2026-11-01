@@ -100,7 +100,6 @@ function gazeFromResult(result) {
 
 /* --------- GazeTracker class -------------------------------------------- */
 export class GazeTracker {
-  static STALE_MS = 700; // no face detected for longer than this -> treat as lost, not just old
 
   constructor() {
     this.landmarker = null;
@@ -227,3 +226,6 @@ export class GazeTracker {
     return applyCalibration(this.model, this.lastBs.x_bs, this.lastBs.y_bs);
   }
 }
+// No face detected for longer than this -> treat as lost, not just old. (Set here, not as a
+// static class field, which needs iOS 14.5.)
+GazeTracker.STALE_MS = 700;

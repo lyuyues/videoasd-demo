@@ -822,7 +822,19 @@
     .done-emoji { font-size: 56px; line-height: 1; margin-bottom: 10px; }
     .done-card h1 { font-size: 26px; font-weight: 800; color: #3a3a44; margin: 0 0 6px; }
     .done-card p { font-size: 14px; color: #8a8a96; margin: 0; line-height: 1.6; }
+    /* Researcher shortcut on the done screen: same as ⚙ → 💾 备份 (one tap). */
+    .done-backup {
+      position: absolute; right: 14px; bottom: 14px;
+      width: 40px; height: 40px; padding: 0;
+      font-size: 18px; line-height: 1;
+      background: rgba(255, 255, 255, 0.55); border: none; border-radius: 50%;
+      opacity: 0.6; cursor: pointer;
+    }
+    .done-backup:active { opacity: 1; }
   </style>
+  <!-- Catch script errors from the start, so offline.js can show them on the setup
+       card: on a browser the app can't run on, the buttons otherwise just do nothing. -->
+  <script>window.__pageErrors = []; addEventListener('error', (e) => window.__pageErrors.push(String(e.message || e.error || e))); addEventListener('unhandledrejection', (e) => window.__pageErrors.push(String(e.reason && e.reason.message || e.reason)));</script>
 </head>
 <body>
   <div class="bg-diorama"></div>
@@ -895,6 +907,10 @@
       <p id="done-sub"></p>
       <button class="setup-hand" id="done-back">回到小镇</button>
     </div>
+    <!-- Researcher: open the on-device backup page (same as ⚙ → 💾 备份). -->
+    <button class="done-backup" id="done-backup" type="button"
+            title="查看本机备份、重新上传、下载成文件" aria-label="本机备份（研究者）"
+            onclick="location.href='backup.html'">💾</button>
   </div>
 
   <button id="postquiz-btn" class="postquiz-btn" hidden></button>
@@ -1138,18 +1154,12 @@
     </div>
   </div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "./assets/vendor/three/three.module.js",
-      "three/addons/": "./assets/vendor/three/examples/jsm/"
-    }
-  }
-  </script>
 
   <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    // Relative paths, not an import map: import maps need iOS 16.4 / Chrome 89, and older
+    // browsers (some China-market ones) failed on this line, so the whole app never ran.
+    import * as THREE from './assets/vendor/three/three.module.js';
+    import { GLTFLoader } from './assets/vendor/three/examples/jsm/loaders/GLTFLoader.js';
     import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
     import { CB, CLIPS } from './clips.js?v=20261020c';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261028';
@@ -2522,7 +2532,8 @@
       // This session's PRR gaze, all viewings of a clip pooled: { "construct|clip": {pts, on, off} }
       const data = {};
       sessionGaze('prr', sessionId).forEach((r) => {
-        const d = (data[`${r.construct}|${r.clip}`] ??= { pts: [], on: 0, off: 0 });
+        const k = `${r.construct}|${r.clip}`;
+        const d = data[k] || (data[k] = { pts: [], on: 0, off: 0 });
         d.pts.push(...r.pts); d.on += r.on; d.off += r.off;
       });
       const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
@@ -3100,6 +3111,6 @@
     })();
   </script>
 <!-- Offline package for the iPad: status, download, updates (offline.js). -->
-<script type="module" src="offline.js?v=20261028"></script>
+<script type="module" src="offline.js?v=20261031"></script>
 </body>
 </html>
