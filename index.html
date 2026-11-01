@@ -574,6 +574,10 @@
     .report-focus canvas { width: 100%; height: auto; display: block; }
     .report-stat { font-size: 13px; color: #8a8a96; margin-top: 6px; text-align: center; }
     .report-empty { color: #8a8a96; font-size: 14px; padding: 24px 0; }
+    .report-demo { text-align: left; font-size: 14px; line-height: 1.6; color: #7a5b16; background: #fff7dc;
+                   border: 1px solid #f1d27a; border-radius: 10px; padding: 10px 12px; margin: 10px 0 4px; }
+    .demo-tag { font-size: 12px; font-weight: 700; color: #7a5b16; background: #ffe9a8; border-radius: 6px;
+                padding: 2px 7px; vertical-align: middle; }
     .modal-card .report-x { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; padding: 0;
                 border-radius: 50%; border: none; background: #f3eee6; color: #6b5640; font-size: 18px;
                 box-shadow: none; cursor: pointer; }
@@ -2440,6 +2444,45 @@
     };
     const emoCell = (e) => e ? `<img src="${emoSrc(e)}" alt="">${EMOTION_LABEL[e] || e}` : '—';
 
+    // Demo gaze for the report when the session has none: on the clips THIS child just
+    // watched (this session's construct_opened / action_selected events: the context of
+    // each topic opened, and the action + reaction of each option picked), so the stills
+    // are the scenes they saw; the playground make-friends clips only if nothing was
+    // watched yet. Points follow each clip's own AOI boxes over time, mostly on faces and
+    // eyes, with a fixed seed per clip so the demo looks the same every time.
+    function demoGazeKeys() {
+      const keys = new Set();
+      let ev = [];
+      try { ev = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'); } catch { /* none */ }
+      ev.filter((e) => e.session === sessionId && e.condition === 'prr').forEach((e) => {
+        if (e.type === 'construct_opened' && e.construct) keys.add(`${e.construct}|context`);
+        if (e.type === 'action_selected' && e.construct && e.action) {
+          keys.add(`${e.construct}|action_${e.action}`); keys.add(`${e.construct}|reaction_${e.action}`);
+        }
+      });
+      return keys.size ? [...keys]
+        : ['playground_make_friends|context', 'playground_make_friends|action_a', 'playground_make_friends|reaction_a'];
+    }
+    function demoGaze(key, aoi) {
+      let s = [...key].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
+      const rnd = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const WEIGHTS = [['eyes', 0.34], ['face', 0.22], ['mouth', 0.16], ['body', 0.16], ['bg', 0.12]];
+      const pts = [];
+      aoi.frames.forEach((f) => {
+        for (let i = 0; i < 6; i++) {
+          let r = rnd(), kind = 'bg';
+          for (const [k, w] of WEIGHTS) { if ((r -= w) < 0) { kind = k; break; } }
+          const boxes = f.boxes.filter((b) => b.kind === kind);
+          if (kind === 'bg' || !boxes.length) { pts.push([+rnd().toFixed(3), +rnd().toFixed(3), f.t]); continue; }
+          const b = boxes[Math.floor(rnd() * boxes.length)].b;
+          const x = b[0] + (0.15 + 0.7 * rnd()) * (b[2] - b[0]), y = b[1] + (0.15 + 0.7 * rnd()) * (b[3] - b[1]);
+          pts.push([+x.toFixed(3), +y.toFixed(3), f.t]);
+        }
+      });
+      return { pts, on: pts.length, off: Math.round(pts.length * 0.14) };
+    }
+
     // Story trees: one per explored (scene, topic) — the tree the child saw, plus a row per action.
     function renderReportTrees() {
       const ids = Object.keys(localStorage).filter((k) => k.startsWith('videoasd_tree_'))
@@ -2475,7 +2518,7 @@
         d.pts.push(...r.pts); d.on += r.on; d.off += r.off;
       });
       const frames = JSON.parse(localStorage.getItem('videoasd_gaze_frames') || '{}');
-      const keys = Object.keys(data);
+      let keys = Object.keys(data);
       $reportBody.innerHTML = '';
       $reportModal.classList.remove('hidden');
       renderReportTrees();
@@ -2484,9 +2527,22 @@
       console.info('[gaze report]', { rec: gazeRecording, cursor: gazeTrackingActive, calib: gaze.hasCalibration(),
         loop: gazeDiag.frames, valid: gazeDiag.valid, captured: gazeDiag.capTotal, on: gazeDiag.capOn, clips: keys.length });
       $reportBody.insertAdjacentHTML('beforeend', '<h3 class="report-section">👀 孩子看向哪里</h3>');
-      if (!keys.length) {
-        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有保存视线数据。</p>');
-        return;
+      // No gaze this session (no calibration, no camera): show the report with demo
+      // points instead, clearly marked, so the feature can still be shown. Display only:
+      // never saved, uploaded or exported.
+      const demo = !keys.length;
+      if (demo) {
+        for (const key of demoGazeKeys()) {
+          const aoi = await loadAOI(key);
+          if (aoi) data[key] = demoGaze(key, aoi);
+        }
+        keys = Object.keys(data);
+        $reportBody.insertAdjacentHTML('beforeend', '<p class="report-demo">⚠️ 这次没有记录到视线（没有做眼动校准，' +
+          '或摄像头没拍到脸）。下面是<b>示范数据</b>，只用来展示报告的样子，不是这个孩子的结果。</p>');
+        if (!keys.length) {
+          $reportBody.insertAdjacentHTML('beforeend', '<p class="report-empty">还没有保存视线数据。</p>');
+          return;
+        }
       }
       for (const key of keys) {
         const d = data[key];
@@ -2497,7 +2553,7 @@
         const wrap = document.createElement('div');
         wrap.className = 'report-clip';
         wrap.innerHTML =
-          `<h3>${constructTitle(loc)} · ${clip}</h3>` +
+          `<h3>${constructTitle(loc)} · ${clip}${demo ? ' <span class="demo-tag">示范</span>' : ''}</h3>` +
           `<div class="report-focus"></div>` +
           `<div class="report-stat">${onPct}% 的时间在看视频</div>` +
           `<div class="aoi-bars"></div>`;
