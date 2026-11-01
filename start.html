@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研究员入口</title>
+<!-- Researcher hub for both studies (2026-10-31). Open once as start.html?k=<token>; the token is
+     kept in this page's URL and added to every link, so researchers don't need to remember URLs.
+     No token is stored in this file. Parent videos live in parent_videos/ on the study server only
+     (git-ignored, copied there by hand), not in git / GitHub Pages. -->
+<style>
+  :root { --bg:#FFF8EC; --card:#FFFFFF; --ink:#3A2E25; --muted:#8A7A6A; --line:#E8D5B5; --accent:#E07A2E; --sense:#4C8C6A; --vasd:#4A6FA5; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:28px 16px 48px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; }
+  .warn { background:#FFF1E0; border:1px solid #F2C38F; border-radius:12px; padding:10px 14px; margin-bottom:18px; display:none; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:18px; }
+  h2 { margin:0 0 12px; font-size:21px; display:flex; align-items:center; gap:8px; }
+  h2 .dot { width:12px; height:12px; border-radius:50%; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px; }
+  a.tile { display:block; text-decoration:none; color:inherit; border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:#FFFCF6; }
+  a.tile:active { transform:scale(.98); }
+  a.tile b { display:block; font-size:18px; }
+  a.tile span { color:var(--muted); font-size:14px; }
+  a.tile.video { border-color:var(--accent); background:#FFF4E8; }
+  .sense h2 .dot { background:var(--sense); } .vasd h2 .dot { background:var(--vasd); }
+  footer { color:var(--muted); font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>研究员入口</h1>
+  <p class="sub">SENSE 和 VideoASD 实验用到的所有页面。点开即可，访问码会自动带上。</p>
+  <div class="warn" id="warn">这个页面没有带访问码打开，下面的链接可能会显示"需要访问口令"。请用研究团队发的完整链接（带 <code>?k=</code>）打开本页，再加到主屏幕或书签。</div>
+
+  <section>
+    <h2>🎬 给家长看的讲解视频</h2>
+    <div class="grid">
+      <a class="tile video" data-href="https://videoasd.yuelyu.ca/parent_videos/sense_parent_intro.mp4"><b>SENSE 家长讲解</b><span>约 3.5 分钟 · 实验前给家长看</span></a>
+      <a class="tile video" data-href="https://videoasd.yuelyu.ca/parent_videos/videoasd_parent_intro.mp4"><b>VideoASD 家长讲解</b><span>约 3 分钟 · 实验前给家长看</span></a>
+    </div>
+  </section>
+
+  <section class="sense">
+    <h2><span class="dot"></span>SENSE</h2>
+    <div class="grid">
+      <a class="tile" data-href="https://sense.yuelyu.ca/"><b>方式一：孩子互动</b><span>输入编号 → 拍照 → 五个小关 → 看视频</span></a>
+      <a class="tile" data-href="https://sense.yuelyu.ca/baseline.html"><b>方式二：家长设置</b><span>家长调滑块 → 确认设置 → 一起看</span></a>
+      <a class="tile" data-href="https://sense.yuelyu.ca/export.html"><b>数据导出</b><span>研究员用</span></a>
+    </div>
+  </section>
+
+  <section class="vasd">
+    <h2><span class="dot"></span>VideoASD</h2>
+    <div class="grid">
+      <a class="tile" data-href="https://videoasd.yuelyu.ca/"><b>互动故事（PRR）</b><span>编号 → 眼动校准 → 小镇 → 故事</span></a>
+      <a class="tile" data-href="https://videoasd.yuelyu.ca/baseline.html"><b>对照：一起看</b><span>不做选择，家长和孩子一起看完</span></a>
+      <a class="tile" data-href="https://videoasd.yuelyu.ca/quiz/"><b>前测 / 后测</b><span>选择测验卷</span></a>
+      <a class="tile" data-href="https://videoasd.yuelyu.ca/recognition_check/"><b>表情识别小测</b><span>需要时使用</span></a>
+    </div>
+  </section>
+
+  <footer>如果 iPad 上的 VideoASD 版本不是最新，不要自己点"更新"，联系 Yue。</footer>
+</main>
+<script>
+  const k = new URLSearchParams(location.search).get('k');
+  if (!k) document.getElementById('warn').style.display = 'block';
+  document.querySelectorAll('a[data-href]').forEach(a => {
+    const u = new URL(a.dataset.href);
+    if (k) u.searchParams.set('k', k);
+    a.href = u.toString();
+  });
+</script>
+</body>
+</html>

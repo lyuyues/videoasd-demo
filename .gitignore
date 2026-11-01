@@ -25,3 +25,6 @@ __pycache__/
 
 # 补音轨前的无声原版本地备份（git 历史里已有同内容的上一版，不入库）
 *_noaudio.mp4
+
+# Parent explainer videos: copied to the study server by hand, not in git/GitHub Pages
+parent_videos/
