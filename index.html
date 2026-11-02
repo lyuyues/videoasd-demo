@@ -1438,6 +1438,9 @@
     const $recapStep = document.getElementById('poe-step-recap');
 
     // Display info for the lock-in summary
+    // Bump when an action icon in assets/actions/ changes, so browsers drop the cached
+    // copy (the offline package keys by path and ignores ?v=).
+    const ACTION_ICON_V = '20261102';
     const ACTION_INFO = {
       a: { icon: 'assets/actions/comfort.png', label: '安慰她' },
       b: { icon: 'assets/actions/joke.png', label: '讲个笑话' },
@@ -1959,7 +1962,7 @@
           if (img) {
             img.onerror = () => { img.style.display = 'none'; };
             img.style.display = '';
-            img.src = `assets/actions/${topic}_${ch}.png`;
+            img.src = `assets/actions/${topic}_${ch}.png?v=${ACTION_ICON_V}`;
           }
         });
       } else {
@@ -2038,7 +2041,7 @@
       const $icon = document.getElementById('confirm-action-icon');
       const topic = cid().split('_').slice(1).join('_');
       $icon.onerror = () => { $icon.onerror = null; $icon.src = action.icon; };
-      $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.png` : action.icon;
+      $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.png?v=${ACTION_ICON_V}` : action.icon;
       document.getElementById('confirm-action-text').textContent = action.label;
       const emo = pendingPrediction || 'neutral';
       document.getElementById('confirm-emotion-icon').src = `assets/emotions/sam_${emo}.png`;
