@@ -44,12 +44,14 @@ export const CHOICES = {
   },
   // 2026-11-01 (VideoASD/2026-11-01_comfort_friend_content.md): c level 3 had two
   // upset feelings (惊讶 + 难过) -> 惊讶 swapped for 没什么感觉; 4-option lists added
-  // for when d exists. d (过度安慰 -> Sam 惊讶) waits for its clip; until then
-  // comfort has 3 actions, so the 4-option lists are not shown.
+  // for when d exists (classroom since 2026-11-02; playground d still to come).
   comfort_friend: {
     a: { answer: 'happy', 2: ['angry', 'happy'], 3: ['angry', 'happy', 'scared'], 4: ['angry', 'happy', 'scared', 'neutral'] },
     b: { answer: 'happy', 2: ['happy', 'sad'],   3: ['happy', 'sad', 'angry'],     4: ['happy', 'sad', 'angry', 'neutral'] },
     c: { answer: 'sad',   2: ['happy', 'sad'],   3: ['happy', 'neutral', 'sad'],   4: ['happy', 'neutral', 'sad', 'confused'] },
+    // d = 笑话她 (2026-11-02, matches quiz d): Alex laughs at her, Sam cries harder -> 难过.
+    // No 生气 among the options so only one answer is plausible. d exists only at level 3.
+    d: { answer: 'sad', 4: ['scared', 'happy', 'confused', 'sad'] },
   },
 };
 
