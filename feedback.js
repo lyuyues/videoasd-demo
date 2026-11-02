@@ -44,7 +44,7 @@ export const CHOICES = {
   },
   // 2026-11-01 (VideoASD/2026-11-01_comfort_friend_content.md): c level 3 had two
   // upset feelings (惊讶 + 难过) -> 惊讶 swapped for 没什么感觉; 4-option lists added
-  // for when d exists (classroom since 2026-11-02; playground d still to come).
+  // for when d exists (classroom + playground since 2026-11-02).
   comfort_friend: {
     a: { answer: 'happy', 2: ['angry', 'happy'], 3: ['angry', 'happy', 'scared'], 4: ['angry', 'happy', 'scared', 'neutral'] },
     b: { answer: 'happy', 2: ['happy', 'sad'],   3: ['happy', 'sad', 'angry'],     4: ['happy', 'sad', 'angry', 'neutral'] },
