@@ -1761,8 +1761,11 @@
     // straight to this child's post-quiz, Kid ID filled in. The topic is the child's
     // PRR topic in the participant assignment (quiz/index.html GROUPS, group =
     // (n - 1) % 4); a Kid ID without a number falls back to the round just finished.
-    const PRR_TOPIC_BY_GROUP = ['make_friends', 'join_activity', 'join_activity', 'make_friends'];
-    const QUIZ_TOPICS = { make_friends: '交朋友', join_activity: '加入活动' };
+    // B = comfort_friend since 2026-11-01 (replaces join_activity; its quiz is the new
+    // comfort_friend_v2 sheet -- the old comfort_friend quiz is kept untouched).
+    const PRR_TOPIC_BY_GROUP = ['make_friends', 'comfort_friend', 'comfort_friend', 'make_friends'];
+    const QUIZ_TOPICS = { make_friends: '交朋友', comfort_friend: '安慰朋友' };
+    const QUIZ_FILE = { make_friends: 'make_friends', comfort_friend: 'comfort_friend_v2' };
     function showPostQuiz(roundTopic) {
       const kid = sessionOwner() ?? (localStorage.getItem('videoasd_participant') || '');
       const n = parseInt((kid.match(/\d+/) || [])[0], 10);
@@ -1773,7 +1776,7 @@
       btn.onclick = () => {
         logEvent('post_quiz_opened', { topic });
         autosave();
-        location.href = `quiz/${topic}_post.html` + (kid ? `?kid=${encodeURIComponent(kid)}` : '');
+        location.href = `quiz/${QUIZ_FILE[topic]}_post.html` + (kid ? `?kid=${encodeURIComponent(kid)}` : '');
       };
       btn.hidden = false;
     }

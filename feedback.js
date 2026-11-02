@@ -11,7 +11,8 @@
  * random) so all children see the same question, in the order written here.
  *
  * Right answers follow what the STUDY clips show (frame check 10-31; the study uses
- * playground for make_friends and classroom for join_activity):
+ * playground for make_friends and classroom for join_activity; comfort_friend
+ * replaced join_activity as topic B on 2026-11-01):
  *   a = 开心; b = 没什么感觉 (Sam keeps playing calmly);
  *   make_friends c (grab toy) = 难过 -- Sam cries in the playground clip;
  *   join_activity c (barge in) = 生气 -- Sam frowns and pouts in the classroom clip;
@@ -41,10 +42,14 @@ export const CHOICES = {
     c: { answer: 'angry',
       2: ['happy', 'angry'], 3: ['happy', 'angry', 'neutral'], 4: ['happy', 'angry', 'neutral', 'confused'] },
   },
+  // 2026-11-01 (VideoASD/2026-11-01_comfort_friend_content.md): c level 3 had two
+  // upset feelings (惊讶 + 难过) -> 惊讶 swapped for 没什么感觉; 4-option lists added
+  // for when d exists. d (过度安慰 -> Sam 惊讶) waits for its clip; until then
+  // comfort has 3 actions, so the 4-option lists are not shown.
   comfort_friend: {
-    a: { answer: 'happy', 2: ['angry', 'happy'], 3: ['angry', 'happy', 'scared'] },
-    b: { answer: 'happy', 2: ['happy', 'sad'],   3: ['happy', 'sad', 'angry'] },
-    c: { answer: 'sad',   2: ['happy', 'sad'],   3: ['happy', 'scared', 'sad'] },
+    a: { answer: 'happy', 2: ['angry', 'happy'], 3: ['angry', 'happy', 'scared'], 4: ['angry', 'happy', 'scared', 'neutral'] },
+    b: { answer: 'happy', 2: ['happy', 'sad'],   3: ['happy', 'sad', 'angry'],     4: ['happy', 'sad', 'angry', 'neutral'] },
+    c: { answer: 'sad',   2: ['happy', 'sad'],   3: ['happy', 'neutral', 'sad'],   4: ['happy', 'neutral', 'sad', 'confused'] },
   },
 };
 

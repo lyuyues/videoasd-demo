@@ -64,14 +64,15 @@
 </main>
 <script>
   // Participant assignment, 2026-10-13 (Research/VideoASD/2026-10-13_participant_assignment.md).
-  // Topic A = make_friends (playground), B = join_activity (classroom). Group = (n - 1) % 4.
-  const TOPIC = { make_friends: "交朋友", join_activity: "加入活动" };
+  // Topic A = make_friends (playground), B = comfort_friend (classroom; replaced
+  // join_activity 2026-11-01, quiz file comfort_friend_v2). Group = (n - 1) % 4.
+  const TOPIC = { make_friends: "交朋友", comfort_friend_v2: "安慰朋友", join_activity: "加入活动（旧，不在实验流程里）" };
   const COND = { prr: "互动视频", baseline: "对照组视频" };
   const GROUPS = [
-    [["make_friends", "prr"], ["join_activity", "baseline"]],   // Kid 1, 5, 9
-    [["make_friends", "baseline"], ["join_activity", "prr"]],   // Kid 2, 6, 10
-    [["join_activity", "prr"], ["make_friends", "baseline"]],   // Kid 3, 7, 11
-    [["join_activity", "baseline"], ["make_friends", "prr"]],   // Kid 4, 8, 12
+    [["make_friends", "prr"], ["comfort_friend_v2", "baseline"]],   // Kid 1, 5, 9
+    [["make_friends", "baseline"], ["comfort_friend_v2", "prr"]],   // Kid 2, 6, 10
+    [["comfort_friend_v2", "prr"], ["make_friends", "baseline"]],   // Kid 3, 7, 11
+    [["comfort_friend_v2", "baseline"], ["make_friends", "prr"]],   // Kid 4, 8, 12
   ];
   const $ = (id) => document.getElementById(id);
   const href = (topic, ver, kid) => `${topic}_${ver}.html` + (kid ? `?kid=${encodeURIComponent(kid)}` : "");
@@ -110,7 +111,7 @@
       );
     }
     const $all = $("all"); $all.innerHTML = "";
-    ["make_friends", "join_activity"].forEach((t) => ["pre", "post"].forEach((v) => {
+    ["make_friends", "comfort_friend_v2", "join_activity"].forEach((t) => ["pre", "post"].forEach((v) => {
       const a = document.createElement("a");
       a.className = "step"; a.href = href(t, v, kid);
       a.innerHTML = `<span class="t">${TOPIC[t]} · ${VER[v]}</span>`;
