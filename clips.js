@@ -83,7 +83,7 @@ export const CLIPS = {
     context: CB + 'playground_comfort_friend/context_sam-sad_alex-notices.mp4',
     options: {
       a: { label: '安慰她',   action: CB + 'playground_comfort_friend/action_a-comfort_alex-comforts.mp4',  reaction: CB + 'playground_comfort_friend/reaction_a-comfort_sam-feels-better.mp4' },
-      b: { label: '讲个笑话', action: CB + 'playground_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'playground_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
+      b: { label: '做鬼脸',   action: CB + 'playground_comfort_friend/action_b-joke_alex-makes-face.mp4',   reaction: CB + 'playground_comfort_friend/reaction_b-joke_sam-laughs.mp4' },
       c: { label: '走开',     action: CB + 'playground_comfort_friend/action_c-ignore_alex-walks-away.mp4', reaction: CB + 'playground_comfort_friend/reaction_c-ignore_sam-stays-alone.mp4' },
       d: { label: '笑话她',   action: CB + 'playground_comfort_friend/action_d-mock_alex-laughs.mp4',       reaction: CB + 'playground_comfort_friend/reaction_d-mock_sam-cries-harder.mp4' },
     },
