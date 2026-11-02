@@ -13,7 +13,7 @@
  * Right answers follow what the STUDY clips show (frame check 10-31; the study uses
  * playground for make_friends and classroom for join_activity; comfort_friend
  * replaced join_activity as topic B on 2026-11-01):
- *   a = 开心; b = 没什么感觉 (Sam keeps playing calmly);
+ *   a = 开心; b = 跟平常一样 (neutral; label was 没什么感觉 until 2026-11-02; Sam keeps playing calmly);
  *   make_friends c (grab toy) = 难过 -- Sam cries in the playground clip;
  *   join_activity c (barge in) = 生气 -- Sam frowns and pouts in the classroom clip;
  *   d (过于热情) = 惊讶 (taken aback; matches the quiz, which has no 困惑);
