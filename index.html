@@ -1043,7 +1043,7 @@
           <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>开心</span></button>
           <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
           <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
-          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_afraid.png" alt=""><span>害怕</span></button>
           <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>惊讶</span></button>
           <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>跟平常一样</span></button>
         </div>
@@ -1102,7 +1102,7 @@
           <button class="emotion-btn" data-emotion="happy"><img src="assets/emotions/sam_happy.png" alt=""><span>开心</span></button>
           <button class="emotion-btn" data-emotion="sad"><img src="assets/emotions/sam_sad.png" alt=""><span>难过</span></button>
           <button class="emotion-btn" data-emotion="angry"><img src="assets/emotions/sam_angry.png" alt=""><span>生气</span></button>
-          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_confused.png" alt=""><span>害怕</span></button>
+          <button class="emotion-btn" data-emotion="confused"><img src="assets/emotions/sam_afraid.png" alt=""><span>害怕</span></button>
           <button class="emotion-btn" data-emotion="scared"><img src="assets/emotions/sam_scared.png" alt=""><span>惊讶</span></button>
           <button class="emotion-btn" data-emotion="neutral"><img src="assets/emotions/sam_neutral.png" alt=""><span>跟平常一样</span></button>
         </div>
@@ -1622,6 +1622,9 @@
        Level is the single source of truth; it maps (via DIFFICULTY_LEVELS) to
        how many actions + emotions the child sees. Pools are ORDERED so a higher
        level reveals the more confusable options. Experts edit only the tables. */
+    // Face image per data key. 'confused' is shown as 害怕 since 2026-11-02 and uses the
+    // afraid face (sam_afraid.png; sam_confused.png has a question mark).
+    const emoSrcOf = (e) => `assets/emotions/sam_${e === 'confused' ? 'afraid' : e}.png`;
     const EMOTION_POOL = ['happy','sad','angry','confused','scared','neutral']; // distinct → confusable
     const ACTION_POOL  = ['a','b','c','d'];  // comfort, joke, ignore, (4th = placeholder)
     // action count == reaction count. 3 levels: 2 / 3 / 4 options.
@@ -2044,7 +2047,7 @@
       $icon.src = currentClips ? `assets/actions/${topic}_${pendingChoice}.png?v=${ACTION_ICON_V}` : action.icon;
       document.getElementById('confirm-action-text').textContent = action.label;
       const emo = pendingPrediction || 'neutral';
-      document.getElementById('confirm-emotion-icon').src = `assets/emotions/sam_${emo}.png`;
+      document.getElementById('confirm-emotion-icon').src = emoSrcOf(emo);
       document.getElementById('confirm-emotion-text').textContent = EMOTION_LABEL[emo] || emo;
       showStep('confirm');
     }
@@ -2194,7 +2197,7 @@
       localStorage.setItem(treeKey(id), JSON.stringify(g));
       return g;
     }
-    const emoSrc = (e) => `assets/emotions/sam_${e}.png`;
+    const emoSrc = emoSrcOf;
 
     function svgEl(tag, attrs) {
       const n = document.createElementNS(SVGNS, tag);
