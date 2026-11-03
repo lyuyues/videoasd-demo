@@ -1166,7 +1166,7 @@
     import { mountTown } from './town.js?v=20261020c';
     import { mountScenes } from './scenes.js?v=20261019';
     import { playReward } from './reward.js?v=20261030g';
-    import { judge, showFeedback, unlockSound, emotionChoices } from './feedback.js?v=20261031d';
+    import { judge, showFeedback, unlockSound, emotionChoices } from './feedback.js?v=20261102a';
     import { saveGazeRecord, gazeRecords, sessionGaze } from './gaze_store.js?v=20261031';
 
     /* ============================================================
@@ -1679,7 +1679,7 @@
     // Runs on entering predict and observe, after the action is known. Topics
     // without a key (studio cases) fall back to the first N of EMOTION_POOL.
     function applyEmotionChoices() {
-      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
+      const topic = $modal.dataset.constructId || '';   // scene_topic: feedback.js applies per-scene overrides
       const lv = currentLevel();
       const n = currentClips ? Math.min(lv.emotions, Object.keys(currentClips.options).length) : lv.emotions;
       const pick = emotionChoices(topic, pendingChoice, n) || EMOTION_POOL.slice(0, n);
@@ -2082,7 +2082,7 @@
     // own "is it like you thought?" answer (2026-10-31), so that answer is the child's
     // judgement, not an echo of the feedback. Once per lock-in, not on replays.
     function predictionFeedback(then) {
-      const topic = ($modal.dataset.constructId || '').split('_').slice(1).join('_');
+      const topic = $modal.dataset.constructId || '';   // scene_topic: feedback.js applies per-scene overrides
       const right = judge(topic, pendingChoice, pendingPrediction);
       if (right === null || $outVideo.dataset.fb) { then(); return; }
       $outVideo.dataset.fb = '1';

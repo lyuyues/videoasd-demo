@@ -55,10 +55,32 @@ export const CHOICES = {
   },
 };
 
-/** The emotion buttons for this topic/option when `n` choices are wanted, in display
+/* Per-scene overrides (2026-11-02), keyed by the full construct id (scene_topic), for
+ * clips whose reaction differs from the topic default above. Only the listed options
+ * change; the rest fall through to CHOICES[topic].
+ *   classroom make_friends c (grab toy): Sam is a bit angry in the classroom clip, not
+ *   crying like the playground one (Yue watched it 11-02) -> 生气, same lists as
+ *   join_activity c (the old 难过 lists had no 生气 at all). */
+export const SCENE_CHOICES = {
+  classroom_make_friends: {
+    c: { answer: 'angry',
+      2: ['happy', 'angry'], 3: ['happy', 'angry', 'neutral'], 4: ['happy', 'angry', 'neutral', 'confused'] },
+  },
+};
+
+/* `key` is a topic ('make_friends') or a full construct id ('classroom_make_friends');
+ * a scene override wins, then the topic default. */
+function entry(key, option) {
+  const o = SCENE_CHOICES[key] && SCENE_CHOICES[key][option];
+  if (o) return o;
+  const topic = CHOICES[key] ? key : key.split('_').slice(1).join('_');
+  return (CHOICES[topic] && CHOICES[topic][option]) || null;
+}
+
+/** The emotion buttons for this topic (or construct id)/option when `n` choices are wanted, in display
  *  order (the longest list available if n is larger); null = no key for this clip. */
 export function emotionChoices(topic, option, n) {
-  const c = CHOICES[topic] && CHOICES[topic][option];
+  const c = entry(topic, option);
   if (!c) return null;
   const sizes = Object.keys(c).filter((k) => k !== 'answer').map(Number).sort((x, y) => x - y);
   const size = sizes.filter((k) => k <= n).pop() || sizes[0];
@@ -148,7 +170,7 @@ function playSound(right) {
 
 /** Is `emotion` right for this topic/option? null when there's no answer key. */
 export function judge(topic, option, emotion) {
-  const c = CHOICES[topic] && CHOICES[topic][option];
+  const c = entry(topic, option);
   return c ? c.answer === emotion : null;
 }
 
