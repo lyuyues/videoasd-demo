@@ -1233,15 +1233,10 @@
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
       $gazeToggle.style.display = '';
-      // Show the cursor tracking live for a few seconds -- proof calibration
-      // actually worked, not just a "success" message -- then turn it off.
-      // Left on indefinitely, it sits in the child's view for the whole
-      // session; the grown-up can still re-show it anytime from the toolbar.
-      enableGazeCursor(true);
-      $gazeToggle.textContent = '隐藏视线 ●';
-      setTimeout(() => {
-        if (gazeTrackingActive) { enableGazeCursor(false); $gazeToggle.textContent = '显示视线 ○'; }
-      }, 4000);
+      // No live cursor after calibration (11-02): gaze is a background feature, and a
+      // visibly offset dot only makes parents doubt it. Recording runs regardless;
+      // the toolbar 显示视线 button can still show it on purpose.
+      $gazeToggle.textContent = '显示视线 ○';
       if (window.__afterCalibration) { window.__afterCalibration(); window.__afterCalibration = null; }
     }
 
