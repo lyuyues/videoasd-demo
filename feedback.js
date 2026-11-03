@@ -21,7 +21,7 @@
  * Distractors are added least-plausible first: c never gets a second "upset" feeling
  * (its 4th is 困惑, least like either clip), b never gets 开心 (Sam plays happily
  * alone), d's 开心 sits farthest from the answer. The right answer's position varies.
- * Keys are the data-emotion values ('scared' is shown as 惊讶).
+ * Keys are the data-emotion values ('scared' is shown as 惊讶; 'confused' as 害怕 since 2026-11-02).
  */
 
 const A_HAPPY = { answer: 'happy',
