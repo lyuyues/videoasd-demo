@@ -1160,7 +1160,8 @@
     // browsers (some China-market ones) failed on this line, so the whole app never ran.
     import * as THREE from './assets/vendor/three/three.module.js';
     import { GLTFLoader } from './assets/vendor/three/examples/jsm/loaders/GLTFLoader.js';
-    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
+    import { GazeTracker } from './gaze.js?v=20261102';
+    import { createCalFlow } from './cal_flow.js?v=20261102';
     import { CB, CLIPS } from './clips.js?v=20261020c';
     import { saveSnapshot, beaconSnapshot, onStudyServer, pendingCount } from './save.js?v=20261028';
     import { mountTown } from './town.js?v=20261020c';
@@ -1182,15 +1183,6 @@
     const $calStart = document.getElementById('cal-start');
     const $gazeToggle = document.getElementById('gaze-toggle');
 
-    // 9-point grid (relative to viewport, 0..1)
-    const CAL_POINTS = [
-      [0.10, 0.10], [0.50, 0.10], [0.90, 0.10],
-      [0.10, 0.50], [0.50, 0.50], [0.90, 0.50],
-      [0.10, 0.90], [0.50, 0.90], [0.90, 0.90],
-    ];
-
-    let calSamples = [];
-    let calIdx = 0;
     // Two separate switches: recording runs for the whole session once the
     // child is calibrated on this page load; the red cursor is only a visual
     // check for the grown-up. Hiding the cursor must NOT stop recording.
@@ -1209,28 +1201,14 @@
       else logEvent('gaze_calibration', { ...rec, during: 'session' });
     }
 
-    function renderCalDots() {
-      $calDots.innerHTML = '';
-      document.getElementById('cal-instructions').classList.toggle('faded', calIdx > 0 && calIdx < CAL_POINTS.length);
-      CAL_POINTS.forEach(([x, y], i) => {
-        const d = document.createElement('div');
-        d.className = 'cal-dot';
-        if (i < calIdx) d.classList.add('done');
-        if (i === calIdx) d.classList.add('current');
-        d.style.left = `${x * 100}%`;
-        d.style.top = `${y * 100}%`;
-        d.addEventListener('click', () => onCalDotClick(i));
-        $calDots.appendChild(d);
-      });
-      $calProgress.textContent = `${calIdx} / ${CAL_POINTS.length}`;
-    }
-
+    // 9 fit dots + 2 check dots, same flow as the baseline (cal_flow.js).
+    const CAL_HINT = '眼动校准 — 看着<strong>黄色圆点</strong>，停一下再点它。<br>点完 9 个圆点后，再点 2 个检查点。';
+    const cal = createCalFlow({ gaze, $dots: $calDots, $instr: document.getElementById('cal-instructions'),
+      $progress: $calProgress, hint: CAL_HINT, note: noteCalibration, onDone: finishCalibration });
     async function startCalibration() {
-      calSamples = [];
-      calIdx = 0;
       $calOverlay.classList.add('show');
       $gazeVideo.classList.add('show');
-      renderCalDots();
+      cal.reset();
       try {
         if (!gaze.landmarker) {
           document.getElementById('cal-instructions').innerHTML = '正在加载 MediaPipe 模型……';
@@ -1238,8 +1216,7 @@
         }
         await gaze.startCamera();
         gaze.start();
-        document.getElementById('cal-instructions').innerHTML =
-          '眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>点完全部 9 个圆点后，校准自动完成。';
+        document.getElementById('cal-instructions').innerHTML = CAL_HINT;
       } catch (e) {
         console.error('[gaze] init failed:', e);
         noteCalibration('error', { error: String(e && e.message || e) });
@@ -1248,32 +1225,10 @@
       }
     }
 
-    function onCalDotClick(i) {
-      if (i !== calIdx) return; // must click the current one
-      const [x, y] = CAL_POINTS[i];
-      const bs = gaze.getRawSignal();
-      calSamples.push({ x_bs: bs.x_bs, y_bs: bs.y_bs, x_screen: x, y_screen: y });
-      calIdx++;
-      if (calIdx >= CAL_POINTS.length) {
-        finishCalibration();
-      } else {
-        renderCalDots();
-      }
-    }
-
-    function finishCalibration() {
-      const model = fitAffine2D(calSamples);
-      if (!model) {
-        noteCalibration('failed', {});
-        document.getElementById('cal-instructions').classList.remove('faded'); document.getElementById('cal-instructions').innerHTML =
-          '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
-        setTimeout(() => { calIdx = 0; renderCalDots(); }, 1500);
-        return;
-      }
+    function finishCalibration(model, info) {
       gaze.saveCalibration(model);
       gazeRecording = true;
-      noteCalibration('ok', { points: calSamples.length, screen: [window.innerWidth, window.innerHeight],
-        rmseX: +model.rmseScreen.x.toFixed(4), rmseY: +model.rmseScreen.y.toFixed(4) });   // same fields as baseline
+      noteCalibration('ok', info);   // same fields as baseline (cal_flow.js)
       console.log('[gaze] calibrated:', model);
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
@@ -1297,7 +1252,7 @@
     }
 
     const gazeDiag = { frames: 0, valid: 0, capTotal: 0, capOn: 0 }; // DIAG
-    gaze.onFrame(() => {
+    gaze.onFrame((bs) => {
       gazeDiag.frames++;                 // DIAG: loop alive?
       if (!gazeRecording) return;
       const g = gaze.getScreenGaze();
@@ -1309,11 +1264,10 @@
       }
       if (gazeTrackingActive) $gazeCursor.classList.add('show');
       gazeDiag.valid++;                  // DIAG: tracking produced gaze?
-      const x = Math.max(0, Math.min(1, g.x)) * window.innerWidth;
-      const y = Math.max(0, Math.min(1, g.y)) * window.innerHeight;
-      $gazeCursor.style.left = `${x}px`;
-      $gazeCursor.style.top = `${y}px`;
-      captureGazePoint(x, y);
+      // Cursor stays on screen; the recorded point is not clamped (past the edge = off-video).
+      $gazeCursor.style.left = `${Math.max(0, Math.min(1, g.x)) * window.innerWidth}px`;
+      $gazeCursor.style.top = `${Math.max(0, Math.min(1, g.y)) * window.innerHeight}px`;
+      captureGazePoint(g.x * window.innerWidth, g.y * window.innerHeight, bs);
     });
 
     $calStart.addEventListener('click', startCalibration);
@@ -1807,19 +1761,22 @@
     function startGazeCap(loc, clip, video) {
       if (!gazeRecording) { gazeCap = null; gazeBuf = null; return; }
       gazeCap = { key: `${loc}|${clip}`, video, grabbed: false, startedAt: new Date().toISOString() };
-      gazeBuf = { pts: [], on: 0, off: 0 };
+      gazeBuf = { pts: [], offPts: [], on: 0, off: 0 };
     }
-    function captureGazePoint(gx, gy) {
+    function captureGazePoint(gx, gy, bs) {
       const c = gazeCap;
       if (!c || !gazeBuf || !c.video || c.video.paused || c.video.ended) return;
       const r = c.video.getBoundingClientRect();
       if (!r.width || !r.height) return;
       const vx = (gx - r.left) / r.width, vy = (gy - r.top) / r.height;
       gazeDiag.capTotal++;               // DIAG
+      // [vx, vy, clip time, raw x_bs, raw y_bs] -- raw kept so the fit can be redone offline
+      const p = [+vx.toFixed(3), +vy.toFixed(3), +c.video.currentTime.toFixed(2), +bs.x_bs.toFixed(4), +bs.y_bs.toFixed(4)];
       if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) {
-        gazeBuf.pts.push([+vx.toFixed(3), +vy.toFixed(3), +c.video.currentTime.toFixed(2)]);
+        gazeBuf.pts.push(p);
         gazeBuf.on++; gazeDiag.capOn++;  // DIAG
       } else {
+        gazeBuf.offPts.push(p);
         gazeBuf.off++;
       }
       // grab the representative still mid-clip (faces tend to be frontal there)
@@ -1849,7 +1806,7 @@
       const [loc, clip] = c.key.split('|');
       const rec = saveGazeRecord({ condition: 'prr',
         participantId: sessionOwner() ?? (localStorage.getItem('videoasd_participant') || ''),
-        sessionId, construct: loc, clip, startedAt: c.startedAt, pts: buf.pts, on: buf.on, off: buf.off });
+        sessionId, construct: loc, clip, startedAt: c.startedAt, pts: buf.pts, offPts: buf.offPts, on: buf.on, off: buf.off });
       logEvent('gaze_summary', { construct: loc, clip, viewing: rec.viewing, on: buf.on, off: buf.off,
         onRatio: +(buf.on / (buf.on + buf.off)).toFixed(3) });
     }

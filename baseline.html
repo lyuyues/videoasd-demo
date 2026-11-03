@@ -133,7 +133,8 @@
 
   <script type="module">
     import { CLIPS } from './clips.js?v=20261020c';
-    import { GazeTracker, fitAffine2D } from './gaze.js?v=20261019';
+    import { GazeTracker } from './gaze.js?v=20261102';
+    import { createCalFlow } from './cal_flow.js?v=20261102';
     import { saveSnapshot, beaconSnapshot, onStudyServer } from './save.js?v=20261028';
     import { saveGazeRecord, gazeRecords, sessionGaze } from './gaze_store.js?v=20261031';
 
@@ -186,32 +187,23 @@
     const noteCalibration = (result, extra = {}) => logEvent('gaze_calibration', { result, ...extra, during: 'setup' });
     let onCalibrated = null;   // set by Start: what to do once the fit is done
 
-    /* 9-dot calibration: look at the yellow dot, tap it; affine fit when all 9 are done. */
-    const CAL_POINTS = [
-      [0.10, 0.10], [0.50, 0.10], [0.90, 0.10],
-      [0.10, 0.50], [0.50, 0.50], [0.90, 0.50],
-      [0.10, 0.90], [0.50, 0.90], [0.90, 0.90],
-    ];
-    const CAL_HINT = '眼动校准 — 看着<strong>黄色圆点</strong>，然后点击它。<br>点完全部 9 个圆点后，校准自动完成。';
-    let calSamples = [], calIdx = 0;
-    function renderCalDots() {
-      $('cal-dots').innerHTML = '';
-      document.getElementById('cal-instructions').classList.toggle('faded', calIdx > 0 && calIdx < CAL_POINTS.length);
-      CAL_POINTS.forEach(([x, y], i) => {
-        const d = document.createElement('div');
-        d.className = 'cal-dot' + (i < calIdx ? ' done' : '') + (i === calIdx ? ' current' : '');
-        d.style.left = `${x * 100}%`;
-        d.style.top = `${y * 100}%`;
-        d.addEventListener('click', () => onCalDotClick(i));
-        $('cal-dots').appendChild(d);
-      });
-      $('cal-progress').textContent = `${calIdx} / ${CAL_POINTS.length}`;
-    }
+    /* Calibration: 9 fit dots + 2 check dots, same flow as the PRR app (cal_flow.js). */
+    const CAL_HINT = '眼动校准 — 看着<strong>黄色圆点</strong>，停一下再点它。<br>点完 9 个圆点后，再点 2 个检查点。';
+    const cal = createCalFlow({ gaze, $dots: $('cal-dots'), $instr: $('cal-instructions'), $progress: $('cal-progress'),
+      hint: CAL_HINT, note: noteCalibration,
+      onDone(model, info) {
+        gaze.saveCalibration(model);
+        runCal = model;
+        noteCalibration('ok', info);
+        hideCalibration();
+        gazeOn = true;   // camera and tracking loop stay on for the run
+        const next = onCalibrated; onCalibrated = null;
+        if (next) next();
+      } });
     async function startCalibration() {
-      calSamples = []; calIdx = 0;
       $('cal-overlay').classList.add('show');
       $('gaze-video').classList.add('show');
-      renderCalDots();
+      cal.reset();
       try {
         if (!gaze.landmarker) {
           $('cal-instructions').innerHTML = '正在加载 MediaPipe 模型……';
@@ -227,29 +219,6 @@
           `<span style="color:#ff8888">加载失败：${e.message || e}</span><br>请检查摄像头权限`;
       }
     }
-    function onCalDotClick(i) {
-      if (i !== calIdx) return;   // must tap the current one
-      const [x, y] = CAL_POINTS[i];
-      const bs = gaze.getRawSignal();
-      calSamples.push({ x_bs: bs.x_bs, y_bs: bs.y_bs, x_screen: x, y_screen: y });
-      calIdx++;
-      if (calIdx < CAL_POINTS.length) { renderCalDots(); return; }
-      const model = fitAffine2D(calSamples);
-      if (!model) {
-        noteCalibration('failed');
-        $('cal-instructions').classList.remove('faded'); $('cal-instructions').innerHTML = '<span style="color:#ff8888">校准失败：采样数据异常，请重试</span>';
-        setTimeout(() => { calIdx = 0; calSamples = []; renderCalDots(); $('cal-instructions').innerHTML = CAL_HINT; }, 1500);
-        return;
-      }
-      gaze.saveCalibration(model);
-      runCal = model;
-      noteCalibration('ok', { points: calSamples.length, screen: [window.innerWidth, window.innerHeight],
-        rmseX: +model.rmseScreen.x.toFixed(4), rmseY: +model.rmseScreen.y.toFixed(4) });
-      hideCalibration();
-      gazeOn = true;   // camera and tracking loop stay on for the run
-      const next = onCalibrated; onCalibrated = null;
-      if (next) next();
-    }
     function hideCalibration() {
       $('cal-overlay').classList.remove('show');
       $('gaze-video').classList.remove('show');
@@ -262,35 +231,33 @@
     });
     let cap = null;   // { key, segment, pts: [], on, off }
 
-    gaze.onFrame(() => {
+    gaze.onFrame((bs) => {
       if (!gazeOn || !cap) return;
       const v = active();
       if (v.paused || v.ended) return;
       const g = gaze.getScreenGaze();
       if (!g) return;
-      const x = Math.max(0, Math.min(1, g.x)) * innerWidth;
-      const y = Math.max(0, Math.min(1, g.y)) * innerHeight;
+      // Not clamped to the screen: a point past the edge is off-video, not piled on the edge.
+      const x = g.x * innerWidth, y = g.y * innerHeight;
       const r = v.getBoundingClientRect();
       const vx = (x - r.left) / r.width, vy = (y - r.top) / r.height;
-      if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) {
-        cap.pts.push([+vx.toFixed(3), +vy.toFixed(3), +v.currentTime.toFixed(2)]);
-        cap.on++;
-      } else {
-        cap.off++;
-      }
+      // [vx, vy, clip time, raw x_bs, raw y_bs] -- raw kept so the fit can be redone offline
+      const p = [+vx.toFixed(3), +vy.toFixed(3), +v.currentTime.toFixed(2), +bs.x_bs.toFixed(4), +bs.y_bs.toFixed(4)];
+      if (vx >= 0 && vx <= 1 && vy >= 0 && vy <= 1) { cap.pts.push(p); cap.on++; }
+      else { cap.offPts.push(p); cap.off++; }
     });
     function startCap(segment) {
       // Same clip names as the PRR app (context / action_<opt> / reaction_<opt>), which
       // are also the AOI file names, so both conditions score against the same boxes.
       const clip = segment === 'context' ? segment : `${segment}_${ctx.option}`;
-      cap = gazeOn ? { clip, segment, startedAt: new Date().toISOString(), pts: [], on: 0, off: 0 } : null;
+      cap = gazeOn ? { clip, segment, startedAt: new Date().toISOString(), pts: [], offPts: [], on: 0, off: 0 } : null;
     }
     function stopCap() {
       const c = cap; cap = null;
       if (!c || (c.on + c.off) === 0) return;
       // One record per capture, tagged with Kid ID / session / condition (gaze_store.js).
       const rec = saveGazeRecord({ condition: 'baseline', participantId: ctx.participant, sessionId,
-        construct: ctx.construct, clip: c.clip, startedAt: c.startedAt, pts: c.pts, on: c.on, off: c.off });
+        construct: ctx.construct, clip: c.clip, startedAt: c.startedAt, pts: c.pts, offPts: c.offPts, on: c.on, off: c.off });
       logEvent('gaze_summary', { segment: c.segment, clip: c.clip, viewing: rec.viewing, on: c.on, off: c.off,
         onRatio: +(c.on / (c.on + c.off)).toFixed(3) });
     }

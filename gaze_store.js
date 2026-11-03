@@ -6,7 +6,10 @@
  *     construct: '<scene>_<topic>', clip: 'context' | 'action_<opt>' | 'reaction_<opt>',
  *     viewing,            // 1st, 2nd... capture of this clip in this session + condition
  *     startedAt, endedAt, // ISO
- *     pts: [[vx, vy, t]], // on-video points: x/y as 0-1 of the video frame, t = clip time (s)
+ *     pts: [[vx, vy, t, x_bs, y_bs]], // on-video points: x/y as 0-1 of the video frame,
+                         // t = clip time (s), x_bs/y_bs = raw eye signal (since 2026-11-02;
+                         // older records have only [vx, vy, t])
+     offPts: [...],      // same shape, points outside the video (since 2026-11-02)
  *     on, off }           // samples on / off the video
  * Clip names match assets/aoi/<construct>__<clip>.json, so both conditions score
  * against the same AOI boxes.
