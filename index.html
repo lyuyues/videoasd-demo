@@ -1272,7 +1272,8 @@
       }
       gaze.saveCalibration(model);
       gazeRecording = true;
-      noteCalibration('ok', { points: calSamples.length, screen: [window.innerWidth, window.innerHeight] });
+      noteCalibration('ok', { points: calSamples.length, screen: [window.innerWidth, window.innerHeight],
+        rmseX: +model.rmseScreen.x.toFixed(4), rmseY: +model.rmseScreen.y.toFixed(4) });   // same fields as baseline
       console.log('[gaze] calibrated:', model);
       $calOverlay.classList.remove('show');
       $gazeVideo.classList.remove('show');
@@ -2628,7 +2629,7 @@
         // condition too, or the baseline's events ride along in this file.
         ...p, events: p.events.filter((e) => e.session === sessionId && e.condition === 'prr'),
         gaze: sessionGaze('prr', sessionId),   // this child's own gaze only
-        calibration: gaze.hasCalibration() ? gaze.model : null };   // the fit the gaze points were mapped with, as the baseline saves
+        calibration: gazeRecording ? gaze.model : null };   // the fit the gaze points were mapped with, as the baseline saves
     }
     function autosave() { eventsDirty = false; saveSnapshot(serverPayload()); }
     setInterval(() => { if (eventsDirty) autosave(); }, 60000);
